@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "name": "example-worker",
+  "kind": "external",
+  "command": ["python3", "workers/example-worker.py"],
+  "version": "1.0.0",
+  "capabilities": ["inspect", "plan", "result"],
+  "supported_loaders": ["neoforge"],
+  "supported_minecraft_versions": ["1.21.1"],
+  "task_types": ["inspect", "plan"],
+  "risk_profile": "bounded-demo",
+  "evidence_requirements": ["doctor-verification"]
+}

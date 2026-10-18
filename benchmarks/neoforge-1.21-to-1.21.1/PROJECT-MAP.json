@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "status": "OBSERVED_MINECRAFT_FIXTURE",
+  "minecraft": "1.21",
+  "loader": "NeoForge",
+  "loader_version": "21.0.167",
+  "target_minecraft": "1.21.1",
+  "target_loader_version": "21.1.235",
+  "features": [],
+  "integrations": [],
+  "dependencies": ["net.neoforged:neoforge:21.0.167"],
+  "evidence": ["BENCHMARK.json", "FIXTURE.md", "source/gradle.properties"]
+}

@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "name": "rust-verification",
+  "kind": "language-verification",
+  "known_source_state": "Rust library with one pure function, no dependencies",
+  "target_state": "verification gate observes a passing cargo check",
+  "expected_plan": {
+    "kind": "language-verification",
+    "requires_audit": false,
+    "requires_reality_baseline": false
+  },
+  "expected_safety": {
+    "project_root_confinement": true,
+    "no_silent_candidate_verification": true,
+    "worker_cannot_authorize_success": true
+  },
+  "expected_validation": {
+    "required_levels": [],
+    "build_required": false
+  },
+  "expected_reality_diff": {
+    "machine_readable": true,
+    "block_unexplained_critical_regressions": true
+  },
+  "regression_assertions": [
+    "path_safe",
+    "has_fixture_manifest",
+    "has_benchmark_manifest",
+    "has_project_map",
+    "fingerprint_stable",
+    "no_cache_dirs"
+  ]
+}

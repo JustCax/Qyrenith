@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "name": "neoforge-1.21-to-1.21.1",
+  "kind": "minecraft-golden-migration",
+  "known_source_state": "NeoForge 1.21 / 21.0.167",
+  "target_state": "NeoForge 1.21.1 / 21.1.235",
+  "worker": "neoforge-porter",
+  "task": "port 1.21 -> 1.21.1",
+  "expected_changed_files": ["gradle.properties"],
+  "expected_unchanged_files": ["build.gradle", "settings.gradle", "src/main/java/example/ExampleFeature.java", "src/main/resources/META-INF/neoforge.mods.toml"],
+  "expected_properties": {"minecraft_version": "1.21.1", "minecraft_version_range": "[1.21.1]", "neo_version": "21.1.235"},
+  "expected_plan": {"kind": "minecraft-golden-migration", "requires_audit": true, "requires_reality_baseline": true},
+  "expected_safety": {"project_root_confinement": true, "no_silent_candidate_verification": true, "worker_cannot_authorize_success": true},
+  "expected_validation": {"required_levels": [1,2,3,4], "build_required": true},
+  "expected_reality_diff": {"machine_readable": true, "block_unexplained_critical_regressions": true},
+  "regression_assertions": ["path_safe", "fingerprint_stable", "no_cache_dirs", "golden_worker_passes"]
+}

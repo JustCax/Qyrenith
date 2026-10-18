@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/evidence.schema.json",
+  "title": "Qyrenith Evidence Record",
+  "type": "object",
+  "required": ["id", "time", "claim", "source", "status", "confidence", "provider", "verification_method", "details"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "time": {"type": "string", "minLength": 1},
+    "claim": {"type": "string"},
+    "source": {"type": "string"},
+    "status": {"enum": ["UNKNOWN", "OBSERVED", "CANDIDATE", "VERIFIED", "BLOCKED", "CONFLICTING"]},
+    "confidence": {"type": "string"},
+    "provider": {"type": "string"},
+    "verification_method": {"type": "string"},
+    "human_confirmation": {"type": "boolean"},
+    "details": {"type": "object"}
+  },
+  "additionalProperties": true
+}

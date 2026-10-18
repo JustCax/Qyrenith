@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "name": "tiny-mod",
+  "known_source_state": "fixture",
+  "expected_plan": {
+    "kind": "control-plane-fixture",
+    "requires_audit": true,
+    "requires_reality_baseline": true
+  },
+  "expected_safety": {
+    "project_root_confinement": true,
+    "no_silent_candidate_verification": true
+  },
+  "expected_validation": {
+    "required_levels": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "expected_reality_diff": {
+    "machine_readable": true,
+    "block_unexplained_critical_regressions": true
+  },
+  "regression_assertions": [
+    "path_safe",
+    "fingerprint_stable",
+    "no_cache_dirs"
+  ]
+}

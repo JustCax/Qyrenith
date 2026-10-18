@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+title: "Qyrenith"
+version: "1.0.0"
+type: software
+abstract: "Safety, verification, and orchestration control plane for AI-assisted Minecraft development."
+license: MIT
+authors:
+  - name: "Qyrenith Contributors"

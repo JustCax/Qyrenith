@@ -1,0 +1,15 @@
+#!/bin/sh
+set -eu
+GRADLE_VERSION=8.8
+BASE="${GRADLE_USER_HOME:-$HOME/.gradle}/wrapper/dists/qyrenith-example/$GRADLE_VERSION"
+DIST="$BASE/gradle-$GRADLE_VERSION-bin.zip"
+INSTALL="$BASE/gradle-$GRADLE_VERSION"
+if [ ! -x "$INSTALL/bin/gradle" ]; then
+  mkdir -p "$BASE"
+  if [ ! -f "$DIST" ]; then
+    command -v curl >/dev/null 2>&1 || { echo 'curl is required to bootstrap Gradle 8.8' >&2; exit 1; }
+    curl -fsSL -o "$DIST" "https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip"
+  fi
+  unzip -q -o "$DIST" -d "$BASE"
+fi
+exec "$INSTALL/bin/gradle" "$@"

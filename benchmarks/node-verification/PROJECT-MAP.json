@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "status": "OBSERVED_FIXTURE_STATE",
+  "minecraft": "not-applicable",
+  "loader": "not-applicable",
+  "features": [],
+  "integrations": [],
+  "dependencies": [],
+  "evidence": ["BENCHMARK.json", "FIXTURE.md"]
+}

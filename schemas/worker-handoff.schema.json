@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/worker-handoff.schema.json",
+  "title": "Qyrenith Worker Handoff",
+  "type": "object",
+  "required": ["schema", "worker", "task", "source", "target", "project_root", "constraints"],
+  "properties": {
+    "schema": {"const": 1},
+    "worker": {"type": "string", "minLength": 1},
+    "task": {"type": "string", "minLength": 1},
+    "source": {"type": "string", "minLength": 1},
+    "target": {"type": "string", "minLength": 1},
+    "loader": {"type": "string"},
+    "loader_version": {"type": "string"},
+    "project_root": {"type": "string", "minLength": 1},
+    "constraints": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}

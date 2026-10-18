@@ -1,0 +1,36 @@
+name: Qyrenith verification gate
+
+# Runs the Qyrenith project-neutral verification gate on every pull request.
+#
+# Fail-closed semantics: `verify --ci` blocks when a detected adapter is
+# unavailable. Pass `--allow-missing-adapters` explicitly if the project
+# intentionally supports environments without every toolchain.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  qyrenith-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Qyrenith verification gate
+        # --allow-missing-adapters: this repository's own suite is
+        # unittest-based, so the detected-but-unavailable pytest adapter is
+        # knowingly informational here. Real adapters still execute; zero
+        # capability would still report NOT_AVAILABLE, never PASS.
+        run: python qyrenith.py verify --project . --execute --ci --allow-missing-adapters
+      - name: Full self-test
+        run: python qyrenith.py self-test
+      - name: Benchmark fixtures
+        run: python qyrenith.py benchmark --project .

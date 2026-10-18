@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+/.qyrenith/
+/.backups/
+*.tmp
+*.log
+*.bak
+# Language build outputs (notably inside benchmarks/ fixtures, which must stay
+# redistributable and reproducible).
+target/
+node_modules/
+dist/
+# Gradle caches and outputs (public NeoForge example).
+.gradle/
+build/
+runs/
+GITHUB_SETUP_HU.md

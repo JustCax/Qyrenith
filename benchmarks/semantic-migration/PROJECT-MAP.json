@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "status": "OBSERVED_FIXTURE_STATE",
+  "minecraft": "fixture",
+  "loader": "fixture",
+  "features": [],
+  "integrations": [],
+  "dependencies": [],
+  "evidence": ["BENCHMARK.json", "FIXTURE.md"]
+}

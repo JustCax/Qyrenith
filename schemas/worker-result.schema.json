@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/worker-result.schema.json",
+  "title": "Qyrenith Worker Result",
+  "type": "object",
+  "required": ["schema", "worker", "status", "summary", "files_changed", "commands_run", "unresolved", "evidence", "dependency_changes"],
+  "properties": {
+    "schema": {"const": 1},
+    "worker": {"type": "string", "minLength": 1},
+    "status": {"enum": ["WORKED", "NO_CHANGE", "BLOCKED", "FAILED"]},
+    "summary": {"type": "string"},
+    "files_changed": {"type": "array", "items": {"type": "string"}},
+    "commands_run": {"type": "array", "items": {"type": "string"}},
+    "unresolved": {"type": "array", "items": {"type": "string"}},
+    "evidence": {"type": "array"},
+    "dependency_changes": {"type": "array", "items": {"type": "object"}},
+    "verified_by_doctor": {"const": false}
+  },
+  "additionalProperties": true
+}

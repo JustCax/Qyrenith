@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "name": "Demo Node package",
+  "version": "1.0.0",
+  "description": "Redistributable Node verification fixture: no dependencies, no network.",
+  "scripts": {
+    "test": "node --test"
+  }
+}
