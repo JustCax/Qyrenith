@@ -239,36 +239,60 @@ The agent cannot declare project SUCCESS. Only the build, validation, Reality Ma
 
 ## Useful commands
 
-```text
-skills       discover/rank installed skills
-external-check inspect a separate project read-only; no Qyrenith files or state required in target
-external-verify run explicitly supplied checks in an external project; execution requires --execute
-verify       generic project verification; reports NOT_AVAILABLE when no adapter exists
-inspect      read-only project state summary
-audit        read-only audit + Reality Map
-reality      refresh Reality Map
-plan         create a verified stepwise plan
-port         begin managed migration
-continue     execute build/validation/commit for current handoff
-build        canonical build + mandatory validation
-status       inspect state
-report       show final report
-explain      explain a blocker or workflow rule with reason/evidence/next action
-dry-run      plan a migration without changing files or Git state
-compatibility show the evidence-backed migration compatibility matrix
-replay       verify that a recorded plan remains deterministic/replayable
-rollback     explicit Git revert of the latest recorded Doctor commit
-doctor       environment/self diagnostics
-self-test    full test suite + built-in security tests
-benchmark    run public structural benchmark fixtures and enforce their declared regression contracts
-worker-run  run one explicitly declared external worker without granting Doctor SUCCESS authority
-security-test security regression tests
-security-review explicitly approve one reviewed security finding
-recovery-test transaction/recovery regression tests
-graph        show the evidence-backed version graph
-adapters     discover worker/skill adapters
-evidence     inspect the evidence ledger
-```
+The main command surface, grouped by purpose. Run `python qyrenith.py --help` for the complete command list.
+
+### Orientation and diagnostics
+
+| Command | Description |
+|---|---|
+| `doctor` | Environment/self diagnostics |
+| `inspect` | Read-only project state summary |
+| `audit` | Read-only audit + Reality Map |
+| `reality` | Refresh Reality Map |
+| `status` | Inspect state |
+| `report` | Show final report |
+| `explain` | Explain a blocker or workflow rule with reason/evidence/next action |
+
+### Verification and external checks
+
+| Command | Description |
+|---|---|
+| `verify` | Generic project verification; reports NOT_AVAILABLE when no adapter exists |
+| `external-check` | Inspect a separate project read-only; no Qyrenith files or state required in target |
+| `external-verify` | Run explicitly supplied checks in an external project; execution requires --execute |
+
+### Planning and managed migration
+
+| Command | Description |
+|---|---|
+| `plan` | Create a verified stepwise plan |
+| `dry-run` | Plan a migration without changing files or Git state |
+| `compatibility` | Show the evidence-backed migration compatibility matrix |
+| `replay` | Verify that a recorded plan remains deterministic/replayable |
+| `port` | Begin managed migration |
+| `continue` | Execute build/validation/commit for current handoff |
+| `build` | Canonical build + mandatory validation |
+| `rollback` | Explicit Git revert of the latest recorded Doctor commit |
+
+### Evidence, skills, and workers
+
+| Command | Description |
+|---|---|
+| `graph` | Show the evidence-backed version graph |
+| `evidence` | Inspect the evidence ledger |
+| `skills` | Discover/rank installed skills |
+| `adapters` | Discover worker/skill adapters |
+| `worker-run` | Run one explicitly declared external worker without granting Doctor SUCCESS authority |
+
+### Tests, security, and recovery
+
+| Command | Description |
+|---|---|
+| `self-test` | Full test suite + built-in security tests |
+| `benchmark` | Run public structural benchmark fixtures and enforce their declared regression contracts |
+| `security-test` | Security regression tests |
+| `security-review` | Explicitly approve one reviewed security finding |
+| `recovery-test` | Transaction/recovery regression tests |
 
 ## Public-release design
 
