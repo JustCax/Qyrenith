@@ -1,5 +1,8 @@
 # Qyrenith
 
+[![PyPI](https://img.shields.io/pypi/v/qyrenith.svg)](https://pypi.org/project/qyrenith/)
+[![Python versions](https://img.shields.io/pypi/pyversions/qyrenith.svg)](https://pypi.org/project/qyrenith/)
+
 **Deterministic verification, safety, and orchestration for Non-AI and AI-assisted software development.**
 
 Minecraft is the first flagship domain. Qyrenith is designed to extend to game modding and ordinary software projects through domain adapters, providers, workers, and language/build integrations.
@@ -175,20 +178,26 @@ After reviewing every command, add `--execute` to run them. Commands run with th
 
 ## Install
 
-Two equivalent ways:
+From PyPI:
 
 ```bash
-# Primary: copy the single control file into the project root
+pip install qyrenith
+```
+
+Or copy the single control file into the project root:
+
+```bash
 cp /path/to/qyrenith.py /path/to/your-project/
 ```
 
+Or install the repository as a Python project:
+
 ```bash
-# Alternative: install the repository as a Python project
 pip install /path/to/qyrenith
 ```
 
-Both give you the same `qyrenith` console command. No runtime dependencies are required
-either way; Python 3.8 or newer is the only prerequisite.
+All three give you the same `qyrenith` console command. No runtime dependencies are required;
+Python 3.8 or newer is the only prerequisite.
 
 ## Quick start
 

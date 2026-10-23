@@ -13,6 +13,7 @@ __pycache__/
 target/
 node_modules/
 dist/
+*.egg-info/
 # Gradle caches and outputs (public NeoForge example).
 .gradle/
 build/
