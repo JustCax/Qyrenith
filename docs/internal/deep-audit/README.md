@@ -50,7 +50,7 @@ This directory contains the normative engineering specifications for the 1.2.0 d
 - **DA-12:** language and domain adapters (LA-01..LA-13).
 - **DA-13:** audit maturity and coverage (MC-01..MC-08).
 - **DA-14:** implementation plan, migration integration (MI-01..MI-15), and integrated reporting (IR-01..IR-14).
-- **QDAS-01..QDAS-21:** dedicated QDAS requirements.
+- **QDAS-01..QDAS-22:** dedicated QDAS requirements.
 
 ## Global completion rule
 
