@@ -6,6 +6,7 @@ import subprocess
 import json
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -1097,3 +1098,27 @@ class TestGenericRealityMapExpansion(unittest.TestCase):
             self.assertIn("main.py",diff["files"]["modified"])
             self.assertIn("package.json",diff["files"]["added"])
             self.assertIn("JavaScript/TypeScript/Node",diff["technologies_added"])
+
+class TestSharedRuntimeExecution(unittest.TestCase):
+    def test_runtime_lab_runner_stops_output_flood_at_the_cap(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            script = "import sys\\nwhile True:\\n sys.stdout.write('x' * 65536)\\n sys.stdout.flush()\\n"
+            started = time.monotonic()
+            report = qyrenith._run_isolated_command(
+                root, [sys.executable, "-c", script], timeout=30
+            )
+            self.assertEqual(report["status"], "BLOCKED")
+            self.assertEqual(report["reason"], "output-limit")
+            self.assertLess(time.monotonic() - started, 10)
+
+    def test_runtime_lab_runner_uses_bounded_timeout_cleanup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            started = time.monotonic()
+            report = qyrenith._run_isolated_command(
+                root, [sys.executable, "-c", "import time; time.sleep(10)"], timeout=1
+            )
+            self.assertEqual(report["status"], "BLOCKED")
+            self.assertEqual(report["reason"], "timeout")
+            self.assertLess(time.monotonic() - started, 6)
