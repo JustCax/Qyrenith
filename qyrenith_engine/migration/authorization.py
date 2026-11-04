@@ -403,6 +403,8 @@ def authorize_migration(
         raise ValueError("worker assessment belongs to a different route plan")
     if assessment.evaluated_at != plan.evaluated_at:
         raise ValueError("worker assessment timestamp does not match the route plan")
+    if assessment.trust_policy_digest != registry.trust_policy_digest:
+        raise ValueError("worker trust policy changed after route assessment")
     assessed_transitions = tuple(item[0] for item in assessment.evaluations)
     if assessed_transitions != plan.transitions:
         raise ValueError("worker assessment must cover the exact ordered transitions in the route plan")
@@ -531,6 +533,8 @@ def validate_migration_authorization(
         raise ValueError("authorization does not match the current worker assessment")
     if assessment.route_plan_digest != plan.plan_digest or assessment.evaluated_at != plan.evaluated_at:
         raise ValueError("worker assessment does not match the exact route plan")
+    if assessment.trust_policy_digest != registry.trust_policy_digest:
+        raise ValueError("worker trust policy changed after route assessment")
     if authorization.policy_digest != policy.policy_digest:
         raise ValueError("authorization policy digest does not match the active policy")
     if _instant(authorization.approved_at, "approved_at") < _instant(plan.evaluated_at, "plan.evaluated_at"):
