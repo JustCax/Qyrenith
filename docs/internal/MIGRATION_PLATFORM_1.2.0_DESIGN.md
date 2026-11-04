@@ -157,6 +157,16 @@ These are planning primitives only. They do not discover a project, modify files
 - Do not replace the current Minecraft workflow until equivalent regression coverage is complete.
 
 ### MP-06 — Isolated multi-target workspaces
+
+- [x] Add a deterministic, bounded, read-only project snapshot with content hashes and exact exclusion policy.
+- [x] Record symbolic links without following them; reject special filesystem objects and non-portable paths.
+- [x] Detect observable concurrent file/directory changes during capture.
+- [x] Revalidate a project against the exact captured snapshot and report changed paths.
+- [ ] Select and verify an isolation strategy (worktree or equivalent).
+- [ ] Bind every target to the same source commit/fingerprint.
+- [ ] Prevent target-to-target file leakage.
+- [ ] Keep build, evidence, and verdicts independent.
+
 - Select and verify an isolation strategy (worktree or equivalent).
 - Bind every target to the same source commit/fingerprint.
 - Prevent target-to-target file leakage.
