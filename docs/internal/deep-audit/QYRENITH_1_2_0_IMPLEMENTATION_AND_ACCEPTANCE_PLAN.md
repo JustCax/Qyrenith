@@ -19,6 +19,9 @@
 - Reconcile PR description with implemented workspace API and remaining limitations.
 - Resolve subprocess timeout/stdin/output-limit issues and command-path validation bypasses.
 - Review environment allowlisting, worker first-run approval, adapter trust, symlink/race behavior, concurrent access, and failure cleanup.
+- Implement trusted-import policy for VERIFIED knowledge, independently validated worker qualification, and authenticated approval before any execution path can consume those records.
+- Verify and pin the Gradle wrapper bootstrap JAR and distribution checksums; retain cross-platform subprocess newline and output-limit regression tests.
+- Enforce generated agent-instruction synchronization in tests and reject symlinked release output paths.
 - Integrate only where acceptance tests prove safety; retain explicit non-claims otherwise.
 - Re-run complete 1.1.0 regression suite and the full platform matrix.
 
