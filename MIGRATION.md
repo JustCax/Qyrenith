@@ -193,7 +193,7 @@ A local hash chain can detect accidental or partial tampering when its trusted t
 
 ## 10. Plan-bound authorization
 
-`MigrationAuthorizationPolicy` defines a local permission allowlist, worker allowlist, resource ceilings, and maximum authorization lifetime. `authorize_migration(plan, assessment, registry, policy, ...)` creates an immutable authorization bound to the exact route-plan digest, worker-assessment digest, and policy digest.
+`MigrationAuthorizationPolicy` defines a local permission allowlist, worker allowlist, resource ceilings, and maximum authorization lifetime. Policies have canonical JSON import/export, a content digest, and a strict JSON Schema so the exact policy can be retained alongside an authorization record. `authorize_migration(plan, assessment, registry, policy, ...)` creates an immutable authorization bound to the exact route-plan digest, worker-assessment digest, and policy digest.
 
 Before issuing grants, the function re-resolves every worker against the registry at the approval timestamp. It rejects a changed manifest or qualification, a qualification that is not current at approval, permissions not allowed by both policy and worker manifest, resource limits above either declared ceiling, and an authorization expiry later than any worker qualification expiry. Every grant is pinned to one transition, worker ID/version, manifest digest, qualification ID/digest, and qualification expiry. Authorization validity uses a half-open time interval: approved_at <= now < expires_at.
 
