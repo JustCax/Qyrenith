@@ -9,6 +9,7 @@ hand-edited; change the canonical sources and re-run this script.
 Standard library only. Deterministic and idempotent.
 """
 from pathlib import Path
+import sys
 
 ROOT = Path(__file__).resolve().parent.parent
 GENERIC = ROOT / "skills-source" / "generic-verification" / "SKILL.md"
@@ -137,13 +138,38 @@ CLIENTS = {
 }
 
 
-def main() -> None:
+def main(argv=None) -> int:
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments not in ([], ["--check"]):
+        print("usage: generate-client-entries.py [--check]", file=sys.stderr)
+        return 2
+
+    check_only = arguments == ["--check"]
+    drift = []
     for rel, (intro, install) in CLIENTS.items():
         path = ROOT / rel
+        expected = md_file(intro, install)
+        if check_only:
+            try:
+                actual = path.read_text(encoding="utf-8")
+            except OSError:
+                actual = None
+            if actual != expected:
+                drift.append(rel)
+            continue
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(md_file(intro, install), encoding="utf-8", newline="\n")
+        path.write_text(expected, encoding="utf-8", newline="\\n")
         print(f"wrote {rel}")
+
+    if check_only and drift:
+        print("Generated client instructions are out of date:", file=sys.stderr)
+        for rel in drift:
+            print(f"- {rel}", file=sys.stderr)
+        return 1
+    if check_only:
+        print("Generated client instructions: PASS")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
