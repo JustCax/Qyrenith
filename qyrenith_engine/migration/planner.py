@@ -249,10 +249,12 @@ def plan_route(
 
     enabled_route = _shortest_route(source, target, _adjacency(enabled_edges))
     if enabled_route is not None and len(enabled_route) <= max_hops:
-        return result(
-            "UNKNOWN", (),
-            "A declared enabled route exists, but one or more transitions lack usable verified knowledge",
+        reason = (
+            "A declared enabled route exists, but the knowledge catalog is not trusted by a local trust policy"
+            if not knowledge.is_trusted
+            else "A declared enabled route exists, but one or more transitions lack usable verified knowledge"
         )
+        return result("UNKNOWN", (), reason)
 
     all_route = _shortest_route(source, target, _adjacency(all_edges))
     if all_route is not None:
