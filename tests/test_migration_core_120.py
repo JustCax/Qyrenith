@@ -404,6 +404,22 @@ class TestUniversalPlanner(unittest.TestCase):
                 "2026-11-04T00:00:00Z", "a" * 64, "b" * 64, 5,
             )
 
+    def test_multi_target_planner_enforces_64_target_bound(self):
+        source = identity("1.20.1")
+        targets = tuple(identity(f"1.21.{index}") for index in range(65))
+        with self.assertRaisesRegex(ValueError, "64-target"):
+            plan_targets(source, targets, (), KnowledgeCatalog(()))
+
+    def test_multi_target_plan_constructor_enforces_64_target_bound(self):
+        from datetime import datetime, timezone
+        source = identity("1.20.1")
+        route = plan_route(
+            source, source, (), KnowledgeCatalog(()),
+            evaluated_at=datetime(2026, 11, 4, tzinfo=timezone.utc),
+        )
+        with self.assertRaisesRegex(ValueError, "64-target"):
+            MultiTargetPlan(source, (route,) * 65)
+
     def test_multi_target_plan_rejects_different_evaluation_times(self):
         from datetime import datetime, timezone
         from qyrenith_engine.migration.planner import MultiTargetPlan
