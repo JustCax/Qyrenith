@@ -96,6 +96,7 @@ include qyrenith_engine/boundary.py
 include qyrenith_engine/execution.py
 include qyrenith_engine/migration/__init__.py
 include qyrenith_engine/migration/assurance.py
+include qyrenith_engine/migration/authorization.py
 include qyrenith_engine/migration/knowledge.py
 include qyrenith_engine/migration/model.py
 include qyrenith_engine/migration/planner.py
@@ -109,6 +110,7 @@ include schemas/migration-transition.schema.json
 include schemas/migration-worker-manifest.schema.json
 include schemas/migration-worker-qualification.schema.json
 include schemas/migration-worker-assessment.schema.json
+include schemas/migration-authorization.schema.json
 include schemas/worker-handoff.schema.json
 include schemas/worker-result.schema.json
 include scripts/check-doc-links.py
@@ -122,6 +124,7 @@ include tests/test_allow_missing_adapters.py
 include tests/test_core_regressions.py
 include tests/test_engine_110.py
 include tests/test_migration_assurance_120.py
+include tests/test_migration_authorization_120.py
 include tests/test_migration_benchmarks_120.py
 include tests/test_migration_core_120.py
 include tests/test_migration_worker_120.py
