@@ -116,6 +116,7 @@ class TestReleaseContents(unittest.TestCase):
                 "qyrenith_engine/migration/knowledge.py",
                 "qyrenith_engine/migration/model.py",
                 "qyrenith_engine/migration/planner.py",
+                "qyrenith_engine/migration/snapshot.py",
                 "qyrenith_engine/migration/worker.py",
             })
             entry_points = next(name for name in names if name.endswith(".dist-info/entry_points.txt"))
