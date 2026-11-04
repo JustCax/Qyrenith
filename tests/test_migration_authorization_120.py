@@ -10,6 +10,7 @@ from qyrenith_engine.migration import (
     MigrationKnowledgeClaim,
     KnowledgeCatalog,
     KnowledgeStatus,
+    KnowledgeTrustPolicy,
     EvidenceReference,
     MigrationTransition,
     MigrationWorkerManifest,
@@ -187,6 +188,49 @@ class TestMigrationAuthorization(unittest.TestCase):
         self.assertIsNone(validate_migration_authorization(
             authorization, plan, assessment, registry, policy, knowledge=knowledge_catalog(), now=NOW,
         ))
+
+    def test_authorization_rejects_revoked_knowledge_trust(self):
+        authorization = authorize()
+        plan, assessment, registry, policy, limits = fixture()
+        revoked_catalog = KnowledgeCatalog.from_json_bytes(
+            knowledge_catalog().to_json_bytes()
+        )
+        self.assertFalse(revoked_catalog.is_trusted)
+        with self.assertRaisesRegex(ValueError, "knowledge trust policy"):
+            authorize_migration(
+                plan, assessment, registry, policy,
+                approved_by="test-reviewer", approved_at=NOW,
+                expires_at=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
+                permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
+                limits=limits, knowledge=revoked_catalog,
+            )
+        with self.assertRaisesRegex(ValueError, "knowledge trust policy"):
+            validate_migration_authorization(
+                authorization, plan, assessment, registry, policy,
+                knowledge=revoked_catalog, now=NOW,
+            )
+
+    def test_authorization_rejects_knowledge_trust_policy_substitution(self):
+        plan, assessment, registry, policy, limits = fixture()
+        catalog_bytes = knowledge_catalog().to_json_bytes()
+        untrusted = KnowledgeCatalog.from_json_bytes(catalog_bytes)
+        changed_policy = KnowledgeTrustPolicy(
+            policy_id="different-knowledge-trust-policy",
+            reviewed_by="test-owner",
+            reviewed_at="2026-11-04T00:00:00Z",
+            trusted_catalog_digests=(untrusted.content_digest,),
+        )
+        substituted = KnowledgeCatalog.from_json_bytes(
+            catalog_bytes, trust_policy=changed_policy
+        )
+        with self.assertRaisesRegex(ValueError, "knowledge trust decision changed"):
+            authorize_migration(
+                plan, assessment, registry, policy,
+                approved_by="test-reviewer", approved_at=NOW,
+                expires_at=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
+                permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
+                limits=limits, knowledge=substituted,
+            )
 
     def test_execution_gate_rejects_expired_authorization(self):
         authorization = authorize()
