@@ -168,6 +168,17 @@ class TestProjectSnapshot(unittest.TestCase):
             with self.assertRaisesRegex(SnapshotError, "max_depth"):
                 capture_project_snapshot(directory, limits=SnapshotLimits(max_depth=1))
 
+    def test_case_insensitive_path_collisions_are_rejected(self):
+        first = SnapshotEntry("Source/A.py", "file", 0o644, 0, "a" * 64)
+        second = SnapshotEntry("source/b.py", "file", 0o644, 0, "b" * 64)
+        with self.assertRaisesRegex(SnapshotError, "portable canonical path order"):
+            ProjectSnapshot((first, second), (), SnapshotLimits(), "2026-11-04T00:00:00Z")
+
+    def test_windows_reserved_paths_are_rejected(self):
+        for path in ("CON", "nul.txt", "LPT1.log", "COM9"):
+            with self.subTest(path=path), self.assertRaises(SnapshotError):
+                SnapshotEntry(path, "file", 0o644, 0, "a" * 64)
+
     def test_nonportable_paths_are_rejected(self):
         for path in ("../escape", "/absolute", "a\\b", "a//b", "a/../b", "C:/outside", "name."):
             with self.subTest(path=path), self.assertRaises(SnapshotError):
