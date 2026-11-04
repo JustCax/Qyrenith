@@ -26,6 +26,7 @@ from qyrenith_engine.migration import (
     serialize_migration_authorization,
     deserialize_migration_authorization_policy,
     serialize_migration_authorization_policy,
+    validate_migration_authorization,
     plan_route,
 )
 
@@ -138,6 +139,56 @@ class TestMigrationAuthorization(unittest.TestCase):
         ))
         self.assertEqual(grant.limits, limits)
         self.assertEqual(len(authorization.authorization_digest), 64)
+
+    def test_execution_gate_accepts_current_exact_authorization(self):
+        authorization = authorize()
+        plan, assessment, registry, policy, _ = fixture()
+        self.assertIsNone(validate_migration_authorization(
+            authorization, plan, assessment, registry, policy, now=NOW,
+        ))
+
+    def test_execution_gate_rejects_expired_authorization(self):
+        authorization = authorize()
+        plan, assessment, registry, policy, _ = fixture()
+        with self.assertRaisesRegex(ValueError, "not currently valid"):
+            validate_migration_authorization(
+                authorization, plan, assessment, registry, policy,
+                now=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
+            )
+
+    def test_execution_gate_rejects_policy_substitution(self):
+        authorization = authorize()
+        plan, assessment, registry, policy, _ = fixture()
+        changed_policy = MigrationAuthorizationPolicy(
+            allowed_permissions=(WorkerPermission.READ_PROJECT,),
+            max_timeout_seconds=300, max_input_bytes=8 * 1024 * 1024,
+            max_output_bytes=4 * 1024 * 1024, max_changed_files=1000,
+            max_lifetime_seconds=900, allowed_worker_ids=("fixture-worker",),
+        )
+        with self.assertRaisesRegex(ValueError, "policy digest"):
+            validate_migration_authorization(
+                authorization, plan, assessment, registry, changed_policy, now=NOW,
+            )
+
+    def test_execution_gate_rejects_worker_manifest_substitution(self):
+        authorization = authorize()
+        plan, assessment, registry, policy, _ = fixture()
+        original = registry.registrations()[0]
+        replacement = MigrationWorkerManifest(
+            worker_id=original.manifest.worker_id,
+            worker_version=original.manifest.worker_version,
+            implementation_digest="sha256:" + "e" * 64,
+            protocol_version=1, scopes=original.manifest.scopes,
+            capabilities=original.manifest.capabilities,
+            permissions=original.manifest.permissions, limits=original.manifest.limits,
+        )
+        replacement_registry = MigrationWorkerRegistry((WorkerRegistration(
+            replacement, original.qualification,
+        ),))
+        with self.assertRaisesRegex(ValueError, "not currently qualified"):
+            validate_migration_authorization(
+                authorization, plan, assessment, replacement_registry, policy, now=NOW,
+            )
 
     def test_policy_round_trip_preserves_canonical_digest(self):
         _, _, _, policy, _ = fixture()
