@@ -171,7 +171,7 @@ class TestProjectSnapshot(unittest.TestCase):
     def test_case_insensitive_path_collisions_are_rejected(self):
         first = SnapshotEntry("Source/A.py", "file", 0o644, 0, "a" * 64)
         second = SnapshotEntry("source/b.py", "file", 0o644, 0, "b" * 64)
-        with self.assertRaisesRegex(SnapshotError, "portable canonical path order"):
+        with self.assertRaisesRegex(SnapshotError, "case-insensitive path collision"):
             ProjectSnapshot((first, second), (), SnapshotLimits(), "2026-11-04T00:00:00Z")
 
     def test_windows_reserved_paths_are_rejected(self):
