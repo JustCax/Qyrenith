@@ -363,6 +363,8 @@ class TestUniversalPlanner(unittest.TestCase):
             catalog._claims["injected"] = verified_claim("injected", source, target)
         with self.assertRaises(AttributeError):
             catalog._trusted = False
+        with self.assertRaises(AttributeError):
+            del catalog._trusted
 
     def test_route_plan_rejects_discontinuous_manual_routes(self):
         from datetime import datetime, timezone
