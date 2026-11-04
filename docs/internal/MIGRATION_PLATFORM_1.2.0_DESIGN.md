@@ -148,6 +148,8 @@ These are planning primitives only. They do not discover a project, modify files
 - [x] Re-resolve exact worker qualification at approval time and reject changed or expired qualification.
 - [x] Intersect requested permissions and resource limits with policy and worker-manifest ceilings.
 - [x] Require authorization expiry to precede every worker qualification expiry.
+- [x] Add a pre-side-effect validation gate that rechecks plan, assessment, policy, grant scope, current worker qualification, permissions, limits, and expiry.
+- [x] Add strict canonical JSON interchange for authorization and policy records, with content-digest verification.
 - [ ] Authenticate the approver and protect policy/approval records with a trusted signing or storage boundary.
 - [ ] Add a runtime enforcement point that consumes each grant immediately before side effects.
 - Execute one transition at a time.
