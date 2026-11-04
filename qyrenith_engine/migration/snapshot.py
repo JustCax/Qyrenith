@@ -401,9 +401,16 @@ def capture_project_snapshot(
             raise SnapshotError("project exceeds max_depth")
         try:
             before_dir = directory.stat(follow_symlinks=False)
+            children = []
             with os.scandir(directory) as iterator:
-                children = sorted(iterator, key=lambda item: item.name)
+                for child in iterator:
+                    children.append(child)
+                    if len(children) > policy.max_entries:
+                        raise SnapshotError("directory exceeds max_entries")
+            children.sort(key=lambda item: item.name)
             for child in children:
+                if len(entries) >= policy.max_entries:
+                    raise SnapshotError("project exceeds max_entries")
                 name = child.name
                 rel = f"{relative}/{name}" if relative else name
                 _safe_relative_path(rel)
