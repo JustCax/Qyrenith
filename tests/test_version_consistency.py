@@ -41,7 +41,8 @@ class TestVersionConsistency(unittest.TestCase):
         self.assertIn("## 1.1.0", changelog)
 
 
-    def test_gradle_wrapper_binary_matches_official_checksum(self):
+    def test_gradle_wrapper_binary_matches_pinned_checksum(self):
+        # This checked-in bootstrap JAR is an older official wrapper artifact; the 8.14.2 distribution is pinned separately.
         wrapper = ROOT / "examples" / "example-neoforge-mod" / "gradle" / "wrapper" / "gradle-wrapper.jar"
         digest = hashlib.sha256(wrapper.read_bytes()).hexdigest()
         self.assertEqual(
