@@ -73,6 +73,8 @@ The fourteen capability modules after QDAS are:
 
 The master architecture and this plan are governance documents. The migration integration and reporting specifications define the final two capability modules. The README is an index, not a runtime module.
 
+**Phase boundary:** Phase 1 completes and hardens the migration foundation that already exists in the branch (typed identities/transitions, knowledge, planning, worker records, authorization, ledger, snapshots, and workspace copying). Phase 3 module 13 then performs the QDAS/deep-audit integration across the completed migration platform; it must not duplicate or bypass the Phase 1 contracts.
+
 ## 4. Requirement traceability
 
 Each requirement must have a stable ID and a traceability row containing:
