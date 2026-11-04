@@ -62,6 +62,11 @@ def _environment(
     return result
 
 
+def _decode_output(data: bytearray) -> str:
+    """Decode captured text and normalize platform newline conventions to LF."""
+    return bytes(data).decode("utf-8", "replace").replace("\r\n", "\n").replace("\r", "\n")
+
+
 def _run_process(
     argv: Sequence[str],
     project: Union[str, Path],
@@ -231,8 +236,8 @@ def _run_process(
     output_incomplete = read_error.is_set() or any(reader.is_alive() for reader in readers)
     input_incomplete = input_error.is_set() or (writer is not None and writer.is_alive())
     output_limited = overflow.is_set()
-    stdout = bytes(buffers["stdout"]).decode("utf-8", "replace")
-    stderr = bytes(buffers["stderr"]).decode("utf-8", "replace")
+    stdout = _decode_output(buffers["stdout"])
+    stderr = _decode_output(buffers["stderr"])
     exit_code = process.returncode
     blocked = timed_out or output_limited or output_incomplete or input_incomplete
     status = "BLOCKED" if blocked else ("PASS" if exit_code == 0 else "FAIL")
