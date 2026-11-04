@@ -384,7 +384,7 @@ def authorize_migration(
     limits: WorkerResourceLimits,
     knowledge: KnowledgeCatalog,
 ) -> MigrationAuthorization:
-    """Create a short-lived, exact-plan authorization after fresh worker re-resolution.
+    """Create a short-lived authorization after fresh knowledge and worker revalidation.
 
     The approval attribution is caller-supplied metadata. This function does not
     authenticate the human, persist an approval, launch a worker, or enforce OS
@@ -522,7 +522,7 @@ def validate_migration_authorization(
     knowledge: KnowledgeCatalog,
     now: datetime,
 ) -> None:
-    """Validate an authorization immediately before a future controlled side effect.
+    """Validate current knowledge, worker qualification, and grants before a controlled side effect.
 
     This verifies consistency and current qualification; it does not authenticate
     the approver, verify a signature, or enforce permissions at the OS boundary.
