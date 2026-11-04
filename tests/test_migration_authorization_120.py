@@ -75,7 +75,7 @@ def fixture():
         capabilities=("rewrite", "validate"),
         permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT,
                      WorkerPermission.EXECUTE_PROCESS),
-        limits=WorkerResourceLimits(600, 16 * 1024 * 1024, 8 * 1024 * 1024, 5000),
+        limits=WorkerResourceLimits(600, 16 * 1024 * 1024, 8 * 1024 * 1024, 500),
     )
     qualification = WorkerQualification(
         qualification_id="fixture-qualification",
@@ -166,7 +166,10 @@ class TestMigrationAuthorization(unittest.TestCase):
 
     def test_rejects_expiry_after_worker_qualification(self):
         with self.assertRaisesRegex(ValueError, "no later than"):
-            authorize(expires_at=datetime(2026, 11, 5, 0, 1, tzinfo=timezone.utc))
+            authorize(
+                approved_at=datetime(2026, 11, 4, 23, 50, tzinfo=timezone.utc),
+                expires_at=datetime(2026, 11, 5, 0, 1, tzinfo=timezone.utc),
+            )
 
     def test_rejects_approval_after_worker_qualification_expires(self):
         with self.assertRaisesRegex(ValueError, "not qualified at approval"):
