@@ -43,13 +43,13 @@ This directory contains the normative engineering specifications for the 1.2.0 d
 - **DA-05:** fuzzing and property testing (FP-01..FP-10).
 - **DA-06:** security and supply-chain audit (SS-01..SS-12).
 - **DA-07:** root-cause and cross-module analysis (RC-01..RC-11).
-- **DA-08:** universal knowledge and compatibility (UK-01..UK-12).
+- **DA-08:** universal knowledge and compatibility (UK-01..UK-13).
 - **DA-09:** reproducible verification lab (RVL sections and acceptance tests).
 - **DA-10:** meta-audit and benchmark (MA-01..MA-12).
 - **DA-11:** evidence and confidence model.
-- **DA-12:** language and domain adapters (LA-01..LA-12).
+- **DA-12:** language and domain adapters (LA-01..LA-13).
 - **DA-13:** audit maturity and coverage (MC-01..MC-08).
-- **DA-14:** implementation plan, migration integration (MI-01..MI-14), and integrated reporting (IR-01..IR-14).
+- **DA-14:** implementation plan, migration integration (MI-01..MI-15), and integrated reporting (IR-01..IR-14).
 - **QDAS-01..QDAS-20:** dedicated QDAS requirements.
 
 ## Global completion rule
