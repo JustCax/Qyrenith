@@ -198,7 +198,7 @@ class ProjectSnapshot:
                 raise SnapshotError("excluded paths must not redundantly contain nested exclusions")
         for item in entries:
             parts = item.path.split("/")
-            if any("/".join(parts[:index]) in exclusion_set for index in range(1, len(parts) + 1)):
+            if any("/".join(parts[:index]).casefold() in exclusion_set for index in range(1, len(parts) + 1)):
                 raise SnapshotError("snapshot entries cannot contain excluded paths")
         object.__setattr__(self, "entries", entries)
         object.__setattr__(self, "excluded_paths", exclusions)
