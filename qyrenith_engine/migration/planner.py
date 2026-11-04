@@ -66,6 +66,7 @@ class RoutePlan:
     reason: str
     evaluated_at: str
     knowledge_digest: str
+    knowledge_trust_digest: str
     max_hops: int
 
     def __post_init__(self) -> None:
@@ -91,6 +92,8 @@ class RoutePlan:
             raise ValueError("route plan evaluation time must use canonical UTC format")
         if not isinstance(self.knowledge_digest, str) or not _DIGEST.fullmatch(self.knowledge_digest):
             raise ValueError("knowledge_digest must be a lowercase SHA-256 hex digest")
+        if not isinstance(self.knowledge_trust_digest, str) or not _DIGEST.fullmatch(self.knowledge_trust_digest):
+            raise ValueError("knowledge_trust_digest must be a lowercase SHA-256 hex digest")
         if not isinstance(self.max_hops, int) or isinstance(self.max_hops, bool) or self.max_hops < 1:
             raise ValueError("max_hops must be a positive integer")
         route = tuple(self.transitions)
@@ -124,6 +127,7 @@ class RoutePlan:
             "reason": self.reason,
             "evaluated_at": self.evaluated_at,
             "knowledge_digest": self.knowledge_digest,
+            "knowledge_trust_digest": self.knowledge_trust_digest,
             "max_hops": self.max_hops,
         }
         return hashlib.sha256(json.dumps(
@@ -214,9 +218,13 @@ def plan_route(
     at = _timestamp(evaluated_at)
     now = datetime.fromisoformat(at.replace("Z", "+00:00"))
     knowledge_digest = knowledge.content_digest
+    knowledge_trust_digest = knowledge.trust_digest
 
     def result(status, route, reason):
-        return RoutePlan(status, source, target, route or (), reason, at, knowledge_digest, max_hops)
+        return RoutePlan(
+            status, source, target, route or (), reason, at,
+            knowledge_digest, knowledge_trust_digest, max_hops,
+        )
 
     if source == target:
         return result("PLANNED", (), "Source already matches target; no transition is required")
