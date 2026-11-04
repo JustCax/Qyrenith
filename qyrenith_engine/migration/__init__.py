@@ -21,7 +21,7 @@ from .workspace import (WorkspaceDescriptor, WorkspaceError, create_isolated_wor
 from .worker import (
     MigrationWorkerManifest, MigrationWorkerRegistry, RouteWorkerAssessment,
     WorkerPermission, WorkerQualification, WorkerRegistration, WorkerResolution,
-    WorkerResourceLimits, WorkerScope, assess_route_workers, deserialize_worker_manifest,
+    WorkerResourceLimits, WorkerScope, WorkerTrustPolicy, assess_route_workers, deserialize_worker_manifest,
     deserialize_worker_qualification, serialize_worker_manifest,
     serialize_worker_qualification,
 )
@@ -49,7 +49,7 @@ __all__ = [
     "MigrationWorkerManifest", "MigrationWorkerRegistry", "RouteWorkerAssessment",
     "assess_route_workers", "WorkerPermission",
     "WorkerQualification", "WorkerRegistration", "WorkerResolution",
-    "WorkerResourceLimits", "WorkerScope", "deserialize_worker_manifest",
+    "WorkerResourceLimits", "WorkerScope", "WorkerTrustPolicy", "deserialize_worker_manifest",
     "deserialize_worker_qualification", "serialize_worker_manifest",
     "serialize_worker_qualification",
     "ProjectSnapshot", "SnapshotEntry", "SnapshotError", "SnapshotLimits",
