@@ -469,7 +469,55 @@ def verify_workspace_baseline(
         raise TypeError("snapshot must be a ProjectSnapshot")
     if descriptor.source_snapshot_digest != snapshot.snapshot_digest:
         raise WorkspaceError("workspace descriptor belongs to a different source snapshot")
-    return verify_project_snapshot(descriptor.project_path, snapshot)
+    workspace_path = Path(descriptor.workspace_path)
+    project_path = Path(descriptor.project_path)
+    metadata_path = workspace_path / "workspace.json"
+    try:
+        workspace_stat = workspace_path.lstat()
+        project_stat = project_path.lstat()
+        metadata_stat = metadata_path.lstat()
+        if not stat.S_ISDIR(workspace_stat.st_mode) or stat.S_ISLNK(workspace_stat.st_mode):
+            raise WorkspaceError("workspace directory is missing or unsafe")
+        if not stat.S_ISDIR(project_stat.st_mode) or stat.S_ISLNK(project_stat.st_mode):
+            raise WorkspaceError("workspace project directory is missing or unsafe")
+        if not stat.S_ISREG(metadata_stat.st_mode) or stat.S_ISLNK(metadata_stat.st_mode):
+            raise WorkspaceError("workspace metadata is missing or unsafe")
+        if metadata_stat.st_size > 1024 * 1024:
+            raise WorkspaceError("workspace metadata exceeds the 1 MiB limit")
+        flags = os.O_RDONLY
+        if hasattr(os, "O_BINARY"):
+            flags |= os.O_BINARY
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        descriptor_fd = os.open(metadata_path, flags)
+        try:
+            before = os.fstat(descriptor_fd)
+            if not stat.S_ISREG(before.st_mode) or not _same_object(metadata_stat, before):
+                raise WorkspaceError("workspace metadata changed before it could be read")
+            chunks = bytearray()
+            while True:
+                chunk = os.read(descriptor_fd, 65536)
+                if not chunk:
+                    break
+                chunks.extend(chunk)
+                if len(chunks) > 1024 * 1024:
+                    raise WorkspaceError("workspace metadata exceeds the 1 MiB limit")
+            after = os.fstat(descriptor_fd)
+            if not _same_object(before, after):
+                raise WorkspaceError("workspace metadata changed while it was being read")
+        finally:
+            os.close(descriptor_fd)
+        stored = deserialize_workspace_descriptor(bytes(chunks))
+        if stored != descriptor:
+            raise WorkspaceError("workspace metadata does not match the supplied descriptor")
+    except WorkspaceError:
+        raise
+    except (OSError, TypeError, ValueError) as exc:
+        raise WorkspaceError(f"workspace metadata could not be validated: {exc}") from exc
+    try:
+        return verify_project_snapshot(project_path, snapshot)
+    except (OSError, SnapshotError) as exc:
+        raise WorkspaceError(f"workspace baseline could not be checked: {exc}") from exc
 
 
 def serialize_workspace_descriptor(descriptor: WorkspaceDescriptor) -> bytes:
