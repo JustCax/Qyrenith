@@ -1,5 +1,4 @@
 """Regression tests for snapshot-pinned isolated workspaces."""
-import json
 import os
 from pathlib import Path
 import tempfile
@@ -7,7 +6,6 @@ import unittest
 
 from qyrenith_engine.migration.model import MigrationIdentity
 from qyrenith_engine.migration.snapshot import (
-    SnapshotError,
     capture_project_snapshot,
 )
 from qyrenith_engine.migration.workspace import (
@@ -222,13 +220,6 @@ class TestIsolatedWorkspace(unittest.TestCase):
                 source, capture_project_snapshot(source), parent, target_identity()
             ).to_document()
             document["schema"] = True
-            document["descriptor_digest"] = WorkspaceDescriptor.from_document(
-                {**document, "schema": 1,
-                 "descriptor_digest": WorkspaceDescriptor.from_document({
-                     **document, "schema": 1,
-                     "descriptor_digest": document["descriptor_digest"],
-                 }).descriptor_digest}
-            ).descriptor_digest if False else document["descriptor_digest"]
             with self.assertRaises(WorkspaceError):
                 WorkspaceDescriptor.from_document(document)
 
