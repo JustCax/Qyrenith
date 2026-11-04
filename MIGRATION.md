@@ -196,8 +196,8 @@ This is a read-only fingerprint, not an atomic filesystem transaction, Git commi
 The CLI exposes the same read-only operation:
 
 ```powershell
-python qyrenith.py snapshot capture --project . > source.snapshot.json
-python qyrenith.py snapshot verify --project . --snapshot-file source.snapshot.json
+python qyrenith.py snapshot capture --project . > ../source.snapshot.json
+python qyrenith.py snapshot verify --project . --snapshot-file ../source.snapshot.json
 ```
 
 Capture writes canonical JSON to standard output; redirect it to a file outside the project when you want to retain it. Verification exits with code 0 for `MATCH`, 1 for `CHANGED`, and a preflight error code when the snapshot cannot be read or checked. Neither command creates Qyrenith state inside the inspected project.
