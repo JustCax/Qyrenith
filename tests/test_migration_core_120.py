@@ -1,5 +1,10 @@
 """Tests for the first Qyrenith 1.2.0 migration-core slice."""
+import hashlib
 import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+VERIFIER_DIGEST = "sha256:" + hashlib.sha256((ROOT / "qyrenith_engine/migration/knowledge.py").read_bytes()).hexdigest()
 
 from qyrenith_engine.migration import (
     EvidenceReference,
@@ -45,6 +50,10 @@ def verified_claim(claim_id, source, target):
         ),),
         verified_by="maintainer-review",
         verified_at="2026-10-02T12:00:00Z",
+        valid_until="2026-12-01T00:00:00Z",
+        verified_with="qyrenith-migration-knowledge-validator",
+        verifier_version="2",
+        verifier_digest=VERIFIER_DIGEST,
     )
 
 
@@ -86,9 +95,11 @@ class TestVerifiedKnowledge(unittest.TestCase):
         claim = MigrationKnowledgeClaim(
             claim_id="expired", subject="api", statement="Claim", assertion="SUPPORTED",
             source=source, target=target, status=KnowledgeStatus.VERIFIED,
-            evidence=(EvidenceReference("e", "test", "fixture", "2026-10-01T00:00:00Z"),),
+            evidence=(EvidenceReference("e", "test", "fixture", "2026-10-01T00:00:00Z", "sha256:" + "c" * 64),),
             verified_by="reviewer", verified_at="2026-10-01T00:00:00Z",
             valid_until="2026-10-02T00:00:00Z",
+            verified_with="qyrenith-migration-knowledge-validator",
+            verifier_version="2", verifier_digest=VERIFIER_DIGEST,
         )
         from datetime import datetime, timezone
         self.assertFalse(claim.is_usable(datetime(2026, 10, 3, tzinfo=timezone.utc)))
@@ -115,8 +126,11 @@ class TestVerifiedKnowledge(unittest.TestCase):
         claim = MigrationKnowledgeClaim(
             claim_id="future", subject="api", statement="Claim", assertion="SUPPORTED",
             source=source, target=target, status=KnowledgeStatus.VERIFIED,
-            evidence=(EvidenceReference("e", "test", "fixture", "2026-10-01T00:00:00Z"),),
+            evidence=(EvidenceReference("e", "test", "fixture", "2026-10-01T00:00:00Z", "sha256:" + "c" * 64),),
             verified_by="reviewer", verified_at="2030-01-01T00:00:00Z",
+            valid_until="2031-01-01T00:00:00Z",
+            verified_with="qyrenith-migration-knowledge-validator",
+            verifier_version="2", verifier_digest=VERIFIER_DIGEST,
         )
         from datetime import datetime, timezone
         self.assertFalse(claim.is_usable(datetime(2026, 11, 4, tzinfo=timezone.utc)))
@@ -174,7 +188,7 @@ class TestVerifiedKnowledge(unittest.TestCase):
         encoded = serialize_knowledge_catalog(catalog)
         restored = deserialize_knowledge_catalog(encoded)
         self.assertEqual(restored.content_digest, catalog.content_digest)
-        self.assertEqual(restored.claims()[0].to_dict()["schema"], 1)
+        self.assertEqual(restored.claims()[0].to_dict()["schema"], 2)
         tampered = encoded.replace(b"SUPPORTED", b"UNSUPPORTED")
         with self.assertRaises(ValueError):
             deserialize_knowledge_catalog(tampered)
@@ -183,7 +197,8 @@ class TestVerifiedKnowledge(unittest.TestCase):
         source, target = identity("1.21"), identity("1.21.1")
         first = verified_claim("stable", source, target)
         extra = EvidenceReference(
-            "second-evidence", "test", "fixture:second", "2026-10-01T00:00:00Z"
+            "second-evidence", "test", "fixture:second", "2026-10-01T00:00:00Z",
+            "sha256:" + "d" * 64,
         )
         with_two = MigrationKnowledgeClaim(
             claim_id=first.claim_id,
@@ -197,6 +212,9 @@ class TestVerifiedKnowledge(unittest.TestCase):
             verified_by=first.verified_by,
             verified_at=first.verified_at,
             valid_until=first.valid_until,
+            verified_with=first.verified_with,
+            verifier_version=first.verifier_version,
+            verifier_digest=first.verifier_digest,
         )
         reversed_order = MigrationKnowledgeClaim(
             claim_id=first.claim_id,
