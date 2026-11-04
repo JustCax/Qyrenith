@@ -78,7 +78,7 @@ For an external adapter that declares `VERIFIED` or `COMMUNITY` trust, the manif
 
 ### Resource and process boundary
 
-External workers are treated as untrusted processes. A first-time command requires explicit user approval (`worker-run --yes`); approval is invalidated when the command fingerprint changes. Their stdout and stderr are each bounded to 1 MiB. Exceeding either bound stops the worker result before it can be interpreted as migration evidence. Timeouts terminate the worker process group where the platform supports process groups, with a forced termination fallback. The worker never receives the controller's ambient environment; only the reduced execution environment is passed through.
+External workers are treated as untrusted processes. A first-time command requires the caller to provide the `worker-run --yes` approval assertion; this legacy CLI gate is not an authenticated human-approval channel. Approval is invalidated when the command fingerprint changes. Their stdout and stderr are each bounded to 1 MiB. Exceeding either bound stops the worker result before it can be interpreted as migration evidence. Timeouts terminate the worker process group where the platform supports process groups, with a forced termination fallback. The worker never receives the controller's ambient environment; only the reduced execution environment is passed through.
 
 ## Manifest execution contract
 
