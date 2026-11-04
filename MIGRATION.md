@@ -212,6 +212,44 @@ Call the function once per target with the same source snapshot to obtain indepe
 
 This is a filesystem copy, not a Git worktree: Git metadata excluded by the source snapshot is not copied, no branch or commit is created, and no worker or build process is launched. Workspace separation is not an OS sandbox; processes later launched inside a workspace still require explicit runtime isolation and permission enforcement.
 
+A minimal two-target setup looks like this (the parent directory must already exist outside the source project):
+
+```python
+from pathlib import Path
+
+from qyrenith_engine.migration import (
+    MigrationIdentity,
+    capture_project_snapshot,
+    create_isolated_workspace,
+    verify_workspace_baseline,
+)
+
+source = Path("path/to/source-project")
+workspace_parent = Path("path/to/external-workspaces")
+snapshot = capture_project_snapshot(source)
+
+fabric_target = MigrationIdentity(
+    domain="minecraft", product="minecraft", product_version="1.21.1",
+    platform="java", loader="fabric", loader_version="0.16.0",
+)
+forge_target = MigrationIdentity(
+    domain="minecraft", product="minecraft", product_version="1.21.1",
+    platform="java", loader="forge", loader_version="21.1.0",
+)
+
+fabric_workspace = create_isolated_workspace(
+    source, snapshot, workspace_parent, fabric_target
+)
+forge_workspace = create_isolated_workspace(
+    source, snapshot, workspace_parent, forge_target
+)
+
+assert verify_workspace_baseline(fabric_workspace, snapshot).matches
+assert verify_workspace_baseline(forge_workspace, snapshot).matches
+```
+
+Each call allocates a separate workspace. The example deliberately stops before worker execution; target-specific changes and verification belong to later orchestration gates.
+
 ## 11. Assurance ledger boundary
 
 `AssuranceLedger` is a separate append-only JSONL record store. It validates record shape, scoped relative paths, digests, commit identifiers, sequence numbers, and a SHA-256 hash chain. Writes use a single-writer lock, bounded input/output, temporary-file replacement, and directory synchronization where supported.
