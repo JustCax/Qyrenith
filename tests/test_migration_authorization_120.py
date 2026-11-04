@@ -48,7 +48,7 @@ TARGET = MigrationIdentity(
 )
 
 
-def knowledge_catalog():
+def knowledge_catalog(valid_until="2026-12-01T00:00:00Z"):
     claim = MigrationKnowledgeClaim(
         claim_id="authorization-claim",
         subject="runtime.compatibility",
@@ -64,7 +64,7 @@ def knowledge_catalog():
         ),),
         verified_by="test-reviewer",
         verified_at="2026-11-01T00:00:00Z",
-        valid_until="2026-12-01T00:00:00Z",
+        valid_until=valid_until,
         verified_with="qyrenith-migration-knowledge-validator",
         verifier_version="2",
         verifier_digest=VERIFIER_DIGEST,
@@ -72,8 +72,8 @@ def knowledge_catalog():
     return KnowledgeCatalog((claim,))
 
 
-def fixture():
-    catalog = knowledge_catalog()
+def fixture(knowledge_valid_until="2026-12-01T00:00:00Z"):
+    catalog = knowledge_catalog(knowledge_valid_until)
     claim = catalog.get("authorization-claim")
     assert claim is not None
     edge = MigrationTransition(
@@ -188,6 +188,36 @@ class TestMigrationAuthorization(unittest.TestCase):
         self.assertIsNone(validate_migration_authorization(
             authorization, plan, assessment, registry, policy, knowledge=knowledge_catalog(), now=NOW,
         ))
+
+    def test_authorization_rechecks_knowledge_expiry(self):
+        valid_until = "2026-11-04T18:01:00Z"
+        plan, assessment, registry, policy, limits = fixture(valid_until)
+        catalog = knowledge_catalog(valid_until)
+
+        with self.assertRaisesRegex(ValueError, "not usable at approval time"):
+            authorize_migration(
+                plan, assessment, registry, policy,
+                approved_by="test-reviewer",
+                approved_at=datetime(2026, 11, 4, 18, 2, tzinfo=timezone.utc),
+                expires_at=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
+                permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
+                limits=limits, knowledge=catalog,
+            )
+
+        authorization = authorize_migration(
+            plan, assessment, registry, policy,
+            approved_by="test-reviewer",
+            approved_at=datetime(2026, 11, 4, 18, 0, 30, tzinfo=timezone.utc),
+            expires_at=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
+            permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
+            limits=limits, knowledge=catalog,
+        )
+        with self.assertRaisesRegex(ValueError, "not usable at validation time"):
+            validate_migration_authorization(
+                authorization, plan, assessment, registry, policy,
+                knowledge=catalog,
+                now=datetime(2026, 11, 4, 18, 2, tzinfo=timezone.utc),
+            )
 
     def test_authorization_rejects_revoked_knowledge_trust(self):
         authorization = authorize()
