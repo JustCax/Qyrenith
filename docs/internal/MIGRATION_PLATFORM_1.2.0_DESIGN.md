@@ -167,11 +167,6 @@ These are planning primitives only. They do not discover a project, modify files
 - [ ] Prevent target-to-target file leakage.
 - [ ] Keep build, evidence, and verdicts independent.
 
-- Select and verify an isolation strategy (worktree or equivalent).
-- Bind every target to the same source commit/fingerprint.
-- Prevent target-to-target file leakage.
-- Keep build, evidence, and verdicts independent.
-
 ### MP-07 — Minecraft reference integration
 - Preserve existing same-loader migration behavior.
 - Add a cross-loader reference only after a real transformation and its exact evidence are available.
