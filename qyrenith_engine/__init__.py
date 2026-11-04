@@ -1,7 +1,7 @@
 """Additive deterministic engineering capabilities for Qyrenith."""
 from .analysis import analyze_project, build_change_impact, compare_baselines
 from .boundary import inspect_project_boundary
-from .execution import run_bounded_process
+from .execution import run_bounded_process, run_bounded_worker
 from .migration import (
     MigrationAuthorization, MigrationAuthorizationPolicy, MigrationStepGrant, authorize_migration,
     deserialize_migration_authorization, serialize_migration_authorization,
@@ -24,7 +24,7 @@ from .migration import (
 
 __all__ = [
     "analyze_project", "build_change_impact", "compare_baselines",
-    "inspect_project_boundary", "run_bounded_process",
+    "inspect_project_boundary", "run_bounded_process", "run_bounded_worker",
     "AssuranceLedger", "AssuranceLedgerError", "LedgerLockedError", "verify_assurance_chain",
     "MigrationAuthorization", "MigrationAuthorizationPolicy", "MigrationStepGrant", "authorize_migration",
     "deserialize_migration_authorization", "serialize_migration_authorization",
