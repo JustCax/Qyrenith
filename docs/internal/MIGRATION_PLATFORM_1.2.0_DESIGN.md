@@ -164,7 +164,10 @@ These are planning primitives only. They do not discover a project, modify files
 - [x] Revalidate a project against the exact captured snapshot and report changed paths.
 - [x] Expose read-only `snapshot capture` and `snapshot verify` CLI operations with explicit match/change exit codes.
 - [x] Validate snapshot schema, canonical serialization, release packaging, and CLI behavior in CI.
-- [ ] Select and verify an isolation strategy (worktree or equivalent).
+- [x] Add single-target isolated workspace materialization from a verified source snapshot; reject symlinks and remove partial workspaces on failure.
+- [x] Bind each workspace descriptor to its target identity and source snapshot digest; support baseline revalidation.
+- [ ] Add batch multi-target lifecycle management and target-to-target isolation verification.
+- [ ] Select and verify a Git-aware isolation strategy (worktree or equivalent) when commit metadata is required.
 - [ ] Bind every target to the same source commit/fingerprint.
 - [ ] Prevent target-to-target file leakage.
 - [ ] Keep build, evidence, and verdicts independent.
