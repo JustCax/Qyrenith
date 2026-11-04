@@ -30,7 +30,7 @@
 - Implement failure taxonomy and evidence lineage.
 - Implement root-cause hypothesis contracts and repair planning.
 - Integrate exact snapshot and reproducible lab identities.
-- Add approval-scoped isolated repair execution.
+- Add approval-scoped repair execution only behind an OS-enforced sandbox or equivalent host-controlled least-privilege boundary; otherwise remain propose-only.
 - Add regression-preservation checks, anti-false-fix checks, bounded retries, and safe-stop states.
 - Demonstrate disposable fixture repair and independent external verification.
 
