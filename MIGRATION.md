@@ -58,12 +58,13 @@ A `MigrationKnowledgeClaim` describes one fact for an exact source/target pair. 
 - `statement`: human-readable explanation.
 - `status`: one of OBSERVED, INFERRED, UNKNOWN, VERIFIED, CONFLICTED, or STALE.
 - `evidence`: references to the material supporting the claim.
-- `verified_by` and `verified_at`: review attribution and time.
-- `valid_until`: optional expiry of the verification.
+- `verified_by` and `verified_at`: human review attribution and time.
+- `verified_with`, `verifier_version`, and `verifier_digest`: the exact verifier identity, version, and SHA-256 digest of its implementation or controlled verification procedure.
+- `valid_until`: mandatory expiry for VERIFIED knowledge.
 
-A VERIFIED claim requires a non-empty assertion, reviewer attribution, timezone-aware verification time, and at least one evidence reference. Evidence observation times cannot be later than the verification time. An expiry must be later than the verification time. Evidence digests, when provided, use `sha256:` followed by 64 lowercase hexadecimal characters.
+A VERIFIED claim requires a non-empty assertion, reviewer attribution, timezone-aware verification time, at least one evidence reference, a SHA-256 digest for every evidence item, pinned verifier identity/version/implementation digest, and an explicit expiry later than the verification time. Evidence observation times cannot be later than the verification time. Evidence and verifier digests use `sha256:` followed by 64 lowercase hexadecimal characters. Non-VERIFIED observations may omit content digests and verifier metadata.
 
-Reviewer attribution is provenance metadata. It is not an authentication or authorization system. A digest establishes integrity only relative to a trusted digest value; it does not prove that a source is authoritative or that an observation is truthful.
+Reviewer attribution is provenance metadata. It is not an authentication or authorization system. A digest establishes integrity only relative to a trusted digest value; it does not prove that a source is authoritative or that an observation is truthful. The claim and catalog digests bind the evidence hashes and verifier build identity into the knowledge record. If evidence bytes, verifier version, or verifier implementation change, a new reviewed claim must be created rather than editing the old claim in place. Qyrenith does not fetch remote evidence or automatically detect changes at a URL; the explicit expiry bounds how long the stored verification may be used, and revalidation must recapture and hash the evidence.
 
 ### Conflict handling
 
@@ -73,7 +74,7 @@ A conflict is not automatically resolved by choosing the newest, highest-confide
 
 ### Catalog interchange
 
-`KnowledgeCatalog.to_json_bytes()` and `serialize_knowledge_catalog()` produce canonical UTF-8 JSON with a SHA-256 content digest. `from_json_bytes()` and `deserialize_knowledge_catalog()` reject duplicate JSON object keys, unknown fields, unsupported schema versions, malformed identities, digest mismatches, oversized imports, and non-canonical documents.
+`KnowledgeCatalog.to_json_bytes()` and `serialize_knowledge_catalog()` produce canonical UTF-8 schema-v2 JSON with a SHA-256 content digest. Schema-v1 knowledge documents are rejected rather than silently promoted because they do not bind VERIFIED claims to evidence and verifier digests. `from_json_bytes()` and `deserialize_knowledge_catalog()` reject duplicate JSON object keys, unknown fields, unsupported schema versions, malformed identities, digest mismatches, oversized imports, and non-canonical documents.
 
 The import size is limited to 16 MiB and each claim's evidence array is bounded. Catalog merging is immutable: identical claim IDs with identical full contents are idempotent; reuse of an ID for different content is rejected.
 
