@@ -115,6 +115,7 @@ class TestReleaseContents(unittest.TestCase):
                 "qyrenith_engine/migration/authorization.py",
                 "qyrenith_engine/migration/snapshot.py",
                 "qyrenith_engine/migration/workspace.py",
+                "qyrenith_engine/migration/workspace.py",
                 "qyrenith_engine/migration/knowledge.py",
                 "qyrenith_engine/migration/model.py",
                 "qyrenith_engine/migration/planner.py",
