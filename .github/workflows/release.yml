@@ -1,6 +1,9 @@
 name: Qyrenith Release
 
 on:
+  pull_request:
+    paths:
+      - ".github/workflows/release.yml"
   release:
     types: [published]
 
@@ -12,9 +15,18 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  workflow-syntax:
+    name: Validate release workflow syntax
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Confirm GitHub accepted the workflow definition
+        run: echo "GitHub Actions accepted the release workflow definition."
+
   build:
     name: Build and verify release distributions
-    if: github.event.release.prerelease == false
+    if: github.event_name == 'release' && github.event.release.prerelease == false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -116,7 +128,7 @@ jobs:
   publish:
     name: Publish Python distributions to PyPI
     needs: build
-    if: github.event.release.prerelease == false
+    if: github.event_name == 'release' && github.event.release.prerelease == false
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -139,7 +151,7 @@ jobs:
   attach-github-assets:
     name: Attach deterministic archives to the GitHub Release
     needs: build
-    if: github.event.release.prerelease == false
+    if: github.event_name == 'release' && github.event.release.prerelease == false
     runs-on: ubuntu-latest
     permissions:
       actions: read
