@@ -262,6 +262,7 @@ from qyrenith_engine.migration import (
     capture_project_snapshot,
     create_isolated_workspaces,
     verify_workspace_baseline,
+    WorkspaceError,
 )
 
 source = Path("path/to/source-project")
@@ -311,7 +312,9 @@ batch = prepare_multi_target_workspaces(
 batch.validate_for_plan(multi_target_plan, snapshot, knowledge)
 
 for descriptor in batch.workspaces:
-    assert verify_workspace_baseline(descriptor, snapshot).matches
+    verification = verify_workspace_baseline(descriptor, snapshot)
+    if not verification.matches:
+        raise WorkspaceError("prepared target workspace no longer matches its baseline")
 
 batch_bytes = batch.to_json_bytes()
 ```
