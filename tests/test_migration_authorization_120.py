@@ -178,6 +178,7 @@ class TestMigrationAuthorization(unittest.TestCase):
                 expires_at=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
                 permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
                 limits=limits,
+                knowledge=knowledge_catalog(),
             )
 
     def test_execution_gate_accepts_current_exact_authorization(self):
@@ -193,6 +194,7 @@ class TestMigrationAuthorization(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not currently valid"):
             validate_migration_authorization(
                 authorization, plan, assessment, registry, policy,
+                knowledge=knowledge_catalog(),
                 now=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
             )
 
@@ -256,6 +258,7 @@ class TestMigrationAuthorization(unittest.TestCase):
                 expires_at=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
                 permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
                 limits=WorkerResourceLimits(120, 1024 * 1024, 512 * 1024, 100),
+                knowledge=knowledge_catalog(),
             )
 
     def test_policy_round_trip_preserves_canonical_digest(self):
@@ -350,6 +353,7 @@ class TestMigrationAuthorization(unittest.TestCase):
                 expires_at=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
                 permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.PUBLISH_ARTIFACT),
                 limits=limits,
+                knowledge=knowledge_catalog(),
             )
 
     def test_rejects_limits_above_policy_ceiling(self):
@@ -380,6 +384,7 @@ class TestMigrationAuthorization(unittest.TestCase):
                 approved_by="reviewer", approved_at=NOW,
                 expires_at=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
                 permissions=(WorkerPermission.READ_PROJECT,), limits=limits,
+                knowledge=knowledge_catalog(),
             )
 
     def test_rejects_worker_assessment_from_another_plan(self):
@@ -396,6 +401,7 @@ class TestMigrationAuthorization(unittest.TestCase):
                 ), registry, policy, approved_by="reviewer",
                 approved_at=NOW, expires_at=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
                 permissions=(WorkerPermission.READ_PROJECT,), limits=limits,
+                knowledge=knowledge_catalog(),
             )
 
     def test_rejects_worker_qualification_changed_after_assessment(self):
@@ -421,6 +427,7 @@ class TestMigrationAuthorization(unittest.TestCase):
                 approved_by="reviewer", approved_at=NOW,
                 expires_at=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
                 permissions=(WorkerPermission.READ_PROJECT,), limits=limits,
+                knowledge=knowledge_catalog(),
             )
 
     def test_rejects_approval_before_plan_evaluation(self):
