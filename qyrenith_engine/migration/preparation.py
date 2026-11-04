@@ -234,8 +234,6 @@ class MultiTargetWorkspaceBatch:
                 created_at=document["created_at"],
             )
         except (TypeError, KeyError, ValueError) as exc:
-            if isinstance(exc, WorkspaceError):
-                raise
             raise WorkspaceError("multi-target workspace batch contains invalid fields") from exc
         if batch.to_document() != document:
             raise WorkspaceError("multi-target workspace batch is not canonical")
