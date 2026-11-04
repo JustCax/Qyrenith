@@ -78,7 +78,7 @@ A conflict is not automatically resolved by choosing the newest, highest-confide
 
 The import size is limited to 16 MiB and each claim's evidence array is bounded. Catalog merging is immutable: identical claim IDs with identical full contents are idempotent; reuse of an ID for different content is rejected.
 
-Catalog digesting is a consistency/integrity mechanism, not a signature or proof of origin. **Current trust limitation:** the present planner accepts a syntactically valid, current VERIFIED claim for route qualification even when its catalog was imported from an untrusted source. The current API has no local trust-policy gate for imported claims. Load only catalogs from a source you already trust; never use an arbitrary repository-supplied catalog to authorize a real migration. Requirement UK-13 adds the explicit trust boundary before any execution integration.
+Catalog digesting is a consistency/integrity mechanism, not a signature or proof of origin. Catalogs constructed directly in trusted application code are treated as local inputs. JSON imports are **untrusted by default** and cannot qualify a route. To trust an imported catalog, the caller must supply a `KnowledgeTrustPolicy` whose allowlist contains that exact catalog digest. The policy must itself be loaded from an owner-controlled local trust store; its digest is not a signature. A changed/merged catalog has a different digest and requires a new review decision. This closes the default-import trust gap while retaining an explicit local trust boundary; it does not authenticate the human reviewer.
 
 ## 5. Route-planning result states
 
@@ -93,7 +93,7 @@ Catalog digesting is a consistency/integrity mechanism, not a signature or proof
 
 `RoutePlan.plannable` is true only for PLANNED. It does **not** mean the migration may be executed. Execution still requires a qualified worker, a separate authorization, an isolated workspace, runtime controls, validation, diff review, and commit/recovery gates.
 
-A plan digest binds the source and target identities, full transition contracts (including worker ID, pinned worker version, and required capabilities), the knowledge catalog digest, planner version, evaluation time, and hop limit. Re-evaluating at a different time or against a different catalog creates a different plan digest.
+A plan digest binds the source and target identities, full transition contracts (including worker ID, pinned worker version, and required capabilities), the knowledge catalog digest, the catalog trust-decision digest, planner version, evaluation time, and hop limit. Re-evaluating at a different time, against a different catalog, or under a different trust decision creates a different plan digest.
 
 ## 6. Multi-target planning
 
