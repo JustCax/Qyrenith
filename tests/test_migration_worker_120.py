@@ -320,6 +320,23 @@ class TestWorkerQualificationAndRegistry(unittest.TestCase):
         self.assertEqual(assessment.status, "UNKNOWN")
         self.assertEqual(assessment.evaluations[0][1].status, "UNTRUSTED")
 
+    def test_future_dated_worker_trust_policy_is_not_current(self):
+        current = manifest()
+        record = qualification(current)
+        policy = WorkerTrustPolicy(
+            policy_id="future-worker-trust",
+            reviewed_by="local-owner",
+            reviewed_at="2026-11-05T00:00:00Z",
+            trusted_qualification_digests=(record.qualification_digest,),
+        )
+        registry = MigrationWorkerRegistry(
+            (WorkerRegistration(current, record),), trust_policy=policy
+        )
+        result = registry.resolve(
+            transition(), datetime(2026, 11, 4, tzinfo=timezone.utc)
+        )
+        self.assertEqual(result.status, "UNTRUSTED")
+
     def test_worker_trust_policy_round_trip_and_assessment_binding(self):
         current = manifest()
         record = qualification(current)
