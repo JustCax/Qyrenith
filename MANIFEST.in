@@ -21,6 +21,7 @@ include MANIFEST.in
 include PROVIDER_PROTOCOL.md
 include PUBLIC_FILES.txt
 include README.md
+include RELEASING.md
 include RELEASE_NOTES_1.0.0.md
 include RELEASE_NOTES_1.1.0.md
 include SAFETY.md
