@@ -1,6 +1,8 @@
 """Version baseline gate: package, CLI, citation, and release notes must agree."""
 import importlib.util
 import re
+import subprocess
+import sys
 import tomllib
 import unittest
 from pathlib import Path
@@ -49,6 +51,16 @@ class TestVersionConsistency(unittest.TestCase):
                         r"^\s*uses\s*:\s*[^@\s]+@[0-9a-f]{40}(?:\s+#.*)?\s*$",
                         f"{workflow.relative_to(ROOT)}:{line_number} must pin its action to a full commit SHA",
                     )
+
+    def test_generated_client_instructions_are_current(self):
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "generate-client-entries.py"), "--check"],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_all_surfaces_agree(self):
         version_txt = (ROOT / "VERSION.txt").read_text(encoding="utf-8").strip()
