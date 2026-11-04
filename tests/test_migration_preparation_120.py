@@ -30,7 +30,7 @@ PLAN_TIME = NOW - timedelta(seconds=30)
 VERIFIED_AT = (PLAN_TIME - timedelta(minutes=1)).isoformat().replace("+00:00", "Z")
 OBSERVED_AT = (PLAN_TIME - timedelta(minutes=2)).isoformat().replace("+00:00", "Z")
 VALID_UNTIL = (NOW + timedelta(days=30)).isoformat().replace("+00:00", "Z")
-VERIFIER_DIGEST = hashlib.sha256(
+VERIFIER_DIGEST = "sha256:" + hashlib.sha256(
     Path("qyrenith_engine/migration/knowledge.py").read_bytes()
 ).hexdigest()
 
