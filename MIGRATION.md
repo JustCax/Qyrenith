@@ -10,7 +10,7 @@ This document describes the first domain-neutral migration planning primitives. 
 
 The migration core provides typed project-state identities, typed transition declarations, evidence-scoped knowledge claims, deterministic route planning, and independent multi-target route plans.
 
-It does not currently transform source files, select or launch workers, create isolated workspaces, run builds, validate application behavior, authorize side effects, or complete a managed migration. Project state can now be fingerprinted through the explicit snapshot API, but automatic project discovery is still a separate capability. Those capabilities require later integration phases and independent acceptance evidence.
+It does not currently transform source files, select or launch workers, run builds, validate application behavior, enforce authorization at the operating-system boundary, or complete a managed migration. Project state can be fingerprinted through the explicit snapshot API, and one snapshot-pinned filesystem copy can be created per target. Automatic project discovery, Git-aware worktrees, batch workspace lifecycle management, and managed workflow integration remain separate capabilities requiring independent acceptance evidence.
 
 Minecraft remains the first reference domain, but the identity and planning contracts do not require Minecraft-specific fields.
 
@@ -292,15 +292,15 @@ The example records caller-supplied attribution only. It does not authenticate t
 
 The current migration package is a planning and record-keeping foundation. It does not yet provide:
 
-- Project discovery or source-state fingerprint generation for migration plans.
+- Automatic project discovery or automatic binding of source snapshots into route plans.
 - Automated conformance-suite execution or cryptographic worker qualification signatures.
 - Authenticated human approvals, signed authorization records, persistent policy administration, and an execution-time enforcement point.
 - Migration source transformations or API mapping discovery.
-- Isolated per-target worktrees and cross-target contamination tests.
+- Git-aware per-target worktrees, batch workspace lifecycle management, and process-level isolation tests. The current workspace API creates independent filesystem copies only.
 - Managed workflow integration and recovery orchestration.
 - Build, test, runtime, or behavioral verification of target projects.
 - A verified cross-loader Minecraft conversion or a newly qualified non-Minecraft domain.
 
-The plan-bound authorization record is available as a policy artifact, but it is not an execution authority. Authenticated approval, protected policy administration, runtime enforcement, isolated execution, and independent target validation remain separate gates.
+The plan-bound authorization record is available as a policy artifact, but it is not an execution authority. Authenticated approval, protected policy administration, runtime enforcement, OS-level process isolation, and independent target validation remain separate gates.
 
 These limits are deliberate. A registered domain, a worker declaration, a PLANNED route, or an AI response must not be presented as a successful or supported migration.
