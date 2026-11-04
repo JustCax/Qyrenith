@@ -81,6 +81,8 @@ class MigrationAuthorizationPolicy:
         if not isinstance(self.allowed_worker_ids, (tuple, list)):
             raise ValueError("allowed_worker_ids must be a sequence")
         workers = tuple(self.allowed_worker_ids)
+        if len(workers) > 10_000:
+            raise ValueError("allowed_worker_ids exceeds the 10000-entry limit")
         if any(not isinstance(item, str) or not item.strip() or len(item) > 256 for item in workers):
             raise ValueError("allowed worker IDs must be non-empty bounded strings")
         if len(workers) != len(set(workers)):
@@ -145,15 +147,15 @@ class MigrationAuthorizationPolicy:
     @classmethod
     def from_json_bytes(cls, data: bytes | str) -> "MigrationAuthorizationPolicy":
         if isinstance(data, bytes):
-            if len(data) > 1024 * 1024:
-                raise ValueError("migration authorization policy exceeds the 1 MiB import limit")
+            if len(data) > 4 * 1024 * 1024:
+                raise ValueError("migration authorization policy exceeds the 4 MiB import limit")
             try:
                 source = data.decode("utf-8")
             except UnicodeDecodeError as exc:
                 raise ValueError("migration authorization policy must be UTF-8") from exc
         elif isinstance(data, str):
-            if len(data.encode("utf-8")) > 1024 * 1024:
-                raise ValueError("migration authorization policy exceeds the 1 MiB import limit")
+            if len(data.encode("utf-8")) > 4 * 1024 * 1024:
+                raise ValueError("migration authorization policy exceeds the 4 MiB import limit")
             source = data
         else:
             raise TypeError("data must be bytes or str")
@@ -245,10 +247,10 @@ class MigrationAuthorization:
         expires = _instant(self.expires_at, "expires_at")
         if expires <= approved:
             raise ValueError("expires_at must be later than approved_at")
-        if not isinstance(self.grants, (tuple, list)) or any(
+        if not isinstance(self.grants, (tuple, list)) or len(self.grants) > 10_000 or any(
             not isinstance(item, MigrationStepGrant) for item in self.grants
         ):
-            raise ValueError("grants must contain MigrationStepGrant values")
+            raise ValueError("grants must contain at most 10000 MigrationStepGrant values")
         ids = [item.transition_id for item in self.grants]
         if len(ids) != len(set(ids)):
             raise ValueError("authorization contains duplicate transition grants")
@@ -339,15 +341,15 @@ class MigrationAuthorization:
     @classmethod
     def from_json_bytes(cls, data: bytes | str) -> "MigrationAuthorization":
         if isinstance(data, bytes):
-            if len(data) > 4 * 1024 * 1024:
-                raise ValueError("migration authorization exceeds the 4 MiB import limit")
+            if len(data) > 16 * 1024 * 1024:
+                raise ValueError("migration authorization exceeds the 16 MiB import limit")
             try:
                 source = data.decode("utf-8")
             except UnicodeDecodeError as exc:
                 raise ValueError("migration authorization must be UTF-8") from exc
         elif isinstance(data, str):
-            if len(data.encode("utf-8")) > 4 * 1024 * 1024:
-                raise ValueError("migration authorization exceeds the 4 MiB import limit")
+            if len(data.encode("utf-8")) > 16 * 1024 * 1024:
+                raise ValueError("migration authorization exceeds the 16 MiB import limit")
             source = data
         else:
             raise TypeError("data must be bytes or str")
@@ -435,6 +437,8 @@ def authorize_migration(
     for field in ("timeout_seconds", "max_input_bytes", "max_output_bytes", "max_changed_files"):
         if getattr(limits, field) > getattr(ceiling, field):
             raise ValueError(f"requested {field} exceeds the authorization policy")
+    if len(plan.transitions) > 10_000:
+        raise ValueError("route exceeds the 10000-step authorization limit")
     registrations = {
         (item.manifest.worker_id, item.manifest.worker_version): item
         for item in registry.registrations()
