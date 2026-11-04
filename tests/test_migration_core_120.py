@@ -369,7 +369,7 @@ class TestUniversalPlanner(unittest.TestCase):
             source, target, (edge,), trusted,
             evaluated_at=datetime(2026, 11, 4, tzinfo=timezone.utc),
         )
-        self.assertTrue(trusted.is_trusted)
+        self.assertTrue(trusted.is_allowlisted)
         self.assertFalse(trusted.is_trusted_at(datetime(2026, 11, 4, tzinfo=timezone.utc)))
         self.assertEqual(plan.status, "UNKNOWN")
 
