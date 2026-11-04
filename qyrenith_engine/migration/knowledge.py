@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 from typing import Any
+from types import MappingProxyType
 
 from .model import MigrationIdentity
 
@@ -242,10 +243,137 @@ def _claim_from_dict(value: object) -> MigrationKnowledgeClaim:
     )
 
 
-class KnowledgeCatalog:
-    """Read-only catalog with conservative conflict detection and stable content identity."""
+@dataclass(frozen=True, slots=True)
+class KnowledgeTrustPolicy:
+    """Local allowlist for exact catalog digests; the policy file itself must be trusted."""
 
-    def __init__(self, claims: tuple[MigrationKnowledgeClaim, ...] = ()) -> None:
+    policy_id: str
+    reviewed_by: str
+    reviewed_at: str
+    trusted_catalog_digests: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        for field, limit in (("policy_id", 256), ("reviewed_by", 256)):
+            value = getattr(self, field)
+            if not isinstance(value, str) or not value.strip() or len(value) > limit:
+                raise ValueError(f"{field} must be a non-empty bounded string")
+        reviewed = parse_timestamp(self.reviewed_at)
+        canonical_time = reviewed.isoformat().replace("+00:00", "Z")
+        if canonical_time != self.reviewed_at:
+            raise ValueError("reviewed_at must use canonical UTC format")
+        if not isinstance(self.trusted_catalog_digests, (tuple, list)):
+            raise ValueError("trusted_catalog_digests must be a sequence")
+        digests = tuple(self.trusted_catalog_digests)
+        if len(digests) > 10000:
+            raise ValueError("trusted_catalog_digests exceeds the 10000-entry limit")
+        if any(
+            not isinstance(item, str) or len(item) != 64
+            or any(char not in "0123456789abcdef" for char in item)
+            for item in digests
+        ):
+            raise ValueError("trusted catalog digests must be lowercase SHA-256 hex digests")
+        if len(digests) != len(set(digests)):
+            raise ValueError("trusted catalog digests must be unique")
+        object.__setattr__(self, "trusted_catalog_digests", tuple(sorted(digests)))
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema": 1,
+            "policy_id": self.policy_id,
+            "reviewed_by": self.reviewed_by,
+            "reviewed_at": self.reviewed_at,
+            "trusted_catalog_digests": list(self.trusted_catalog_digests),
+        }
+
+    @property
+    def policy_digest(self) -> str:
+        return hashlib.sha256(_canonical_bytes(self.to_dict())).hexdigest()
+
+    def to_document(self) -> dict[str, Any]:
+        return {**self.to_dict(), "policy_digest": self.policy_digest}
+
+    def to_json_bytes(self) -> bytes:
+        return _canonical_bytes(self.to_document()) + b"\n"
+
+    def trusts(self, catalog_digest: str) -> bool:
+        return catalog_digest in self.trusted_catalog_digests
+
+    @classmethod
+    def from_document(cls, document: object) -> "KnowledgeTrustPolicy":
+        expected = {
+            "schema", "policy_id", "reviewed_by", "reviewed_at",
+            "trusted_catalog_digests", "policy_digest",
+        }
+        if not isinstance(document, dict) or set(document) != expected:
+            raise ValueError("knowledge trust policy has missing or unexpected fields")
+        if type(document["schema"]) is not int or document["schema"] != 1:
+            raise ValueError("unsupported knowledge trust policy schema")
+        payload = {key: value for key, value in document.items() if key != "policy_digest"}
+        digest = hashlib.sha256(_canonical_bytes(payload)).hexdigest()
+        if document["policy_digest"] != digest:
+            raise ValueError("knowledge trust policy digest mismatch")
+        if not isinstance(document["trusted_catalog_digests"], list):
+            raise ValueError("trusted_catalog_digests must be an array")
+        policy = cls(
+            policy_id=document["policy_id"],
+            reviewed_by=document["reviewed_by"],
+            reviewed_at=document["reviewed_at"],
+            trusted_catalog_digests=tuple(document["trusted_catalog_digests"]),
+        )
+        if policy.to_document() != document:
+            raise ValueError("knowledge trust policy is not canonical")
+        return policy
+
+    @classmethod
+    def from_json_bytes(cls, data: bytes | str) -> "KnowledgeTrustPolicy":
+        if isinstance(data, bytes):
+            if len(data) > 1024 * 1024:
+                raise ValueError("knowledge trust policy exceeds the 1 MiB import limit")
+            try:
+                source = data.decode("utf-8")
+            except UnicodeDecodeError as exc:
+                raise ValueError("knowledge trust policy must be UTF-8") from exc
+        elif isinstance(data, str):
+            if len(data.encode("utf-8")) > 1024 * 1024:
+                raise ValueError("knowledge trust policy exceeds the 1 MiB import limit")
+            source = data
+        else:
+            raise TypeError("data must be bytes or str")
+        try:
+            document = json.loads(
+                source, object_pairs_hook=strict_object_pairs,
+                parse_constant=lambda value: (_ for _ in ()).throw(ValueError(f"invalid JSON constant: {value}")),
+            )
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise ValueError("invalid knowledge trust policy JSON") from exc
+        canonical = _canonical_bytes(document)
+        if source.encode("utf-8") not in {canonical, canonical + b"\n"}:
+            raise ValueError("knowledge trust policy JSON is not canonical")
+        return cls.from_document(document)
+
+
+class KnowledgeCatalog:
+    """Read-only catalog with conservative conflicts and explicit import trust."""
+
+    __slots__ = (
+        "_claims", "_conflict_groups", "_conflicted_ids",
+        "_trust_policy", "_trusted", "_imported",
+    )
+
+    def __setattr__(self, name, value) -> None:
+        if hasattr(self, name):
+            raise AttributeError("KnowledgeCatalog is immutable")
+        object.__setattr__(self, name, value)
+
+    def __init__(
+        self,
+        claims: tuple[MigrationKnowledgeClaim, ...] = (),
+        *,
+        trust_policy: KnowledgeTrustPolicy | None = None,
+        _imported: bool = False,
+    ) -> None:
+        if trust_policy is not None and not isinstance(trust_policy, KnowledgeTrustPolicy):
+            raise TypeError("trust_policy must be a KnowledgeTrustPolicy")
         indexed = {}
         for claim in claims:
             if not isinstance(claim, MigrationKnowledgeClaim):
@@ -255,9 +383,16 @@ class KnowledgeCatalog:
             indexed[claim.claim_id] = claim
         if len(indexed) > 50000:
             raise ValueError("knowledge catalog exceeds the 50000-claim limit")
-        self._claims = indexed
+        immutable_claims = MappingProxyType(indexed)
+        payload = {"schema": 2, "claims": [immutable_claims[key].to_dict() for key in sorted(immutable_claims)]}
+        catalog_digest = hashlib.sha256(_canonical_bytes(payload)).hexdigest()
+        trusted = (
+            trust_policy.trusts(catalog_digest)
+            if trust_policy is not None
+            else not _imported
+        )
         groups = {}
-        for claim in indexed.values():
+        for claim in immutable_claims.values():
             if claim.status in {KnowledgeStatus.UNKNOWN, KnowledgeStatus.STALE}:
                 continue
             key = (claim.source.stable_key, claim.target.stable_key, claim.subject)
@@ -272,8 +407,12 @@ class KnowledgeCatalog:
                 ids = tuple(sorted(item.claim_id for item in items))
                 conflicts.append(ids)
                 conflicted_ids.update(ids)
+        self._claims = immutable_claims
         self._conflict_groups = tuple(conflicts)
         self._conflicted_ids = frozenset(conflicted_ids)
+        self._trust_policy = trust_policy
+        self._trusted = trusted
+        self._imported = _imported
 
     def get(self, claim_id: str) -> MigrationKnowledgeClaim | None:
         return self._claims.get(claim_id)
@@ -286,16 +425,37 @@ class KnowledgeCatalog:
         return self._conflict_groups
 
     @property
+    def is_trusted(self) -> bool:
+        return self._trusted
+
+    @property
+    def trust_policy_digest(self) -> str | None:
+        return self._trust_policy.policy_digest if self._trust_policy is not None else None
+
+    @property
     def content_digest(self) -> str:
         payload = {"schema": 2, "claims": [claim.to_dict() for claim in self.claims()]}
         return hashlib.sha256(_canonical_bytes(payload)).hexdigest()
 
+    @property
+    def trust_digest(self) -> str:
+        payload = {
+            "schema": 1,
+            "catalog_digest": self.content_digest,
+            "catalog_origin": "IMPORTED" if self._imported else "LOCAL",
+            "trusted": self._trusted,
+            "trust_policy_digest": self.trust_policy_digest,
+        }
+        return hashlib.sha256(_canonical_bytes(payload)).hexdigest()
+
     def merge(self, *others: "KnowledgeCatalog") -> "KnowledgeCatalog":
-        """Return a new catalog; identical IDs are idempotent, changed IDs are rejected."""
+        """Return a new catalog; imported trust is never silently inherited by a changed digest."""
         merged = dict(self._claims)
+        imported = self._imported
         for other in others:
             if not isinstance(other, KnowledgeCatalog):
                 raise TypeError("all merge inputs must be KnowledgeCatalog values")
+            imported = imported or other._imported
             for claim in other.claims():
                 existing = merged.get(claim.claim_id)
                 if existing is not None:
@@ -303,7 +463,10 @@ class KnowledgeCatalog:
                         raise ValueError(f"claim identifier collision: {claim.claim_id}")
                     continue
                 merged[claim.claim_id] = claim
-        return KnowledgeCatalog(tuple(merged[key] for key in sorted(merged)))
+        return KnowledgeCatalog(
+            tuple(merged[key] for key in sorted(merged)),
+            _imported=imported,
+        )
 
     def summary(self, now: datetime | None = None) -> dict[str, Any]:
         """Return deterministic counts without promoting or mutating any claim."""
@@ -318,12 +481,10 @@ class KnowledgeCatalog:
         for claim in self.claims():
             counts[claim.status.value] += 1
             if claim.status is KnowledgeStatus.VERIFIED:
-                if claim.claim_id in self._conflicted_ids:
+                if not self._trusted or claim.claim_id in self._conflicted_ids or not claim.is_usable(instant):
                     unusable_verified += 1
-                elif claim.is_usable(instant):
-                    usable_verified += 1
                 else:
-                    unusable_verified += 1
+                    usable_verified += 1
         return {
             "schema": 1,
             "claim_count": len(self._claims),
@@ -333,13 +494,21 @@ class KnowledgeCatalog:
             "conflict_group_count": len(self._conflict_groups),
             "conflict_groups": [list(group) for group in self._conflict_groups],
             "content_digest": self.content_digest,
+            "trusted": self._trusted,
+            "trust_policy_digest": self.trust_policy_digest,
+            "trust_digest": self.trust_digest,
         }
 
     def claim_is_usable(self, claim_id: str, now: datetime | None = None) -> bool:
         claim = self.get(claim_id)
-        return bool(claim is not None and claim_id not in self._conflicted_ids and claim.is_usable(now))
+        return bool(
+            self._trusted and claim is not None
+            and claim_id not in self._conflicted_ids and claim.is_usable(now)
+        )
 
     def validates_transition(self, transition: object, now: datetime | None = None) -> bool:
+        if not self._trusted:
+            return False
         source = getattr(transition, "source", None)
         target = getattr(transition, "target", None)
         claim_ids = getattr(transition, "knowledge_claim_ids", ())
@@ -361,7 +530,12 @@ class KnowledgeCatalog:
         return _canonical_bytes(self.to_document()) + b"\n"
 
     @classmethod
-    def from_document(cls, document: object) -> "KnowledgeCatalog":
+    def from_document(
+        cls,
+        document: object,
+        *,
+        trust_policy: KnowledgeTrustPolicy | None = None,
+    ) -> "KnowledgeCatalog":
         if not isinstance(document, dict) or set(document) != {"schema", "claims", "content_digest"}:
             raise ValueError("knowledge catalog document has missing or unexpected fields")
         if type(document["schema"]) is not int or document["schema"] != 2:
@@ -373,13 +547,22 @@ class KnowledgeCatalog:
         digest = hashlib.sha256(_canonical_bytes(payload)).hexdigest()
         if document["content_digest"] != digest:
             raise ValueError("knowledge catalog content digest mismatch")
-        catalog = cls(tuple(_claim_from_dict(item) for item in claims_data))
+        catalog = cls(
+            tuple(_claim_from_dict(item) for item in claims_data),
+            trust_policy=trust_policy,
+            _imported=True,
+        )
         if catalog.to_document() != document:
             raise ValueError("knowledge catalog is not in canonical form")
         return catalog
 
     @classmethod
-    def from_json_bytes(cls, data: bytes | str) -> "KnowledgeCatalog":
+    def from_json_bytes(
+        cls,
+        data: bytes | str,
+        *,
+        trust_policy: KnowledgeTrustPolicy | None = None,
+    ) -> "KnowledgeCatalog":
         if isinstance(data, bytes):
             if len(data) > 16 * 1024 * 1024:
                 raise ValueError("knowledge catalog exceeds the 16 MiB import limit")
@@ -404,7 +587,7 @@ class KnowledgeCatalog:
         encoded_source = source.encode("utf-8")
         if encoded_source not in {canonical, canonical + b"\n"}:
             raise ValueError("knowledge catalog JSON is not in canonical form")
-        return cls.from_document(document)
+        return cls.from_document(document, trust_policy=trust_policy)
 
 
 def serialize_knowledge_catalog(catalog: KnowledgeCatalog) -> bytes:
@@ -413,12 +596,16 @@ def serialize_knowledge_catalog(catalog: KnowledgeCatalog) -> bytes:
     return catalog.to_json_bytes()
 
 
-def deserialize_knowledge_catalog(data: bytes | str) -> KnowledgeCatalog:
-    return KnowledgeCatalog.from_json_bytes(data)
+def deserialize_knowledge_catalog(
+    data: bytes | str,
+    *,
+    trust_policy: KnowledgeTrustPolicy | None = None,
+) -> KnowledgeCatalog:
+    return KnowledgeCatalog.from_json_bytes(data, trust_policy=trust_policy)
 
 
 __all__ = [
-    "EvidenceReference", "KnowledgeCatalog", "KnowledgeStatus",
+    "EvidenceReference", "KnowledgeCatalog", "KnowledgeStatus", "KnowledgeTrustPolicy",
     "MigrationKnowledgeClaim", "deserialize_knowledge_catalog",
     "serialize_knowledge_catalog",
 ]
