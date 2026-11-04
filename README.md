@@ -269,6 +269,10 @@ The main command surface, grouped by purpose. Run `python qyrenith.py --help` fo
 | `verify` | Generic project verification; reports NOT_AVAILABLE when no adapter exists |
 | `external-check` | Inspect a separate project read-only; no Qyrenith files or state required in target |
 | `external-verify` | Run explicitly supplied checks in an external project; execution requires --execute |
+| `source-analysis` | Static Python syntax, import-reference, and symbol inventory without importing project code |
+| `impact` | Static direct/transitive Python import impact hints for changed files |
+| `boundary-check` | Read-only filesystem boundary inspection |
+| `bounded-check` | Explicit shell-free, bounded process invocation; not an OS sandbox |
 
 ### Planning and managed migration
 
@@ -320,6 +324,7 @@ See:
 - `ADAPTERS.md` — worker adapter protocol
 - `EVIDENCE.md` — evidence and claim model
 - `BENCHMARKS.md` — benchmark fixtures and philosophy
+- `ENGINEERING_ANALYSIS.md` — static analysis, change impact, boundary checks, and bounded execution
 - `LICENSE` — MIT license
 
 ## Verification surface

@@ -44,3 +44,6 @@ qyrenith = "qyrenith:main"
 [tool.setuptools]
 py-modules = ["qyrenith"]
 license-files = ["LICENSE"]
+
+[tool.setuptools.packages.find]
+include = ["qyrenith_engine*"]
