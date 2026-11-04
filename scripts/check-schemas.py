@@ -20,6 +20,7 @@ EXPECTED = {
     "migration-knowledge.schema.json": [
         "schema", "claim_id", "subject", "statement", "assertion", "source", "target",
         "status", "evidence", "verified_by", "verified_at", "valid_until",
+        "verified_with", "verifier_version", "verifier_digest",
     ],
     "migration-transition.schema.json": [
         "schema", "transition_id", "source", "target", "kind", "knowledge_claim_ids",
@@ -98,8 +99,9 @@ for name, required_fields in EXPECTED.items():
     if name.startswith("migration-"):
         require(schema.get("additionalProperties") is False,
                 f"{name} must reject unknown top-level fields")
-        require(schema["properties"].get("schema") == {"const": 1},
-                f"{name} must pin schema version 1")
+        expected_schema_version = 2 if name == "migration-knowledge.schema.json" else 1
+    require(schema["properties"].get("schema") == {"const": expected_schema_version},
+                f"{name} must pin schema version {expected_schema_version}")
 
 adapter = schemas["adapter-manifest.schema.json"]
 alternatives = adapter.get("anyOf", [])
