@@ -72,6 +72,26 @@ class TestEngineeringCLI(unittest.TestCase):
             finally:
                 snapshot_file.unlink(missing_ok=True)
 
+    def test_snapshot_custom_exclusion_preserves_default_exclusions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".git").mkdir()
+            (root / ".git" / "config").write_text("ignored", encoding="utf-8")
+            (root / "generated").mkdir()
+            (root / "generated" / "bundle.bin").write_bytes(b"ignored")
+            (root / "main.py").write_text("pass\\n", encoding="utf-8")
+            result = self.run_cli(
+                "snapshot", "capture", "--project", directory,
+                "--snapshot-exclude", "generated",
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            document = json.loads(result.stdout)
+            self.assertEqual([item["path"] for item in document["entries"]], ["main.py"])
+            self.assertEqual(
+                document["excluded_paths"],
+                [".backups", ".git", ".qyrenith", "__pycache__", "generated"],
+            )
+
     def test_snapshot_verify_requires_snapshot_file(self):
         with tempfile.TemporaryDirectory() as directory:
             result = self.run_cli("snapshot", "verify", "--project", directory)
