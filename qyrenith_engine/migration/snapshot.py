@@ -191,7 +191,7 @@ class ProjectSnapshot:
         exclusions = tuple(_safe_relative_path(item) for item in self.excluded_paths)
         if exclusions != tuple(sorted(set(exclusions))) or len(exclusions) != len({item.casefold() for item in exclusions}):
             raise SnapshotError("excluded paths must be unique and canonically sorted")
-        exclusion_set = set(exclusions)
+        exclusion_set = {item.casefold() for item in exclusions}
         for excluded in exclusions:
             parts = excluded.split("/")
             if any("/".join(parts[:index]) in exclusion_set for index in range(1, len(parts))):
@@ -465,7 +465,7 @@ def capture_project_snapshot(
     def is_excluded(rel: str) -> bool:
         components = rel.split("/")
         return any(
-            "/".join(components[:index]) in exclusion_set
+            "/".join(components[:index]).casefold() in exclusion_set
             for index in range(1, len(components) + 1)
         )
 
