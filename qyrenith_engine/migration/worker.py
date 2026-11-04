@@ -771,9 +771,12 @@ class RouteWorkerAssessment:
     status: str
     evaluations: tuple[tuple[MigrationTransition, WorkerResolution], ...]
     reason: str
+    trust_policy_digest: str | None = None
 
     def __post_init__(self) -> None:
         _hex_digest(self.route_plan_digest, "route_plan_digest")
+        if self.trust_policy_digest is not None:
+            _hex_digest(self.trust_policy_digest, "trust_policy_digest")
         instant = parse_timestamp(self.evaluated_at)
         if instant.isoformat().replace("+00:00", "Z") != self.evaluated_at:
             raise ValueError("assessment time must use canonical UTC format")
@@ -816,7 +819,7 @@ class RouteWorkerAssessment:
             raise ValueError("QUALIFIED assessment requires a qualification for every route transition")
         if self.status == "UNKNOWN" and (
             not evaluations or not any(
-                resolution.status in {"NOT_SELECTED", "NOT_REGISTERED", "UNQUALIFIED", "STALE"}
+                resolution.status in {"NOT_SELECTED", "NOT_REGISTERED", "UNQUALIFIED", "UNTRUSTED", "STALE"}
                 for _, resolution in evaluations
             ) or any(
                 resolution.status in {"BLOCKED", "INCOMPATIBLE"}
@@ -857,6 +860,7 @@ class RouteWorkerAssessment:
                 for transition, resolution in self.evaluations
             ],
             "reason": self.reason,
+            "trust_policy_digest": self.trust_policy_digest,
         }
 
     @property
@@ -889,11 +893,13 @@ def assess_route_workers(
         return RouteWorkerAssessment(
             plan.plan_digest, evaluated_at, "ROUTE_NOT_PLANNED", (),
             "Worker qualification is not evaluated until the route itself is PLANNED",
+            trust_policy_digest=registry.trust_policy_digest,
         )
     if not plan.transitions:
         return RouteWorkerAssessment(
             plan.plan_digest, evaluated_at, "NO_WORK_REQUIRED", (),
             "The source already matches the target; no worker transition is required",
+            trust_policy_digest=registry.trust_policy_digest,
         )
 
     evaluations = tuple(
@@ -909,8 +915,11 @@ def assess_route_workers(
         reason = "At least one route transition is disabled or incompatible with its registered worker"
     else:
         status = "UNKNOWN"
-        reason = "At least one route transition is unselected, unregistered, unqualified, or stale"
-    return RouteWorkerAssessment(plan.plan_digest, evaluated_at, status, evaluations, reason)
+        reason = "At least one route transition is unselected, unregistered, unqualified, untrusted, or stale"
+    return RouteWorkerAssessment(
+        plan.plan_digest, evaluated_at, status, evaluations, reason,
+        trust_policy_digest=registry.trust_policy_digest,
+    )
 
 
 def serialize_worker_manifest(manifest: MigrationWorkerManifest) -> bytes:
