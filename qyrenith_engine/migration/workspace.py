@@ -331,6 +331,7 @@ def create_isolated_workspace(
         raise WorkspaceError("workspace parent must be a real directory, not a symlink")
     source_resolved = source.resolve(strict=True)
     parent_resolved = parent.resolve(strict=True)
+    source = source_resolved
     if parent_resolved == source_resolved or parent_resolved.is_relative_to(source_resolved):
         raise WorkspaceError("workspace parent must be outside the source project")
     try:
