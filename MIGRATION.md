@@ -140,13 +140,31 @@ The registry returns one of these states for a pinned transition:
 | `NOT_REGISTERED` | The exact worker ID and version are absent from the local registry. |
 | `INCOMPATIBLE` | The registered manifest does not cover the exact transition or all required capabilities. |
 | `UNQUALIFIED` | No qualification record is present. |
+| `UNTRUSTED` | A current qualification exists but its exact digest is not allowlisted by the active local trust policy. |
 | `STALE` | The qualification is expired or bound to a different manifest digest. |
 | `QUALIFIED` | Exact scope and capability match, plus a current PASS qualification record for the same manifest digest. |
 | `BLOCKED` | The transition is disabled. |
 
-The `assess_route_workers(plan, registry)` API evaluates every planned edge at the exact route-plan timestamp. It returns `QUALIFIED` only when every edge resolves to a current matching qualification; it returns `UNKNOWN` for missing/unselected/stale workers, `BLOCKED` for disabled or incompatible workers, `ROUTE_NOT_PLANNED` when the route itself is not PLANNED, and `NO_WORK_REQUIRED` for a no-op route. The assessment digest binds the route digest and ordered transition/resolution pairs. `assessment.qualified` is true only when a worker was actually qualified; `assessment.worker_gate_satisfied` is also true for a no-op route with no worker operation. Neither property grants execution permission.
+The `assess_route_workers(plan, registry)` API evaluates every planned edge at the exact route-plan timestamp. It returns `QUALIFIED` only when every edge resolves to a current matching qualification; it returns `UNKNOWN` for missing/unselected/unqualified/untrusted/stale workers, `BLOCKED` for disabled or incompatible workers, `ROUTE_NOT_PLANNED` when the route itself is not PLANNED, and `NO_WORK_REQUIRED` for a no-op route. The assessment digest binds the route digest and ordered transition/resolution pairs. `assessment.qualified` is true only when a worker was actually qualified; `assessment.worker_gate_satisfied` is also true for a no-op route with no worker operation. Neither property grants execution permission.
 
-A `WorkerQualification` records the manifest digest, conformance-suite identity and version, suite digest, result digest, PASS status, test count, reviewer attribution, qualification time, and expiry. It is a record of a reviewed result; it is not proof that this library ran the suite. The current registry does not execute conformance tests, sign qualifications, authenticate reviewer identities, fetch worker packages, or launch workers. A qualification record must come from a separately controlled and reviewed process. The registry now returns `UNTRUSTED` unless the exact qualification digest is allowlisted by a `WorkerTrustPolicy`; the active policy digest is bound into route-worker assessments and migration authorization. **Remaining trust limitation:** the policy itself is not cryptographically authenticated, and an allowlisted record still does not prove that the declared conformance suite actually ran. Load the policy only from an owner-controlled source. The conformance runner and independently collected result evidence remain required before worker execution.
+A `WorkerQualification` records the manifest digest, conformance-suite identity and version, suite digest, result digest, PASS status, test count, reviewer attribution, qualification time, and expiry. It is a record of a reviewed result; it is not proof that this library ran the suite. The current registry does not execute conformance tests, sign qualifications, authenticate reviewer identities, fetch worker packages, or launch workers. A qualification record must come from a separately controlled and reviewed process. The registry now returns \`UNTRUSTED\` unless the exact qualification digest is allowlisted by a \`WorkerTrustPolicy\`; the active policy digest is bound into route-worker assessments and migration authorization.
+
+Example local qualification allowlisting (the trust policy must be protected and reviewed separately):
+
+\`\`\`python
+from qyrenith_engine.migration import MigrationWorkerRegistry, WorkerTrustPolicy
+
+worker_trust = WorkerTrustPolicy(
+    policy_id="locally-reviewed-workers",
+    reviewed_by="operator-review-attribution",
+    reviewed_at="2026-11-04T00:00:00Z",
+    trusted_qualification_digests=(qualification.qualification_digest,),
+)
+registry = MigrationWorkerRegistry(
+    (WorkerRegistration(manifest, qualification),),
+    trust_policy=worker_trust,
+)
+\`\`\` **Remaining trust limitation:** the policy itself is not cryptographically authenticated, and an allowlisted record still does not prove that the declared conformance suite actually ran. Load the policy only from an owner-controlled source. The conformance runner and independently collected result evidence remain required before worker execution.
 
 Manifest permissions are declarations, not grants. The registry returns permissions and resource limits to the caller; a future execution authority must independently decide whether the current task is allowed to use them. In particular, `WRITE_PROJECT`, `EXECUTE_PROCESS`, `NETWORK`, and `PUBLISH_ARTIFACT` must never be treated as implicitly approved by worker registration.
 
