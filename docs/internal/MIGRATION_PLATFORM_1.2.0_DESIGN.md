@@ -187,3 +187,30 @@ These are planning primitives only. They do not discover a project, modify files
 ## Explicit non-claims
 
 The current code does not provide universal automatic code conversion, API mapping discovery, Minecraft cross-loader conversion, Git-worktree or OS-level process isolation, build execution, or production migration support for any newly added domain. Worker manifests and qualification records are validated, but the conformance suite is not executed or signed by this registry. The assurance ledger exists as a standalone primitive but is not yet bound to the existing managed migration workflow. A route being PLANNED means only that the current knowledge catalog qualifies its typed edges for planning; execution authorization and migration success are separate future gates.
+
+
+---
+
+## 1.2.0 Deep-Audit and Development-Assurance Integration
+
+The migration platform is now governed by the complete deep-audit specification set under [`docs/internal/deep-audit/`](deep-audit/README.md). The master architecture, QDAS specification, module contracts, evidence model, and implementation plan are normative for the remaining 1.2.0 work.
+
+### Required delivery sequence
+
+1. Complete and cross-review the deep-audit documentation set.
+2. Finish and independently validate the existing migration-platform slice and its known defects.
+3. Implement Qyrenith Development Assurance System (QDAS).
+4. Implement the fourteen remaining capability modules with QDAS-assisted development.
+5. Complete cross-module acceptance and independent release verification.
+
+### Existing migration work is not yet end-to-end
+
+The current identity, knowledge, planner, worker, authorization, ledger, snapshot, and filesystem-copy workspace primitives must not be described as a completed migration executor. The remaining work is specified in [Migration Platform Integration](deep-audit/MIGRATION_PLATFORM_INTEGRATION_SPEC.md). In particular, conformance execution, authenticated approval, runtime permission enforcement, process isolation, managed workflow integration, transformation execution, recovery, and target build/behavior verification require their own implementation and evidence.
+
+### QDAS relationship
+
+QDAS is the first new implementation milestone after the existing migration work is stabilized. It captures development failures, classifies them, builds evidence-backed root-cause hypotheses, proposes bounded repairs, and verifies the unchanged baseline checks after repair. It is not an OS sandbox, cannot self-certify Qyrenith, and cannot implicitly write, install dependencies, access the network, commit, or publish.
+
+### Release rule
+
+All accepted requirements remain release-blocking until implemented and verified. These design documents do not claim implementation completion. See [Implementation and Acceptance Plan](deep-audit/QYRENITH_1_2_0_IMPLEMENTATION_AND_ACCEPTANCE_PLAN.md).
