@@ -298,7 +298,9 @@ This is preparation, not execution: it does not run workers, authorize side effe
 ```python
 from qyrenith_engine.migration import (
     capture_project_snapshot,
+    plan_targets,
     prepare_multi_target_workspaces,
+    verify_workspace_baseline,
 )
 
 snapshot = capture_project_snapshot(source_root)
