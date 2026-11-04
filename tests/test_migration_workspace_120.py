@@ -17,6 +17,7 @@ from qyrenith_engine.migration.workspace import (
     deserialize_workspace_descriptor,
     serialize_workspace_descriptor,
     verify_workspace_baseline,
+    _open_source_file,
 )
 
 
@@ -144,6 +145,20 @@ class TestIsolatedWorkspace(unittest.TestCase):
             snapshot = capture_project_snapshot(source)
             with self.assertRaisesRegex(WorkspaceError, "outside the source project"):
                 create_isolated_workspace(source, snapshot, parent, target_identity())
+
+    def test_posix_source_open_rejects_symlinked_parent_directories(self):
+        if os.name == "nt" or not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_DIRECTORY"):
+            self.skipTest("directory-relative no-follow opens are unavailable")
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            source = base / "source"
+            external = base / "external"
+            source.mkdir()
+            external.mkdir()
+            (external / "secret.txt").write_text("outside\\n", encoding="utf-8")
+            os.symlink(external, source / "linked", target_is_directory=True)
+            with self.assertRaisesRegex(WorkspaceError, "without following symlinks"):
+                _open_source_file(source, "linked/secret.txt")
 
     def test_workspace_parent_must_not_be_a_symlink(self):
         with tempfile.TemporaryDirectory() as directory:
