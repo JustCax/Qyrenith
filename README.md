@@ -303,7 +303,7 @@ The main command surface, grouped by purpose. Run `python qyrenith.py --help` fo
 | `evidence` | Inspect the evidence ledger |
 | `skills` | Discover/rank installed skills |
 | `adapters` | Discover worker/skill adapters |
-| `worker-run` | Run one explicitly declared external worker; first execution requires `--yes` to approve its exact command fingerprint; never grants Doctor SUCCESS authority |
+| `worker-run` | Run one explicitly declared external worker; first execution requires the caller-supplied `--yes` approval assertion for its exact command fingerprint (not authenticated human approval); never grants Doctor SUCCESS authority |
 
 ### Tests, security, and recovery
 
