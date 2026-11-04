@@ -205,7 +205,7 @@ class MigrationAuthorization:
         return {**self.to_dict(), "authorization_digest": self.authorization_digest}
 
     def to_json_bytes(self) -> bytes:
-        return _canonical(self.to_document()) + b"\\n"
+        return _canonical(self.to_document()) + b"\n"
 
     @classmethod
     def from_document(cls, document: object) -> "MigrationAuthorization":
@@ -290,7 +290,7 @@ class MigrationAuthorization:
         except (json.JSONDecodeError, ValueError) as exc:
             raise ValueError("invalid migration authorization JSON") from exc
         canonical = _canonical(document)
-        if source.encode("utf-8") not in {canonical, canonical + b"\\n"}:
+        if source.encode("utf-8") not in {canonical, canonical + b"\n"}:
             raise ValueError("migration authorization JSON is not canonical")
         return cls.from_document(document)
 
