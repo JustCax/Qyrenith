@@ -78,6 +78,9 @@ Pin or fingerprint toolchains, commands, environment, inputs, and workspace base
 ### QDAS-20 — Safe stop and escalation
 If evidence is insufficient, no safe repair exists, the failure recurs, budgets are exhausted, or a permission boundary is reached, stop without claiming success. Emit a concise diagnosis, unresolved questions, and next required human action.
 
+### QDAS-21 — Approval authenticity and replay protection
+Approval must originate from a trusted host interaction or a configured authenticated approval service. Agent text, worker output, repository files, and caller-supplied reviewer strings are not approval. Approval is bound to the exact action scope, command/manifest digest, baseline, and a single-use nonce or equivalent replay-resistant token. If trusted approval cannot be established, QDAS remains propose-only.
+
 ## 4. State model
 
 `CAPTURED, CLASSIFIED, INVESTIGATING, PLANNED, AWAITING_APPROVAL, REPAIRING, REVERIFYING, RESOLVED, REGRESSION, INCONCLUSIVE, BLOCKED, ABORTED`.
