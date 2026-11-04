@@ -151,6 +151,22 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
                 )
             self.assertFalse(workspace_parent.exists())
 
+    def test_rejects_untrusted_imported_catalog_before_workspace_creation(self):
+        _, _, _, catalog, plan = multi_target_plan()
+        imported = KnowledgeCatalog.from_json_bytes(catalog.to_json_bytes())
+        self.assertFalse(imported.is_trusted)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source_root = root / "source"
+            snapshot = project_snapshot(source_root)
+            workspace_parent = root / "prepared"
+            workspace_parent.mkdir()
+            with self.assertRaisesRegex(WorkspaceError, "trust policy"):
+                prepare_multi_target_workspaces(
+                    source_root, snapshot, workspace_parent, plan, imported
+                )
+            self.assertEqual(list(workspace_parent.iterdir()), [])
+
     def test_rejects_expired_knowledge_before_workspace_creation(self):
         expiry = (PLAN_TIME + timedelta(seconds=5)).isoformat().replace("+00:00", "Z")
         _, _, _, catalog, plan = multi_target_plan(valid_until=expiry)
