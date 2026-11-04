@@ -17,7 +17,7 @@ class TestEngineeringCLI(unittest.TestCase):
     def test_help_lists_new_commands(self):
         result = self.run_cli("--help")
         self.assertEqual(result.returncode, 0, result.stderr)
-        for command in ("source-analysis", "impact", "boundary-check", "bounded-check"):
+        for command in ("source-analysis", "impact", "boundary-check", "bounded-check", "snapshot"):
             self.assertIn(command, result.stdout)
 
     def test_source_analysis_cli_emits_json(self):
@@ -32,6 +32,51 @@ class TestEngineeringCLI(unittest.TestCase):
             result = self.run_cli("source-analysis", "--project", directory)
             self.assertEqual(result.returncode, 2)
             self.assertEqual(json.loads(result.stdout)["status"], "UNKNOWN")
+
+    def test_snapshot_capture_cli_emits_canonical_json_without_project_state(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "main.py").write_text("print('hello')\\n", encoding="utf-8")
+            result = self.run_cli("snapshot", "capture", "--project", directory)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            document = json.loads(result.stdout)
+            self.assertEqual(document["schema"], 1)
+            self.assertEqual(document["entries"][0]["path"], "main.py")
+            self.assertFalse((root / ".qyrenith").exists())
+
+    def test_snapshot_verify_cli_reports_match_and_detects_changes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "main.py"
+            source.write_text("before\\n", encoding="utf-8")
+            captured = self.run_cli("snapshot", "capture", "--project", directory)
+            self.assertEqual(captured.returncode, 0, captured.stderr)
+            snapshot_file = root.parent / (root.name + ".snapshot.json")
+            try:
+                snapshot_file.write_text(captured.stdout, encoding="utf-8")
+                matched = self.run_cli(
+                    "snapshot", "verify", "--project", directory,
+                    "--snapshot-file", str(snapshot_file),
+                )
+                self.assertEqual(matched.returncode, 0, matched.stderr)
+                self.assertEqual(json.loads(matched.stdout)["status"], "MATCH")
+                source.write_text("after\\n", encoding="utf-8")
+                changed = self.run_cli(
+                    "snapshot", "verify", "--project", directory,
+                    "--snapshot-file", str(snapshot_file),
+                )
+                self.assertEqual(changed.returncode, 1, changed.stderr)
+                report = json.loads(changed.stdout)
+                self.assertEqual(report["status"], "CHANGED")
+                self.assertIn("main.py", report["changed_paths"])
+            finally:
+                snapshot_file.unlink(missing_ok=True)
+
+    def test_snapshot_verify_requires_snapshot_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            result = self.run_cli("snapshot", "verify", "--project", directory)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("requires --snapshot-file", result.stderr)
 
     def test_impact_cli_requires_changed_path(self):
         result = self.run_cli("impact", "--project", str(ROOT))
