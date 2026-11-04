@@ -114,6 +114,7 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
             source_root = root / "source"
             snapshot = project_snapshot(source_root)
             workspace_parent = root / "prepared"
+            workspace_parent.mkdir()
             batch = prepare_multi_target_workspaces(
                 source_root, snapshot, workspace_parent, plan, catalog
             )
@@ -193,8 +194,10 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
             root = Path(temporary)
             source_root = root / "source"
             snapshot = project_snapshot(source_root)
+            workspace_parent = root / "prepared"
+            workspace_parent.mkdir()
             batch = prepare_multi_target_workspaces(
-                source_root, snapshot, root / "prepared", plan, catalog
+                source_root, snapshot, workspace_parent, plan, catalog
             )
             with self.assertRaisesRegex(WorkspaceError, "does not match"):
                 batch.validate_for_plan(other_plan, snapshot, catalog)
@@ -210,6 +213,7 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
             source_root = root / "source"
             snapshot = project_snapshot(source_root)
             workspace_parent = root / "prepared"
+            workspace_parent.mkdir()
             changed = SnapshotVerification(
                 expected_digest=snapshot.snapshot_digest,
                 actual_digest="f" * 64,
@@ -234,8 +238,10 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
             root = Path(temporary)
             source_root = root / "source"
             snapshot = project_snapshot(source_root)
+            workspace_parent = root / "prepared"
+            workspace_parent.mkdir()
             batch = prepare_multi_target_workspaces(
-                source_root, snapshot, root / "prepared", plan, catalog
+                source_root, snapshot, workspace_parent, plan, catalog
             )
             document = json.loads(batch.to_json_bytes())
             document["plan_digest"] = "0" * 64
