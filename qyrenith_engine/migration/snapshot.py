@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import re
 import stat
+import unicodedata
 from typing import Any
 
 from .knowledge import strict_object_pairs
@@ -49,6 +50,8 @@ def _safe_relative_path(value: object, *, allow_empty: bool = False) -> str:
         part in {"", ".", ".."}
         or part.endswith((".", " "))
         or ":" in part
+        or unicodedata.normalize("NFC", part) != part
+        or part.split(".", 1)[0].upper() in {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}
         or any(ord(char) < 32 or ord(char) == 127 for char in part)
         for part in parts
     ):
@@ -103,7 +106,7 @@ class SnapshotEntry:
 
     def __post_init__(self) -> None:
         _safe_relative_path(self.path)
-        if self.kind not in {"file", "directory", "symlink"}:
+        if not isinstance(self.kind, str) or self.kind not in {"file", "directory", "symlink"}:
             raise SnapshotError("snapshot entry kind must be file, directory, or symlink")
         if type(self.mode) is not int or not 0 <= self.mode <= 0o777:
             raise SnapshotError("snapshot mode must contain only portable permission bits")
@@ -145,7 +148,7 @@ class ProjectSnapshot:
     schema: int = 1
 
     def __post_init__(self) -> None:
-        if self.schema != 1:
+        if type(self.schema) is not int or self.schema != 1:
             raise SnapshotError("unsupported project snapshot schema")
         if not isinstance(self.limits, SnapshotLimits):
             raise SnapshotError("snapshot limits must be SnapshotLimits")
@@ -155,8 +158,8 @@ class ProjectSnapshot:
         if any(not isinstance(item, SnapshotEntry) for item in entries):
             raise SnapshotError("snapshot entries must be SnapshotEntry values")
         paths = [item.path for item in entries]
-        if paths != sorted(paths) or len(paths) != len(set(paths)):
-            raise SnapshotError("snapshot entries must have unique, canonical path order")
+        if paths != sorted(paths) or len(paths) != len(set(paths)) or len(paths) != len({path.casefold() for path in paths}):
+            raise SnapshotError("snapshot entries must have unique, portable canonical path order")
         if not isinstance(self.excluded_paths, (tuple, list)):
             raise SnapshotError("excluded_paths must be a sequence")
         exclusions = tuple(_safe_relative_path(item) for item in self.excluded_paths)
@@ -240,7 +243,10 @@ class ProjectSnapshot:
         else:
             raise TypeError("data must be bytes or str")
         try:
-            document = json.loads(source, object_pairs_hook=strict_object_pairs)
+            document = json.loads(
+                source, object_pairs_hook=strict_object_pairs,
+                parse_constant=lambda value: (_ for _ in ()).throw(ValueError(f"invalid JSON constant: {value}")),
+            )
         except (json.JSONDecodeError, ValueError) as exc:
             raise SnapshotError("invalid project snapshot JSON") from exc
         canonical = _canonical(document)
@@ -370,6 +376,9 @@ def capture_project_snapshot(
                         raise SnapshotError("project exceeds max_entries")
                 elif stat.S_ISLNK(item_stat.st_mode):
                     target = os.readlink(child.path)
+                    after_link = Path(child.path).lstat()
+                    if not _same_object(item_stat, after_link):
+                        raise SnapshotError(f"symbolic link changed during snapshot capture: {rel}")
                     entries.append(SnapshotEntry(rel, "symlink", mode, link_target=target))
                     if len(entries) > policy.max_entries:
                         raise SnapshotError("project exceeds max_entries")
