@@ -185,7 +185,7 @@ class TestMigrationAuthorization(unittest.TestCase):
         authorization = authorize()
         plan, assessment, registry, policy, _ = fixture()
         self.assertIsNone(validate_migration_authorization(
-            authorization, plan, assessment, registry, policy, now=NOW,
+            authorization, plan, assessment, registry, policy, knowledge=knowledge_catalog(), now=NOW,
         ))
 
     def test_execution_gate_rejects_expired_authorization(self):
@@ -209,7 +209,7 @@ class TestMigrationAuthorization(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "policy digest"):
             validate_migration_authorization(
-                authorization, plan, assessment, registry, changed_policy, now=NOW,
+                authorization, plan, assessment, registry, changed_policy, knowledge=knowledge_catalog(), now=NOW,
             )
 
     def test_execution_gate_rejects_worker_manifest_substitution(self):
@@ -229,7 +229,7 @@ class TestMigrationAuthorization(unittest.TestCase):
         ),))
         with self.assertRaisesRegex(ValueError, "not currently qualified"):
             validate_migration_authorization(
-                authorization, plan, assessment, replacement_registry, policy, now=NOW,
+                authorization, plan, assessment, replacement_registry, policy, knowledge=knowledge_catalog(), now=NOW,
             )
 
     def test_execution_gate_rejects_worker_trust_policy_substitution(self):
@@ -249,7 +249,7 @@ class TestMigrationAuthorization(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "trust policy changed"):
             validate_migration_authorization(
-                authorization, plan, assessment, substituted_registry, policy, now=NOW,
+                authorization, plan, assessment, substituted_registry, policy, knowledge=knowledge_catalog(), now=NOW,
             )
         with self.assertRaisesRegex(ValueError, "trust policy changed"):
             authorize_migration(
