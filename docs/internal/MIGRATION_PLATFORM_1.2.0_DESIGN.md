@@ -63,7 +63,7 @@ The following terms are intentionally non-interchangeable:
 
 1. **Declared** — a manifest or transition says a worker or capability exists.
 2. **Qualified** — a current reviewed qualification record matches the exact worker manifest and scope.
-3. **Authorized** — a separate policy/user decision permits the proposed action and its side effects. This layer is not implemented yet.
+3. **Authorized** — a short-lived authorization record binds a policy decision to the exact plan, worker assessment, worker manifest/qualification, permission subset, resource ceilings, and expiry. The current record captures caller-supplied approval attribution but does not authenticate the approver or enforce permissions at runtime.
 4. **Executed** — a controlled executor actually launched the pinned worker in an identified workspace. This layer is not implemented yet.
 5. **Verified** — Qyrenith independently observed the required build/test/runtime results, source diff, post-state, and recovery/commit evidence. This end-to-end gate is not integrated with the new migration planner yet.
 
@@ -82,7 +82,7 @@ A transition may be PLANNED while its worker assessment is UNKNOWN or BLOCKED. A
 | Packaging | Every public source file is present in both the deterministic archive allowlist and the source-distribution manifest. |
 | Compatibility | 1.1.0 version metadata and existing runtime behavior are unchanged during 1.2.0 development. |
 
-The executable conformance runner, authorization engine, isolated workspace executor, managed recovery integration, and end-to-end transformation validation are intentionally outside the acceptance boundary of this slice. They remain explicit follow-on work rather than implied capabilities.
+The executable conformance runner, authenticated approval/signing, isolated workspace executor, managed recovery integration, and end-to-end transformation validation are intentionally outside the acceptance boundary of this slice. The new authorization record is a policy artifact only; it is not an execution authority.
 
 ## Current implementation slice
 
@@ -143,7 +143,12 @@ These are planning primitives only. They do not discover a project, modify files
 - [x] No automatic download or execution of unknown workers.
 
 ### MP-05 — Migration execution orchestration
-- Add explicit plan inspection and authorization.
+- [x] Add a plan-bound authorization record with per-transition worker provenance.
+- [x] Re-resolve exact worker qualification at approval time and reject changed or expired qualification.
+- [x] Intersect requested permissions and resource limits with policy and worker-manifest ceilings.
+- [x] Require authorization expiry to precede every worker qualification expiry.
+- [ ] Authenticate the approver and protect policy/approval records with a trusted signing or storage boundary.
+- [ ] Add a runtime enforcement point that consumes each grant immediately before side effects.
 - Execute one transition at a time.
 - Preserve backup, pre/post snapshots, validation, diff, commit, and recovery gates.
 - Do not replace the current Minecraft workflow until equivalent regression coverage is complete.
