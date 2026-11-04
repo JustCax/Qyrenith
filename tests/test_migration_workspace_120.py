@@ -14,6 +14,7 @@ from qyrenith_engine.migration.workspace import (
     WorkspaceDescriptor,
     WorkspaceError,
     create_isolated_workspace,
+    create_isolated_workspaces,
     deserialize_workspace_descriptor,
     serialize_workspace_descriptor,
     verify_workspace_baseline,
@@ -90,6 +91,70 @@ class TestIsolatedWorkspace(unittest.TestCase):
             self.assertEqual((source / "README.md").read_text(encoding="utf-8"), "source baseline\n")
             self.assertTrue(verify_workspace_baseline(forge, snapshot).matches)
             self.assertEqual(verify_workspace_baseline(fabric, snapshot).status, "CHANGED")
+
+    def test_batch_materializes_unique_target_workspaces_from_one_snapshot(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            source = base / "source"
+            parent = base / "workspaces"
+            source.mkdir()
+            parent.mkdir()
+            self.source_tree(source)
+            snapshot = capture_project_snapshot(source)
+            descriptors = create_isolated_workspaces(
+                source, snapshot, parent,
+                (target_identity("fabric"), target_identity("forge")),
+            )
+            self.assertEqual(len(descriptors), 2)
+            self.assertNotEqual(descriptors[0].project_path, descriptors[1].project_path)
+            self.assertTrue(all(verify_workspace_baseline(item, snapshot).matches for item in descriptors))
+
+    def test_batch_rejects_duplicate_target_identities_before_creation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            source = base / "source"
+            parent = base / "workspaces"
+            source.mkdir()
+            parent.mkdir()
+            (source / "main.py").write_text("pass\\n", encoding="utf-8")
+            snapshot = capture_project_snapshot(source)
+            with self.assertRaisesRegex(WorkspaceError, "must be unique"):
+                create_isolated_workspaces(
+                    source, snapshot, parent, (target_identity(), target_identity())
+                )
+            self.assertEqual(list(parent.iterdir()), [])
+
+    def test_batch_rolls_back_prior_workspaces_if_source_changes_between_targets(self):
+        from qyrenith_engine.migration import workspace as workspace_module
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            source = base / "source"
+            parent = base / "workspaces"
+            source.mkdir()
+            parent.mkdir()
+            source_file = source / "main.py"
+            source_file.write_text("baseline\\n", encoding="utf-8")
+            snapshot = capture_project_snapshot(source)
+            original = workspace_module.create_isolated_workspace
+            calls = [0]
+
+            def create_then_change(*args, **kwargs):
+                descriptor = original(*args, **kwargs)
+                calls[0] += 1
+                if calls[0] == 1:
+                    source_file.write_text("changed\\n", encoding="utf-8")
+                return descriptor
+
+            with patch(
+                "qyrenith_engine.migration.workspace.create_isolated_workspace",
+                side_effect=create_then_change,
+            ):
+                with self.assertRaisesRegex(WorkspaceError, "does not match"):
+                    create_isolated_workspaces(
+                        source, snapshot, parent,
+                        (target_identity("fabric"), target_identity("forge")),
+                    )
+            self.assertEqual(list(parent.iterdir()), [])
 
     def test_empty_project_can_be_materialized(self):
         with tempfile.TemporaryDirectory() as directory:
