@@ -328,7 +328,7 @@ See:
 - `EVIDENCE.md` — evidence and claim model
 - `BENCHMARKS.md` — benchmark fixtures and philosophy
 - `ENGINEERING_ANALYSIS.md` — static analysis, change impact, boundary checks, and bounded execution
-- `RELEASING.md` — trusted PyPI publishing and GitHub release procedure
+- `MIGRATION.md` — experimental domain-neutral migration planning API and its evidence/safety boundaries
 - `LICENSE` — MIT license
 
 ## Verification surface

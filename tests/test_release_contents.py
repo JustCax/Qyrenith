@@ -110,6 +110,12 @@ class TestReleaseContents(unittest.TestCase):
                 "qyrenith_engine/analysis.py",
                 "qyrenith_engine/boundary.py",
                 "qyrenith_engine/execution.py",
+                "qyrenith_engine/migration/__init__.py",
+                "qyrenith_engine/migration/assurance.py",
+                "qyrenith_engine/migration/knowledge.py",
+                "qyrenith_engine/migration/model.py",
+                "qyrenith_engine/migration/planner.py",
+                "qyrenith_engine/migration/worker.py",
             })
             entry_points = next(name for name in names if name.endswith(".dist-info/entry_points.txt"))
             with zipfile.ZipFile(wheel_path) as archive:
