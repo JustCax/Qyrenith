@@ -16,7 +16,7 @@ from .knowledge import (
 from .model import MigrationIdentity, MigrationTransition, TransitionKind
 from .planner import MultiTargetPlan, RoutePlan, plan_route, plan_targets
 from .snapshot import (ProjectSnapshot, SnapshotEntry, SnapshotError, SnapshotLimits, SnapshotVerification, capture_project_snapshot, deserialize_project_snapshot, serialize_project_snapshot, verify_project_snapshot)
-from .workspace import (WorkspaceDescriptor, WorkspaceError, create_isolated_workspace, deserialize_workspace_descriptor, serialize_workspace_descriptor, verify_workspace_baseline)
+from .workspace import (WorkspaceDescriptor, WorkspaceError, create_isolated_workspace, create_isolated_workspaces, deserialize_workspace_descriptor, serialize_workspace_descriptor, verify_workspace_baseline)
 from .worker import (
     MigrationWorkerManifest, MigrationWorkerRegistry, RouteWorkerAssessment,
     WorkerPermission, WorkerQualification, WorkerRegistration, WorkerResolution,
@@ -53,7 +53,7 @@ __all__ = [
     "ProjectSnapshot", "SnapshotEntry", "SnapshotError", "SnapshotLimits",
     "SnapshotVerification", "capture_project_snapshot", "verify_project_snapshot",
     "serialize_project_snapshot", "deserialize_project_snapshot",
-    "WorkspaceDescriptor", "WorkspaceError", "create_isolated_workspace",
+    "WorkspaceDescriptor", "WorkspaceError", "create_isolated_workspace", "create_isolated_workspaces",
     "verify_workspace_baseline", "serialize_workspace_descriptor",
     "deserialize_workspace_descriptor",
 ]
