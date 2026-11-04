@@ -379,15 +379,19 @@ def authorize_migration(
             raise ValueError("qualified worker registration disappeared before approval")
         manifest = registration.manifest
         qualification = registration.qualification
+        at_plan = registry.resolve(transition, planned)
+        if at_plan.status != "QUALIFIED":
+            raise ValueError(f"worker qualification was not current at plan evaluation: {transition.transition_id}")
         current = registry.resolve(transition, approved)
         if current.status != "QUALIFIED":
             raise ValueError(f"worker is not qualified at approval time: {transition.transition_id}")
-        if (
-            current.manifest_digest != prior.manifest_digest
-            or current.qualification_id != prior.qualification_id
-            or current.qualification_digest != prior.qualification_digest
-        ):
-            raise ValueError("worker manifest or qualification changed after route assessment")
+        for observed in (at_plan, current):
+            if (
+                observed.manifest_digest != prior.manifest_digest
+                or observed.qualification_id != prior.qualification_id
+                or observed.qualification_digest != prior.qualification_digest
+            ):
+                raise ValueError("worker manifest or qualification changed after route assessment")
         if policy.allowed_worker_ids and manifest.worker_id not in policy.allowed_worker_ids:
             raise ValueError(f"worker is not permitted by policy: {manifest.worker_id}")
         if not set(requested).issubset(manifest.permissions):
