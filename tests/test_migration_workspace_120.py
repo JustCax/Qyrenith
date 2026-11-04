@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from qyrenith_engine.migration.model import MigrationIdentity
 from qyrenith_engine.migration.snapshot import (
@@ -87,6 +88,36 @@ class TestIsolatedWorkspace(unittest.TestCase):
             self.assertEqual((source / "README.md").read_text(encoding="utf-8"), "source baseline\n")
             self.assertTrue(verify_workspace_baseline(forge, snapshot).matches)
             self.assertEqual(verify_workspace_baseline(fabric, snapshot).status, "CHANGED")
+
+    def test_empty_project_can_be_materialized(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            source = base / "source"
+            parent = base / "workspaces"
+            source.mkdir()
+            parent.mkdir()
+            snapshot = capture_project_snapshot(source)
+            descriptor = create_isolated_workspace(source, snapshot, parent, target_identity())
+            self.assertEqual(descriptor.file_count, 0)
+            self.assertEqual(descriptor.total_bytes, 0)
+            self.assertTrue(verify_workspace_baseline(descriptor, snapshot).matches)
+
+    def test_partial_workspace_is_removed_when_copy_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            source = base / "source"
+            parent = base / "workspaces"
+            source.mkdir()
+            parent.mkdir()
+            (source / "main.py").write_text("pass\\n", encoding="utf-8")
+            snapshot = capture_project_snapshot(source)
+            with patch(
+                "qyrenith_engine.migration.workspace._copy_regular_file",
+                side_effect=WorkspaceError("simulated copy failure"),
+            ):
+                with self.assertRaisesRegex(WorkspaceError, "simulated copy failure"):
+                    create_isolated_workspace(source, snapshot, parent, target_identity())
+            self.assertEqual(list(parent.iterdir()), [])
 
     def test_workspace_creation_rejects_a_stale_source_snapshot(self):
         with tempfile.TemporaryDirectory() as directory:
