@@ -646,27 +646,39 @@ def validate_adapter_manifest(entry: Dict[str,Any], request: Dict[str,Any]) -> N
     loader=request.get("loader")
     if loader and loader not in entry["supported_loaders"]: die("STOPPED",f"Adapter does not support loader: {loader}")
 def validate_worker_command_paths(root: Path, command: Sequence[str]) -> None:
-    """Reject worker command path arguments that escape the project root."""
-    root_resolved=root.resolve()
-    for index,arg in enumerate(command):
-        value=str(arg)
-        if not value or "\x00" in value: die("USAGE", "Worker command contains an invalid argument")
-        candidate=Path(value)
-        path_like=candidate.is_absolute() or "/" in value or "\\" in value or value.startswith(".")
+    """Best-effort lint of path arguments; this is not a command sandbox or trust boundary."""
+    root_resolved = root.resolve()
+    for index, argument in enumerate(command):
+        if not isinstance(argument, str) or not argument or "\x00" in argument:
+            die("USAGE", "Worker command contains an invalid argument")
+        candidate = Path(argument)
+        local_candidate = candidate if candidate.is_absolute() else root / candidate
+        path_like = (
+            candidate.is_absolute() or "/" in argument or "\\" in argument
+            or argument.startswith(".") or (index > 0 and local_candidate.exists())
+        )
         if not path_like:
             continue
-        if candidate.is_absolute():
-            resolved=candidate.resolve()
-        else:
-            resolved=(root/candidate).resolve()
-        if index == 0 and candidate.is_absolute():
-            if not resolved.is_file() or not os.access(resolved,os.X_OK):
-                die("STOPPED", f"Worker executable is invalid or not executable: {value}")
+        if local_candidate.is_symlink():
+            die("STOPPED", f"Worker command path must not be a symbolic link: {argument}")
+        try:
+            resolved = local_candidate.resolve(strict=False)
+        except (OSError, ValueError) as exc:
+            die("STOPPED", f"Worker command path cannot be resolved: {argument}: {exc}")
+        if index == 0:
+            if candidate.is_absolute():
+                if not resolved.is_file() or not os.access(resolved, os.X_OK):
+                    die("STOPPED", f"Worker executable is invalid or not executable: {argument}")
+            elif not resolved.is_relative_to(root_resolved):
+                die("STOPPED", f"Worker executable escapes the project root: {argument}")
+            elif not resolved.is_file() or not os.access(resolved, os.X_OK):
+                die("STOPPED", f"Worker executable is invalid or not executable: {argument}")
             continue
         if not resolved.is_relative_to(root_resolved):
-            die("STOPPED", f"Worker command argument escapes project root: {value}")
-        if index > 0 and candidate.exists() and not resolved.is_file() and not resolved.is_dir():
-            die("STOPPED", f"Worker command argument is not a valid project-local path: {value}")
+            die("STOPPED", f"Worker command argument escapes project root: {argument}")
+        if local_candidate.exists() and not resolved.is_file() and not resolved.is_dir():
+            die("STOPPED", f"Worker command argument is not a valid project-local path: {argument}")
+
 def worker_command_digest(root: Path, command: Sequence[str], entry: Dict[str, Any], env: Dict[str, str]) -> str:
     """Fingerprint the exact argv, executable, file entrypoints, and effective worker environment."""
     file_records = []
@@ -698,13 +710,14 @@ def worker_command_digest(root: Path, command: Sequence[str], entry: Dict[str, A
                 candidates.append((len(command) + index, path if path.is_absolute() else root / path))
     for index, candidate in candidates:
         try:
-            if candidate.is_symlink() or not candidate.is_file():
+            resolved = candidate.resolve(strict=True)
+            if not resolved.is_file():
                 file_records.append({"argument_index": index, "path": str(candidate.absolute()), "status": "UNREADABLE"})
                 continue
-            resolved = candidate.resolve(strict=True)
             file_records.append({
                 "argument_index": index,
-                "path": str(resolved),
+                "path": str(candidate.absolute()),
+                "resolved_path": str(resolved),
                 "sha256": sha256_full(resolved),
             })
         except OSError:
@@ -895,12 +908,12 @@ def run_external_worker(root: Path, adapter_name: str, request: Dict[str, Any], 
     result.setdefault("schema",1); result.setdefault("worker",adapter_name); result.setdefault("dependency_changes",[]); result["verified_by_doctor"]=False
     result["doctor_exit_code"]=returncode; result["duration_seconds"]=duration; result["command_sha256"]=command_digest
     if returncode != 0:
-        result={"schema":1,"worker":adapter_name,"status":"FAILED","verified_by_doctor":False,"summary":"Worker exited non-zero; its claimed result is not trusted.","files_changed":result.get("files_changed",[]),"commands_run":result.get("commands_run",[]),"unresolved":result.get("unresolved",[])+[f"worker exit code {returncode}"],"evidence":result.get("evidence",[]),"dependency_changes":result.get("dependency_changes",[]),"doctor_exit_code":returncode,"duration_seconds":duration}
+        result={"schema":1,"worker":adapter_name,"status":"FAILED","verified_by_doctor":False,"summary":"Worker exited non-zero; its claimed result is not trusted.","files_changed":result.get("files_changed",[]),"commands_run":result.get("commands_run",[]),"unresolved":result.get("unresolved",[])+[f"worker exit code {returncode}"],"evidence":result.get("evidence",[]),"dependency_changes":result.get("dependency_changes",[]),"doctor_exit_code":returncode,"duration_seconds":duration,"command_sha256":command_digest}
     elif result.get("status") in {"WORKED","NO_CHANGE","BLOCKED","FAILED"}:
         required={"summary","files_changed","commands_run","unresolved","evidence","dependency_changes"}
         missing=sorted(required-set(result))
         if missing:
-            result={"schema":1,"worker":adapter_name,"status":"INVALID_RESULT","verified_by_doctor":False,"summary":"Worker result schema is incomplete.","files_changed":result.get("files_changed",[]),"commands_run":result.get("commands_run",[]),"unresolved":[f"missing result fields: {missing}"],"evidence":result.get("evidence",[]),"dependency_changes":result.get("dependency_changes",[]),"doctor_exit_code":returncode,"duration_seconds":duration}
+            result={"schema":1,"worker":adapter_name,"status":"INVALID_RESULT","verified_by_doctor":False,"summary":"Worker result schema is incomplete.","files_changed":result.get("files_changed",[]),"commands_run":result.get("commands_run",[]),"unresolved":[f"missing result fields: {missing}"],"evidence":result.get("evidence",[]),"dependency_changes":result.get("dependency_changes",[]),"doctor_exit_code":returncode,"duration_seconds":duration,"command_sha256":command_digest}
     if stderr:
         result["stderr_tail"]=redact_text(stderr[-4000:])
     save_json(root/STATE_DIR/WORKER_RESULT,result)
