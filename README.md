@@ -229,8 +229,8 @@ python qyrenith.py doctor --project .
 python qyrenith.py verify --project . --execute
 python qyrenith.py inspect --project .
 python qyrenith.py explain UNKNOWN_API
-python qyrenith.py snapshot capture --project . > source.snapshot.json
-python qyrenith.py snapshot verify --project . --snapshot-file source.snapshot.json
+python qyrenith.py snapshot capture --project . > ../source.snapshot.json
+python qyrenith.py snapshot verify --project . --snapshot-file ../source.snapshot.json
 ```
 
 `snapshot capture` is read-only and emits a canonical content fingerprint. Store the redirected snapshot outside the project when retaining a baseline. `snapshot verify` reports `MATCH` or `CHANGED`; it does not execute workers or modify the inspected project.
