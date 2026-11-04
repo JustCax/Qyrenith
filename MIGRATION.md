@@ -201,6 +201,64 @@ Approval attribution (`approved_by`) is caller-supplied provenance, not authenti
 
 A no-op route may receive an authorization record with zero worker grants; it authorizes no worker operation.
 
+### Minimal authorization flow
+
+Assuming `plan`, `assessment`, and `registry` were produced by the preceding APIs, the caller can create a narrow policy and an approval record:
+
+```python
+from datetime import datetime, timedelta, timezone
+
+from qyrenith_engine.migration import (
+    MigrationAuthorizationPolicy,
+    WorkerPermission,
+    WorkerResourceLimits,
+    authorize_migration,
+    validate_migration_authorization,
+    serialize_migration_authorization,
+    serialize_migration_authorization_policy,
+)
+
+now = datetime.now(timezone.utc)
+policy = MigrationAuthorizationPolicy(
+    allowed_permissions=(
+        WorkerPermission.READ_PROJECT,
+        WorkerPermission.WRITE_PROJECT,
+    ),
+    max_timeout_seconds=120,
+    max_input_bytes=2 * 1024 * 1024,
+    max_output_bytes=1024 * 1024,
+    max_changed_files=100,
+    max_lifetime_seconds=300,
+    allowed_worker_ids=("reviewed-porter",),
+)
+
+authorization = authorize_migration(
+    plan,
+    assessment,
+    registry,
+    policy,
+    approved_by="operator-review-attribution",
+    approved_at=now,
+    expires_at=now + timedelta(minutes=2),
+    permissions=(
+        WorkerPermission.READ_PROJECT,
+        WorkerPermission.WRITE_PROJECT,
+    ),
+    limits=WorkerResourceLimits(60, 1024 * 1024, 512 * 1024, 50),
+)
+
+# Persist both records in the caller's trusted audit store.
+policy_bytes = serialize_migration_authorization_policy(policy)
+authorization_bytes = serialize_migration_authorization(authorization)
+
+# Revalidate immediately before a future controlled side effect.
+validate_migration_authorization(
+    authorization, plan, assessment, registry, policy, now=datetime.now(timezone.utc)
+)
+```
+
+The example records caller-supplied attribution only. It does not authenticate the operator, persist files by itself, or launch a worker. A real executor must additionally enforce the grant at the operating-system and workspace boundaries.
+
 ## 11. Current limitations
 
 The current migration package is a planning and record-keeping foundation. It does not yet provide:
