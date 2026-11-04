@@ -48,7 +48,7 @@ def identity(version):
     )
 
 
-def verified_claim(claim_id, source, target):
+def verified_claim(claim_id, source, target, valid_until=VALID_UNTIL):
     evidence = EvidenceReference(
         evidence_id=f"evidence-{claim_id}",
         origin="local-test-fixture",
@@ -67,25 +67,25 @@ def verified_claim(claim_id, source, target):
         evidence=(evidence,),
         verified_by="test-reviewer",
         verified_at=VERIFIED_AT,
-        valid_until=VALID_UNTIL,
+        valid_until=valid_until,
         verified_with="qyrenith-native-verifier",
         verifier_version="1.2.0-test",
         verifier_digest=VERIFIER_DIGEST,
     )
 
 
-def multi_target_plan(*, include_second_claim=True):
+def multi_target_plan(*, include_second_claim=True, valid_until=VALID_UNTIL):
     source = identity("1.21")
     target_a = identity("1.21.1")
     target_b = identity("1.22")
-    claims = [verified_claim("claim-a", source, target_a)]
+    claims = [verified_claim("claim-a", source, target_a, valid_until)]
     transitions = [
         MigrationTransition(
             "upgrade-a", source, target_a, TransitionKind.VERSION_UPGRADE, ("claim-a",)
         )
     ]
     if include_second_claim:
-        claims.append(verified_claim("claim-b", source, target_b))
+        claims.append(verified_claim("claim-b", source, target_b, valid_until))
         transitions.append(
             MigrationTransition(
                 "upgrade-b", source, target_b, TransitionKind.VERSION_UPGRADE, ("claim-b",)
@@ -147,6 +147,21 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
             with self.assertRaisesRegex(WorkspaceError, "requires PLANNED"):
                 prepare_multi_target_workspaces(
                     source_root, snapshot, workspace_parent, plan, catalog
+                )
+            self.assertFalse(workspace_parent.exists())
+
+    def test_rejects_expired_knowledge_before_workspace_creation(self):
+        expiry = (PLAN_TIME + timedelta(seconds=5)).isoformat().replace("+00:00", "Z")
+        _, _, _, catalog, plan = multi_target_plan(valid_until=expiry)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source_root = root / "source"
+            snapshot = project_snapshot(source_root)
+            workspace_parent = root / "prepared"
+            with self.assertRaisesRegex(WorkspaceError, "claims are not usable"):
+                prepare_multi_target_workspaces(
+                    source_root, snapshot, workspace_parent, plan, catalog,
+                    now=PLAN_TIME + timedelta(seconds=10),
                 )
             self.assertFalse(workspace_parent.exists())
 
