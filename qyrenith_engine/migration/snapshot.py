@@ -424,6 +424,8 @@ def capture_project_snapshot(
                 components = rel.split("/")
                 if any("/".join(components[:index]) in exclusion_set for index in range(1, len(components) + 1)):
                     continue
+                if len(components) > policy.max_depth:
+                    raise SnapshotError("project exceeds max_depth")
                 try:
                     item_stat = child.stat(follow_symlinks=False)
                 except OSError as exc:
