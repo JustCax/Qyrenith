@@ -98,6 +98,6 @@ The 1.2.0 release is blocked until every accepted requirement is either implemen
 - DA-01: this master architecture.
 - DA-02..DA-13: the corresponding capability specifications.
 - DA-14: implementation and acceptance plan, including migration-platform integration and integrated reporting/orchestration acceptance.
-- QDAS-01..QDAS-20: the dedicated QDAS specification and cross-module integration requirements.
+- QDAS-01..QDAS-22: the dedicated QDAS specification and cross-module integration requirements.
 
 The specification index lists all seventeen normative documents plus the navigation README. The fourteen capability modules implemented after QDAS are enumerated in the implementation plan.
