@@ -159,7 +159,7 @@ class TestProjectSnapshot(unittest.TestCase):
             (root / "a.bin").write_bytes(b"1234")
             (root / "b.bin").write_bytes(b"5678")
             with self.assertRaisesRegex(SnapshotError, "max_total_bytes"):
-                capture_project_snapshot(root, limits=SnapshotLimits(max_file_bytes=8, max_total_bytes=7))
+                capture_project_snapshot(root, limits=SnapshotLimits(max_file_bytes=7, max_total_bytes=7))
 
     def test_depth_limit_is_enforced(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -223,10 +223,6 @@ class TestProjectSnapshot(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             document = capture_project_snapshot(directory).to_document()
             document["captured_at"] = "2026-11-04T00:00:00+00:00"
-            document["snapshot_digest"] = ProjectSnapshot.from_document({
-                **document,
-                "snapshot_digest": capture_project_snapshot(directory).snapshot_digest,
-            }).snapshot_digest if False else document["snapshot_digest"]
             with self.assertRaises(SnapshotError):
                 ProjectSnapshot.from_document(document)
 
