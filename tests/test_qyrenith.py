@@ -807,7 +807,7 @@ triggers: [voxel-compile]
             r=Path(td); qyrenith.ensure_state_dir(r); worker=r/"noisy.py"
             worker.write_text("import sys; sys.stderr.write('x' * (1024*1024+1)); print('\"status\":\"WORKED\"')\n",encoding="utf-8")
             qyrenith.save_json(r/qyrenith.STATE_DIR/"adapters.json", {"adapters":[{"name":"noisy","command":[sys.executable,str(worker)],"capabilities":["inspect"]}]})
-            result=qyrenith.run_external_worker(r,"noisy",{"operation":"inspect"},30)
+            result=qyrenith.run_external_worker(r,"noisy",{"operation":"inspect"},30,approve_command=True,approval_store=r/"approvals.sqlite3")
             self.assertEqual(result["status"],"OUTPUT_LIMIT")
             self.assertFalse(result["verified_by_doctor"])
 
@@ -816,13 +816,13 @@ triggers: [voxel-compile]
             r=Path(td); qyrenith.ensure_state_dir(r)
             bad=r/"bad.py"; bad.write_text('import json,sys; print(json.dumps({"status":"WORKED","summary":"claimed"})); sys.exit(7)\n',encoding="utf-8")
             qyrenith.save_json(r/qyrenith.STATE_DIR/"adapters.json", {"adapters":[{"name":"bad","command":[sys.executable,str(bad)],"capabilities":["inspect"]}]})
-            result=qyrenith.run_external_worker(r,"bad",{"operation":"inspect"},30)
+            result=qyrenith.run_external_worker(r,"bad",{"operation":"inspect"},30,approve_command=True,approval_store=r/"approvals.sqlite3")
             self.assertEqual(result["status"],"FAILED"); self.assertFalse(result["verified_by_doctor"])
         with tempfile.TemporaryDirectory() as td:
             r=Path(td); qyrenith.ensure_state_dir(r)
             bad=r/"incomplete.py"; bad.write_text('import json; print(json.dumps({"status":"WORKED","summary":"claimed"}))\n',encoding="utf-8")
             qyrenith.save_json(r/qyrenith.STATE_DIR/"adapters.json", {"adapters":[{"name":"incomplete","command":[sys.executable,str(bad)],"capabilities":["inspect"]}]})
-            result=qyrenith.run_external_worker(r,"incomplete",{"operation":"inspect"},30)
+            result=qyrenith.run_external_worker(r,"incomplete",{"operation":"inspect"},30,approve_command=True,approval_store=r/"approvals.sqlite3")
             self.assertEqual(result["status"],"INVALID_RESULT")
 
     def test_worker_runner_rejects_external_command_path(self):
@@ -843,7 +843,7 @@ triggers: [voxel-compile]
             worker_source=Path(qyrenith.__file__).resolve().parent / "workers" / "example-worker.py"
             worker=r/"workers/example-worker.py"; worker.parent.mkdir(parents=True); worker.write_text(worker_source.read_text(),encoding="utf-8")
             qyrenith.save_json(r/qyrenith.STATE_DIR/"adapters.json", {"adapters":[{"name":"example-worker","command":[sys.executable,"workers/example-worker.py"],"capabilities":["inspect","plan"]}]})
-            result=qyrenith.run_external_worker(r,"example-worker",{"operation":"result"},30)
+            result=qyrenith.run_external_worker(r,"example-worker",{"operation":"result"},30,approve_command=True,approval_store=r/"approvals.sqlite3")
             self.assertEqual(result["status"],"WORKED")
             self.assertFalse(result["verified_by_doctor"])
             self.assertTrue((r/qyrenith.STATE_DIR/qyrenith.WORKER_RESULT).is_file())
@@ -938,7 +938,7 @@ class TestPublicHardening(unittest.TestCase):
             worker=r/"workers/neoforge-porter.py"; worker.parent.mkdir(parents=True,exist_ok=True); worker.write_text(worker_source.read_text(),encoding="utf-8")
             qyrenith.save_json(r/qyrenith.STATE_DIR/"adapters.json", {"adapters":[{"name":"neoforge-porter","version":"1.0.0","command":[sys.executable,"workers/neoforge-porter.py"],"capabilities":["port"],"supported_loaders":["neoforge"],"supported_minecraft_versions":["1.21","1.21.1"],"task_types":["port"],"risk_profile":"bounded","evidence_requirements":["verified-mapping"]}]})
             before={x.relative_to(r).as_posix():qyrenith.sha256(x) for x in r.rglob("*") if x.is_file() and ".qyrenith" not in x.parts}
-            result=qyrenith.run_external_worker(r,"neoforge-porter",{"operation":"port","task":"port 1.21 -> 1.21.1"},30)
+            result=qyrenith.run_external_worker(r,"neoforge-porter",{"operation":"port","task":"port 1.21 -> 1.21.1"},30,approve_command=True,approval_store=r/"approvals.sqlite3")
             self.assertEqual(result["status"],"WORKED")
             self.assertFalse(result["verified_by_doctor"])
             self.assertEqual(result["files_changed"],["gradle.properties"])
@@ -1122,3 +1122,53 @@ class TestSharedRuntimeExecution(unittest.TestCase):
             self.assertEqual(report["status"], "BLOCKED")
             self.assertEqual(report["reason"], "timeout")
             self.assertLess(time.monotonic() - started, 6)
+
+
+class TestWorkerCommandApproval(unittest.TestCase):
+    def test_worker_requires_first_run_approval_and_reapproves_command_drift(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            qyrenith.ensure_state_dir(root)
+            worker = root / "worker.py"
+            worker.write_text(
+                "import json; from pathlib import Path; Path('worker-ran.txt').write_text('yes'); print(json.dumps({'status':'OBSERVED'}))\\n",
+                encoding="utf-8",
+            )
+            qyrenith.save_json(root / qyrenith.STATE_DIR / "adapters.json", {
+                "adapters": [{
+                    "name": "approval-test",
+                    "command": [sys.executable, "worker.py"],
+                    "capabilities": ["inspect"],
+                }]
+            })
+            approval_store = root / "user-approvals.sqlite3"
+            first = qyrenith.run_external_worker(
+                root, "approval-test", {"operation": "inspect"}, 10,
+                approval_store=approval_store,
+            )
+            self.assertEqual(first["status"], "APPROVAL_REQUIRED")
+            self.assertFalse((root / "worker-ran.txt").exists())
+            self.assertEqual(len(first["command_sha256"]), 64)
+
+            approved = qyrenith.run_external_worker(
+                root, "approval-test", {"operation": "inspect"}, 10,
+                approve_command=True, approval_store=approval_store,
+            )
+            self.assertEqual(approved["status"], "OBSERVED")
+            self.assertTrue((root / "worker-ran.txt").is_file())
+            self.assertEqual(approved["command_sha256"], first["command_sha256"])
+
+            repeated = qyrenith.run_external_worker(
+                root, "approval-test", {"operation": "inspect"}, 10,
+                approval_store=approval_store,
+            )
+            self.assertEqual(repeated["status"], "OBSERVED")
+
+            worker.write_text(worker.read_text(encoding="utf-8") + "# changed\\n", encoding="utf-8")
+            changed = qyrenith.run_external_worker(
+                root, "approval-test", {"operation": "inspect"}, 10,
+                approval_store=approval_store,
+            )
+            self.assertEqual(changed["status"], "APPROVAL_REQUIRED")
+            self.assertNotEqual(changed["command_sha256"], first["command_sha256"])
+
