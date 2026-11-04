@@ -317,7 +317,7 @@ class TestIsolatedWorkspace(unittest.TestCase):
                 source, capture_project_snapshot(source), parent, target_identity()
             )
             encoded = serialize_workspace_descriptor(descriptor)
-            restored = deserialize_workspace_descriptor(encoded.rstrip(b"\\n") + b"\\r\\n")
+            restored = deserialize_workspace_descriptor(encoded[:-1] + bytes((13, 10)))
             self.assertEqual(restored.descriptor_digest, descriptor.descriptor_digest)
 
     def test_workspace_descriptor_rejects_digest_tampering(self):
