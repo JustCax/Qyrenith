@@ -364,6 +364,7 @@ class TestMigrationAuthorization(unittest.TestCase):
             status="NO_WORK_REQUIRED",
             evaluations=(),
             reason="Forged no-op assessment",
+            trust_policy_digest=registry.trust_policy_digest,
         )
         with self.assertRaisesRegex(ValueError, "exact ordered transitions"):
             authorize_migration(
@@ -383,6 +384,7 @@ class TestMigrationAuthorization(unittest.TestCase):
                     status=assessment.status,
                     evaluations=assessment.evaluations,
                     reason=assessment.reason,
+                    trust_policy_digest=assessment.trust_policy_digest,
                 ), registry, policy, approved_by="reviewer",
                 approved_at=NOW, expires_at=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
                 permissions=(WorkerPermission.READ_PROJECT,), limits=limits,
