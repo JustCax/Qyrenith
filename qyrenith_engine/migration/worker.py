@@ -10,6 +10,7 @@ import hashlib
 import json
 import re
 from typing import Any
+from types import MappingProxyType
 
 from .knowledge import identity_from_dict, parse_timestamp, strict_object_pairs
 from .model import MigrationIdentity, MigrationTransition, TransitionKind, validate_transition_scope
@@ -23,7 +24,7 @@ _MAX_SCOPES = 10_000
 _MAX_CAPABILITIES = 1_000
 _RESOLUTION_STATUSES = {
     "BLOCKED", "NOT_SELECTED", "NOT_REGISTERED", "INCOMPATIBLE",
-    "UNQUALIFIED", "STALE", "QUALIFIED",
+    "UNQUALIFIED", "UNTRUSTED", "STALE", "QUALIFIED",
 }
 
 
@@ -444,6 +445,108 @@ class WorkerQualification:
 
 
 @dataclass(frozen=True, slots=True)
+class WorkerTrustPolicy:
+    """Local allowlist for exact qualification digests; the policy source must be trusted."""
+
+    policy_id: str
+    reviewed_by: str
+    reviewed_at: str
+    trusted_qualification_digests: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        _text(self.policy_id, "policy_id", 256)
+        _text(self.reviewed_by, "reviewed_by", 256)
+        reviewed = parse_timestamp(self.reviewed_at)
+        if reviewed.isoformat().replace("+00:00", "Z") != self.reviewed_at:
+            raise ValueError("reviewed_at must use canonical UTC format")
+        if not isinstance(self.trusted_qualification_digests, (tuple, list)):
+            raise ValueError("trusted_qualification_digests must be a sequence")
+        digests = tuple(self.trusted_qualification_digests)
+        if len(digests) > 10000:
+            raise ValueError("trusted_qualification_digests exceeds the 10000-entry limit")
+        for digest in digests:
+            _hex_digest(digest, "trusted qualification digest")
+        if len(digests) != len(set(digests)):
+            raise ValueError("trusted qualification digests must be unique")
+        object.__setattr__(self, "trusted_qualification_digests", tuple(sorted(digests)))
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "schema": 1,
+            "policy_id": self.policy_id,
+            "reviewed_by": self.reviewed_by,
+            "reviewed_at": self.reviewed_at,
+            "trusted_qualification_digests": list(self.trusted_qualification_digests),
+        }
+
+    @property
+    def policy_digest(self) -> str:
+        return hashlib.sha256(_canonical_bytes(self.to_dict())).hexdigest()
+
+    def to_document(self) -> dict[str, Any]:
+        return {**self.to_dict(), "policy_digest": self.policy_digest}
+
+    def to_json_bytes(self) -> bytes:
+        return _canonical_bytes(self.to_document()) + b"\n"
+
+    def trusts(self, qualification_digest: str) -> bool:
+        return qualification_digest in self.trusted_qualification_digests
+
+    @classmethod
+    def from_document(cls, document: object) -> "WorkerTrustPolicy":
+        expected = {
+            "schema", "policy_id", "reviewed_by", "reviewed_at",
+            "trusted_qualification_digests", "policy_digest",
+        }
+        if not isinstance(document, dict) or set(document) != expected:
+            raise ValueError("worker trust policy has missing or unexpected fields")
+        if type(document["schema"]) is not int or document["schema"] != 1:
+            raise ValueError("unsupported worker trust policy schema")
+        payload = {key: value for key, value in document.items() if key != "policy_digest"}
+        digest = hashlib.sha256(_canonical_bytes(payload)).hexdigest()
+        if document["policy_digest"] != digest:
+            raise ValueError("worker trust policy digest mismatch")
+        if not isinstance(document["trusted_qualification_digests"], list):
+            raise ValueError("trusted_qualification_digests must be an array")
+        policy = cls(
+            policy_id=document["policy_id"],
+            reviewed_by=document["reviewed_by"],
+            reviewed_at=document["reviewed_at"],
+            trusted_qualification_digests=tuple(document["trusted_qualification_digests"]),
+        )
+        if policy.to_document() != document:
+            raise ValueError("worker trust policy is not canonical")
+        return policy
+
+    @classmethod
+    def from_json_bytes(cls, data: bytes | str) -> "WorkerTrustPolicy":
+        if isinstance(data, bytes):
+            if len(data) > 1024 * 1024:
+                raise ValueError("worker trust policy exceeds the 1 MiB import limit")
+            try:
+                source = data.decode("utf-8")
+            except UnicodeDecodeError as exc:
+                raise ValueError("worker trust policy must be UTF-8") from exc
+        elif isinstance(data, str):
+            if len(data.encode("utf-8")) > 1024 * 1024:
+                raise ValueError("worker trust policy exceeds the 1 MiB import limit")
+            source = data
+        else:
+            raise TypeError("data must be bytes or str")
+        try:
+            document = json.loads(
+                source, object_pairs_hook=strict_object_pairs,
+                parse_constant=lambda value: (_ for _ in ()).throw(ValueError(f"invalid JSON constant: {value}")),
+            )
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise ValueError("invalid worker trust policy JSON") from exc
+        canonical = _canonical_bytes(document)
+        if source.encode("utf-8") not in {canonical, canonical + b"\n"}:
+            raise ValueError("worker trust policy JSON is not canonical")
+        return cls.from_document(document)
+
+
+@dataclass(frozen=True, slots=True)
 class WorkerRegistration:
     manifest: MigrationWorkerManifest
     qualification: WorkerQualification | None = None
@@ -522,7 +625,7 @@ class WorkerResolution:
         elif self.status == "UNQUALIFIED":
             if not has_worker or not self.manifest_digest or self.qualification_id or self.qualification_digest or not self.limits:
                 raise ValueError("UNQUALIFIED resolution requires a manifest but no qualification")
-        elif self.status in {"STALE", "QUALIFIED"}:
+        elif self.status in {"STALE", "UNTRUSTED", "QUALIFIED"}:
             if not has_worker or not self.manifest_digest or not self.qualification_id or not self.qualification_digest or not self.limits:
                 raise ValueError(f"{self.status} resolution requires manifest and qualification provenance")
 
@@ -546,9 +649,26 @@ class WorkerResolution:
 
 
 class MigrationWorkerRegistry:
-    """Local allow-list; registration does not download or execute worker code."""
+    """Local allow-list; qualification requires an exact trusted digest allowlist."""
 
-    def __init__(self, registrations: tuple[WorkerRegistration, ...] = ()) -> None:
+    __slots__ = ("_registrations", "_trust_policy")
+
+    def __setattr__(self, name, value) -> None:
+        if hasattr(self, name):
+            raise AttributeError("MigrationWorkerRegistry is immutable")
+        object.__setattr__(self, name, value)
+
+    def __delattr__(self, name) -> None:
+        raise AttributeError("MigrationWorkerRegistry is immutable")
+
+    def __init__(
+        self,
+        registrations: tuple[WorkerRegistration, ...] = (),
+        *,
+        trust_policy: WorkerTrustPolicy | None = None,
+    ) -> None:
+        if trust_policy is not None and not isinstance(trust_policy, WorkerTrustPolicy):
+            raise TypeError("trust_policy must be a WorkerTrustPolicy")
         if not isinstance(registrations, (tuple, list)):
             raise TypeError("registrations must be a sequence")
         if len(registrations) > 10_000:
@@ -561,7 +681,12 @@ class MigrationWorkerRegistry:
             if key in indexed:
                 raise ValueError(f"duplicate worker registration: {key[0]}@{key[1]}")
             indexed[key] = registration
-        self._registrations = indexed
+        self._registrations = MappingProxyType(indexed)
+        self._trust_policy = trust_policy
+
+    @property
+    def trust_policy_digest(self) -> str | None:
+        return self._trust_policy.policy_digest if self._trust_policy is not None else None
 
     def registrations(self) -> tuple[WorkerRegistration, ...]:
         return tuple(self._registrations[key] for key in sorted(self._registrations))
@@ -613,6 +738,16 @@ class MigrationWorkerRegistry:
                 manifest.manifest_digest, qualification.qualification_id,
                 qualification.qualification_digest, manifest.permissions, manifest.limits,
                 "Worker qualification is expired or does not match the current manifest digest",
+            )
+        if (
+            self._trust_policy is None
+            or not self._trust_policy.trusts(qualification.qualification_digest)
+        ):
+            return WorkerResolution(
+                "UNTRUSTED", manifest.worker_id, manifest.worker_version,
+                manifest.manifest_digest, qualification.qualification_id,
+                qualification.qualification_digest, manifest.permissions, manifest.limits,
+                "Worker qualification is not allowlisted by the active local trust policy",
             )
         return WorkerResolution(
             "QUALIFIED", manifest.worker_id, manifest.worker_version,
