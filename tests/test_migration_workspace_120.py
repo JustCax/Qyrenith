@@ -222,9 +222,8 @@ class TestIsolatedWorkspace(unittest.TestCase):
             descriptor = create_isolated_workspace(
                 source, capture_project_snapshot(source), parent, target_identity()
             )
-            altered = replace(descriptor, workspace_id="0" * 32)
             with self.assertRaisesRegex(WorkspaceError, "bound to workspace_id"):
-                altered.to_document()
+                replace(descriptor, workspace_id="0" * 32)
 
     def test_workspace_descriptor_import_accepts_windows_terminal_crlf(self):
         with tempfile.TemporaryDirectory() as directory:
