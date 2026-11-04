@@ -6,7 +6,7 @@ Minecraft remains the first flagship domain; domain-specific knowledge lives in 
 and workers while the safety/verification core stays generic. Standard library only.
 """
 from __future__ import annotations
-import argparse, datetime as dt, hashlib, json, os, re, shutil, stat, sys, tempfile, threading, time, zipfile, shlex
+import argparse, datetime as dt, hashlib, json, os, re, shutil, sqlite3, stat, sys, tempfile, threading, time, zipfile, shlex
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
@@ -667,7 +667,119 @@ def validate_worker_command_paths(root: Path, command: Sequence[str]) -> None:
             die("STOPPED", f"Worker command argument escapes project root: {value}")
         if index > 0 and candidate.exists() and not resolved.is_file() and not resolved.is_dir():
             die("STOPPED", f"Worker command argument is not a valid project-local path: {value}")
-def run_external_worker(root: Path, adapter_name: str, request: Dict[str, Any], timeout: int = 120) -> Dict[str, Any]:
+def worker_command_digest(root: Path, command: Sequence[str], entry: Dict[str, Any], env: Dict[str, str]) -> str:
+    """Fingerprint the exact argv, executable, file entrypoints, and effective worker environment."""
+    file_records = []
+    candidates = []
+    for index, argument in enumerate(command):
+        candidate = None
+        if index == 0:
+            resolved_executable = shutil.which(argument)
+            if resolved_executable:
+                candidate = Path(resolved_executable)
+            elif Path(argument).is_absolute():
+                candidate = Path(argument)
+        else:
+            path_value = Path(argument)
+            if path_value.is_absolute() or "/" in argument or "\\" in argument or argument.startswith("."):
+                candidate = path_value if path_value.is_absolute() else root / path_value
+        if candidate is not None:
+            candidates.append((index, candidate))
+    entrypoint = entry.get("entrypoint")
+    entrypoints = [entrypoint] if isinstance(entrypoint, str) else entrypoint
+    if isinstance(entrypoints, list):
+        for index, value in enumerate(entrypoints):
+            if isinstance(value, str) and value:
+                path = Path(value)
+                candidates.append((len(command) + index, path if path.is_absolute() else root / path))
+    for index, candidate in candidates:
+        try:
+            if candidate.is_symlink() or not candidate.is_file():
+                file_records.append({"argument_index": index, "path": str(candidate.absolute()), "status": "UNREADABLE"})
+                continue
+            resolved = candidate.resolve(strict=True)
+            file_records.append({
+                "argument_index": index,
+                "path": str(resolved),
+                "sha256": sha256_full(resolved),
+            })
+        except OSError:
+            file_records.append({"argument_index": index, "path": str(candidate.absolute()), "status": "UNREADABLE"})
+    payload = {
+        "schema": 1,
+        "adapter_version": entry.get("version"),
+        "argv": list(command),
+        "entrypoint": entrypoint,
+        "files": file_records,
+        "environment": dict(sorted(env.items())),
+    }
+    encoded = json.dumps(payload, ensure_ascii=True, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _worker_command_is_approved(
+    root: Path,
+    adapter_name: str,
+    command_digest: str,
+    *,
+    approve: bool,
+    approval_store: Optional[Path] = None,
+) -> bool:
+    """Read or record an explicit user approval in a user-level SQLite store."""
+    path = Path(approval_store) if approval_store is not None else Path.home() / ".qyrenith" / "worker-approvals.sqlite3"
+    path = path.expanduser().absolute()
+    parent = path.parent
+    try:
+        if not parent.exists():
+            if not approve:
+                return False
+            parent.mkdir(parents=True, exist_ok=True)
+        if parent.is_symlink() or not parent.is_dir():
+            raise OSError("approval store directory is not a real directory")
+        if path.exists() and (path.is_symlink() or not path.is_file()):
+            raise OSError("approval store is not a regular file")
+        if not path.exists() and not approve:
+            return False
+        if approve:
+            try:
+                os.chmod(parent, 0o700)
+            except OSError:
+                pass
+        connection = sqlite3.connect(str(path), timeout=5)
+        try:
+            connection.execute("PRAGMA busy_timeout = 5000")
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS worker_command_approvals ("
+                "project_root TEXT NOT NULL, adapter_name TEXT NOT NULL, "
+                "command_sha256 TEXT NOT NULL, approved_at TEXT NOT NULL, "
+                "PRIMARY KEY (project_root, adapter_name, command_sha256))"
+            )
+            if approve:
+                connection.execute(
+                    "INSERT OR IGNORE INTO worker_command_approvals "
+                    "(project_root, adapter_name, command_sha256, approved_at) VALUES (?, ?, ?, ?)",
+                    (str(root.resolve()), adapter_name, command_digest, now()),
+                )
+                connection.commit()
+            row = connection.execute(
+                "SELECT 1 FROM worker_command_approvals "
+                "WHERE project_root = ? AND adapter_name = ? AND command_sha256 = ?",
+                (str(root.resolve()), adapter_name, command_digest),
+            ).fetchone()
+            return row is not None
+        finally:
+            connection.close()
+    except (OSError, sqlite3.Error) as exc:
+        die("STOPPED", f"Worker approval store could not be validated: {type(exc).__name__}: {exc}")
+    finally:
+        if approve and path.exists() and not path.is_symlink():
+            try:
+                os.chmod(path, 0o600)
+            except OSError:
+                pass
+
+
+def run_external_worker(root: Path, adapter_name: str, request: Dict[str, Any], timeout: int = 120, *, approve_command: bool = False, approval_store: Optional[Path] = None) -> Dict[str, Any]:
     """Run one explicitly declared worker without shell execution. Worker output never authorizes SUCCESS."""
     if timeout < 1 or timeout > 600:
         die("USAGE", "Worker timeout must be between 1 and 600 seconds")
@@ -710,6 +822,22 @@ def run_external_worker(root: Path, adapter_name: str, request: Dict[str, Any], 
     safe_env={"PATH":os.environ.get("PATH","")}
     for key in ("SystemRoot","WINDIR","HOME","TMPDIR","TEMP","TMP","LANG","LC_ALL"):
         if key in os.environ: safe_env[key]=os.environ[key]
+    command_digest = worker_command_digest(root, command, entry, safe_env)
+    if not _worker_command_is_approved(
+        root, adapter_name, command_digest,
+        approve=approve_command, approval_store=approval_store,
+    ):
+        result={
+            "schema":1,
+            "worker":adapter_name,
+            "status":"APPROVAL_REQUIRED",
+            "verified_by_doctor":False,
+            "command_sha256":command_digest,
+            "summary":"This exact worker command has not been approved by the user.",
+            "unresolved":["Review the command and rerun worker-run with --yes to approve this exact command fingerprint."],
+        }
+        save_json(root/STATE_DIR/WORKER_RESULT,result)
+        return result
     execution = run_bounded_worker(
         command,
         root,
@@ -723,16 +851,16 @@ def run_external_worker(root: Path, adapter_name: str, request: Dict[str, Any], 
     timed_out = execution["timed_out"]
     output_limited = execution["output_limited"]
     if timed_out:
-        result={"schema":1,"worker":adapter_name,"status":"TIMEOUT","verified_by_doctor":False,"unresolved":[f"Worker exceeded {timeout}s timeout"]}
+        result={"schema":1,"worker":adapter_name,"status":"TIMEOUT","verified_by_doctor":False,"command_sha256":command_digest,"unresolved":[f"Worker exceeded {timeout}s timeout"]}
         save_json(root/STATE_DIR/WORKER_RESULT,result); return result
     if output_limited:
-        result={"schema":1,"worker":adapter_name,"status":"OUTPUT_LIMIT","verified_by_doctor":False,"unresolved":[f"Worker stdout/stderr exceeded {WORKER_STREAM_LIMIT} bytes"]}
+        result={"schema":1,"worker":adapter_name,"status":"OUTPUT_LIMIT","verified_by_doctor":False,"command_sha256":command_digest,"unresolved":[f"Worker stdout/stderr exceeded {WORKER_STREAM_LIMIT} bytes"]}
         save_json(root/STATE_DIR/WORKER_RESULT,result); return result
     if execution["input_incomplete"]:
-        result={"schema":1,"worker":adapter_name,"status":"INPUT_INCOMPLETE","verified_by_doctor":False,"unresolved":["Worker did not receive the complete request"]}
+        result={"schema":1,"worker":adapter_name,"status":"INPUT_INCOMPLETE","verified_by_doctor":False,"command_sha256":command_digest,"unresolved":["Worker did not receive the complete request"]}
         save_json(root/STATE_DIR/WORKER_RESULT,result); return result
     if execution["output_incomplete"]:
-        result={"schema":1,"worker":adapter_name,"status":"OUTPUT_INCOMPLETE","verified_by_doctor":False,"unresolved":["Worker output could not be collected completely"]}
+        result={"schema":1,"worker":adapter_name,"status":"OUTPUT_INCOMPLETE","verified_by_doctor":False,"command_sha256":command_digest,"unresolved":["Worker output could not be collected completely"]}
         save_json(root/STATE_DIR/WORKER_RESULT,result); return result
     stdout = execution["stdout"]
     stderr = execution["stderr"]
@@ -746,7 +874,7 @@ def run_external_worker(root: Path, adapter_name: str, request: Dict[str, Any], 
         result={"schema":1,"worker":adapter_name,"status":"INVALID_RESULT","verified_by_doctor":False,"unresolved":["Worker result must be a JSON object"]}
     result=redact_sensitive(result)
     result.setdefault("schema",1); result.setdefault("worker",adapter_name); result.setdefault("dependency_changes",[]); result["verified_by_doctor"]=False
-    result["doctor_exit_code"]=returncode; result["duration_seconds"]=duration
+    result["doctor_exit_code"]=returncode; result["duration_seconds"]=duration; result["command_sha256"]=command_digest
     if returncode != 0:
         result={"schema":1,"worker":adapter_name,"status":"FAILED","verified_by_doctor":False,"summary":"Worker exited non-zero; its claimed result is not trusted.","files_changed":result.get("files_changed",[]),"commands_run":result.get("commands_run",[]),"unresolved":result.get("unresolved",[])+[f"worker exit code {returncode}"],"evidence":result.get("evidence",[]),"dependency_changes":result.get("dependency_changes",[]),"doctor_exit_code":returncode,"duration_seconds":duration}
     elif result.get("status") in {"WORKED","NO_CHANGE","BLOCKED","FAILED"}:
@@ -2723,7 +2851,7 @@ def cmd_worker_run(args):
         security=security_scan(root)
         if security.get("status") != "PASS": die("PREFLIGHT_FAILURE",f"Security review required before external worker execution: {security.get('findings',[])}")
         request={"operation":args.operation,"task":args.task or "external worker task"}
-        result=run_external_worker(root,args.worker,request,args.timeout)
+        result=run_external_worker(root,args.worker,request,args.timeout,approve_command=args.yes)
         print(json.dumps(result,indent=2,ensure_ascii=False))
         return 0 if result.get("status") in {"WORKED","OBSERVED","PLANNED","AVAILABLE"} else 1
     finally: release_lock(root,s.get("run_id"))
@@ -3603,7 +3731,7 @@ def cmd_snapshot(args):
 # Parser / main
 # ---------------------------------------------------------------------------
 def parser():
-    p=argparse.ArgumentParser(description=f"Qyrenith {VERSION} Project Verification & Control Plane"); p.add_argument("command",choices=["audit","plan","port","continue","build","verify","policy","skills","reality","inspect","explain","dry-run","rollback","doctor","status","report","self-test","benchmark","failure-quality","security-test","security-review","recovery-test","graph","compatibility","replay","adapters","worker-run","artifact-inspect","evidence","git-test","fuzz-test","public-audit","domains","intelligence","external-check","external-verify","source-analysis","impact","boundary-check","bounded-check","snapshot"]); p.add_argument("-p","--project",default="."); p.add_argument("--check-command",action="append",default=[],help="Explicit command for external-verify; repeat for multiple checks"); p.add_argument("--target-mc",default=""); p.add_argument("--target-loader",default=""); p.add_argument("--target-loader-version",default=""); p.add_argument("--resume",action="store_true"); p.add_argument("--yes",action="store_true"); p.add_argument("--noninteractive",action="store_true"); p.add_argument("--managed",action="store_true"); p.add_argument("--allow-unknown-dependencies",action="store_true"); p.add_argument("--allow-missing-adapters",action="store_true",help="For verify --ci: downgrade detected-but-unavailable adapters to informational instead of blocking; never turns zero available adapters into PASS."); p.add_argument("--task",default=""); p.add_argument("--execute",action="store_true"); p.add_argument("--ci",action="store_true"); p.add_argument("--limit",type=int,default=12); p.add_argument("--worker",default=""); p.add_argument("--operation",default="result",choices=["discover","inspect","plan","execute","result","port"]); p.add_argument("--timeout",type=int,default=120); p.add_argument("--baseline",default="",help="Baseline external-check JSON for diffing (external-check only)"); p.add_argument("--run-runtime",action="store_true"); p.add_argument("--run-failure-lab",action="store_true"); p.add_argument("--run-mutations",action="store_true"); p.add_argument("--run-counterfactual",action="store_true"); p.add_argument("--verdict",action="store_true"); p.add_argument("--finding-id",default=""); p.add_argument("--reason",default=""); p.add_argument("--max-files",type=int,default=10000); p.add_argument("--max-entries",type=int,default=50000); p.add_argument("--check-command-one",default=""); p.add_argument("--output-limit",type=int,default=16000,help="Maximum captured subprocess output bytes (256–1000000)"); p.add_argument("--snapshot-file",default="",help="Existing canonical snapshot JSON file for snapshot verify"); p.add_argument("--snapshot-exclude",action="append",default=[],help="Additional project-relative path exclusion for snapshot capture"); p.add_argument("--snapshot-max-entries",type=int,default=200000); p.add_argument("--snapshot-max-file-bytes",type=int,default=256*1024*1024); p.add_argument("--snapshot-max-total-bytes",type=int,default=2*1024*1024*1024); p.add_argument("--snapshot-max-depth",type=int,default=64); p.add_argument("extra",nargs="*"); return p
+    p=argparse.ArgumentParser(description=f"Qyrenith {VERSION} Project Verification & Control Plane"); p.add_argument("command",choices=["audit","plan","port","continue","build","verify","policy","skills","reality","inspect","explain","dry-run","rollback","doctor","status","report","self-test","benchmark","failure-quality","security-test","security-review","recovery-test","graph","compatibility","replay","adapters","worker-run","artifact-inspect","evidence","git-test","fuzz-test","public-audit","domains","intelligence","external-check","external-verify","source-analysis","impact","boundary-check","bounded-check","snapshot"]); p.add_argument("-p","--project",default="."); p.add_argument("--check-command",action="append",default=[],help="Explicit command for external-verify; repeat for multiple checks"); p.add_argument("--target-mc",default=""); p.add_argument("--target-loader",default=""); p.add_argument("--target-loader-version",default=""); p.add_argument("--resume",action="store_true"); p.add_argument("--yes",action="store_true",help="Explicitly approve a new external worker command when used with worker-run"); p.add_argument("--noninteractive",action="store_true"); p.add_argument("--managed",action="store_true"); p.add_argument("--allow-unknown-dependencies",action="store_true"); p.add_argument("--allow-missing-adapters",action="store_true",help="For verify --ci: downgrade detected-but-unavailable adapters to informational instead of blocking; never turns zero available adapters into PASS."); p.add_argument("--task",default=""); p.add_argument("--execute",action="store_true"); p.add_argument("--ci",action="store_true"); p.add_argument("--limit",type=int,default=12); p.add_argument("--worker",default=""); p.add_argument("--operation",default="result",choices=["discover","inspect","plan","execute","result","port"]); p.add_argument("--timeout",type=int,default=120); p.add_argument("--baseline",default="",help="Baseline external-check JSON for diffing (external-check only)"); p.add_argument("--run-runtime",action="store_true"); p.add_argument("--run-failure-lab",action="store_true"); p.add_argument("--run-mutations",action="store_true"); p.add_argument("--run-counterfactual",action="store_true"); p.add_argument("--verdict",action="store_true"); p.add_argument("--finding-id",default=""); p.add_argument("--reason",default=""); p.add_argument("--max-files",type=int,default=10000); p.add_argument("--max-entries",type=int,default=50000); p.add_argument("--check-command-one",default=""); p.add_argument("--output-limit",type=int,default=16000,help="Maximum captured subprocess output bytes (256–1000000)"); p.add_argument("--snapshot-file",default="",help="Existing canonical snapshot JSON file for snapshot verify"); p.add_argument("--snapshot-exclude",action="append",default=[],help="Additional project-relative path exclusion for snapshot capture"); p.add_argument("--snapshot-max-entries",type=int,default=200000); p.add_argument("--snapshot-max-file-bytes",type=int,default=256*1024*1024); p.add_argument("--snapshot-max-total-bytes",type=int,default=2*1024*1024*1024); p.add_argument("--snapshot-max-depth",type=int,default=64); p.add_argument("extra",nargs="*"); return p
 def main():
     args=parser().parse_intermixed_args()
     try:
