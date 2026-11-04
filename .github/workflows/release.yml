@@ -13,6 +13,13 @@ on:
       - "tests/test_version_consistency.py"
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Published GitHub release tag to publish to PyPI"
+        required: true
+        type: string
+        default: "v1.1.0"
 
 permissions:
   contents: read
@@ -33,7 +40,7 @@ jobs:
 
   build:
     name: Build and verify release distributions
-    if: github.event_name == 'pull_request' || (github.event_name == 'release' && github.event.release.prerelease == false)
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && github.event.release.prerelease == false)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -60,9 +67,9 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Verify release identity and main-branch ancestry
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
         env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
         shell: bash
         run: |
           python - <<'PY'
@@ -108,7 +115,7 @@ jobs:
 
       - name: Install and smoke-test the built wheel
         env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
           EVENT_NAME: ${{ github.event_name }}
         shell: bash
         run: |
@@ -134,7 +141,7 @@ jobs:
       - name: Upload verified release bundle
         uses: actions/upload-artifact@v7
         with:
-          name: qyrenith-release-${{ github.event.release.tag_name || github.event.pull_request.head.sha }}
+          name: qyrenith-release-${{ github.event.release.tag_name || inputs.release_tag || github.event.pull_request.head.sha || github.sha }}
           path: ${{ runner.temp }}/qyrenith-release/
           if-no-files-found: error
           retention-days: 14
@@ -142,7 +149,7 @@ jobs:
   publish:
     name: Publish Python distributions to PyPI
     needs: build
-    if: github.event_name == 'release' && github.event.release.prerelease == false
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && github.event.release.prerelease == false)
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -154,7 +161,7 @@ jobs:
       - name: Download verified Python distributions
         uses: actions/download-artifact@v8
         with:
-          name: qyrenith-release-${{ github.event.release.tag_name }}
+          name: qyrenith-release-${{ github.event.release.tag_name || inputs.release_tag }}
           path: release-bundle
 
       - name: Publish with PyPI Trusted Publishing
