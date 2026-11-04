@@ -12,7 +12,6 @@ import os
 from pathlib import Path
 import shutil
 import stat
-import tempfile
 import uuid
 from typing import Any
 
@@ -89,6 +88,8 @@ class WorkspaceDescriptor:
         try:
             workspace = Path(self.workspace_path)
             project = Path(self.project_path)
+            if workspace.name != f".qyrenith-workspace-{self.workspace_id}":
+                raise WorkspaceError("workspace_path must be bound to workspace_id")
             if project.parent != workspace or project.name != "project":
                 raise WorkspaceError("project_path must be the workspace's direct project child")
         except (OSError, ValueError) as exc:
@@ -296,8 +297,10 @@ def create_isolated_workspace(
         raise WorkspaceError(f"source snapshot could not be verified: {exc}") from exc
     if not initial.matches:
         raise WorkspaceError("source project does not match the supplied snapshot")
+    workspace_id = uuid.uuid4().hex
+    workspace_dir = parent_resolved / f".qyrenith-workspace-{workspace_id}"
     try:
-        workspace_dir = Path(tempfile.mkdtemp(prefix=".qyrenith-workspace-", dir=parent_resolved))
+        os.mkdir(workspace_dir, 0o700)
     except OSError as exc:
         raise WorkspaceError(f"cannot allocate an isolated workspace: {exc}") from exc
     project_dir = workspace_dir / "project"
@@ -336,7 +339,7 @@ def create_isolated_workspace(
         file_count = sum(item.kind == "file" for item in snapshot.entries)
         total_bytes = sum(item.size for item in snapshot.entries if item.kind == "file")
         descriptor = WorkspaceDescriptor(
-            workspace_id=uuid.uuid4().hex,
+            workspace_id=workspace_id,
             workspace_path=str(workspace_dir.resolve()),
             project_path=str(project_dir.resolve()),
             target=target,
