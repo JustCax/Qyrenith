@@ -100,7 +100,7 @@ for name, required_fields in EXPECTED.items():
         require(schema.get("additionalProperties") is False,
                 f"{name} must reject unknown top-level fields")
         expected_schema_version = 2 if name == "migration-knowledge.schema.json" else 1
-    require(schema["properties"].get("schema") == {"const": expected_schema_version},
+        require(schema["properties"].get("schema") == {"const": expected_schema_version},
                 f"{name} must pin schema version {expected_schema_version}")
 
 adapter = schemas["adapter-manifest.schema.json"]
@@ -131,10 +131,18 @@ verified_conditions = [
 ]
 require(len(verified_conditions) == 1, "VERIFIED knowledge must have exactly one conditional contract")
 verified_then = verified_conditions[0].get("then", {})
-require(set(verified_then.get("required", [])) >= {"assertion", "verified_by", "verified_at", "evidence"},
-        "VERIFIED knowledge must require assertion, reviewer, time, and evidence")
+require(set(verified_then.get("required", [])) >= {
+    "assertion", "verified_by", "verified_at", "valid_until", "evidence",
+    "verified_with", "verifier_version", "verifier_digest",
+}, "VERIFIED knowledge must require reviewer, expiry, evidence, and pinned verifier provenance")
 require(verified_then.get("properties", {}).get("evidence", {}).get("minItems") == 1,
         "VERIFIED knowledge must require at least one evidence reference")
+require(
+    verified_then.get("properties", {}).get("evidence", {}).get("items", {}).get("properties", {}).get("digest", {}).get("type") == "string",
+    "VERIFIED evidence must require a content digest",
+)
+require(knowledge["properties"]["verifier_digest"].get("pattern") == "^sha256:[0-9a-f]{64}$",
+        "verifier digest format mismatch")
 
 transition = schemas["migration-transition.schema.json"]
 require(set(transition["properties"]["kind"].get("enum", [])) == EXPECTED_TRANSITION_KINDS,
