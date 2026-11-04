@@ -146,7 +146,7 @@ The Doctor maintains an append-only evidence ledger and separates `OBSERVED`, `U
 
 ## Worker adapters
 
-The Doctor can discover specialist skills and project-local adapters. See `ADAPTERS.md`. Discovery never launches a worker. The first execution of an exact external worker command requires explicit approval with `worker-run --yes`; approval is stored per user and bound to a SHA-256 command fingerprint. A changed command or file entrypoint requires re-approval. Worker choice is advisory; only Doctor verification can produce a successful workflow result.
+The Doctor can discover specialist skills and project-local adapters. See `ADAPTERS.md`. Discovery never launches a worker. The first execution of an exact external worker command requires the explicit `worker-run --yes` flag; this is a caller-supplied approval assertion, not authenticated human identity or an interactive host approval. The approval record is stored per user and bound to a SHA-256 command fingerprint. A changed command or file entrypoint requires re-approval. Worker choice is advisory; only Doctor verification can produce a successful workflow result.
 
 ## Recovery and security
 
