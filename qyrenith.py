@@ -3650,9 +3650,7 @@ def cmd_snapshot(args):
             )
             snapshot = capture_project_snapshot(
                 root,
-                excluded_paths=tuple(args.snapshot_exclude) if args.snapshot_exclude else (
-                    ".git", ".qyrenith", ".backups", "__pycache__"
-                ),
+                excluded_paths=(".git", ".qyrenith", ".backups", "__pycache__", *tuple(args.snapshot_exclude)),
                 limits=limits,
             )
         except (OSError, TypeError, ValueError) as exc:
