@@ -498,6 +498,102 @@ def authorize_migration(
     )
 
 
+
+def validate_migration_authorization(
+    authorization: MigrationAuthorization,
+    plan: RoutePlan,
+    assessment: RouteWorkerAssessment,
+    registry: MigrationWorkerRegistry,
+    policy: MigrationAuthorizationPolicy,
+    *,
+    now: datetime,
+) -> None:
+    """Validate an authorization immediately before a future controlled side effect.
+
+    This verifies consistency and current qualification; it does not authenticate
+    the approver, verify a signature, or enforce permissions at the OS boundary.
+    """
+    if not isinstance(authorization, MigrationAuthorization):
+        raise TypeError("authorization must be a MigrationAuthorization")
+    if not isinstance(plan, RoutePlan) or not isinstance(assessment, RouteWorkerAssessment):
+        raise TypeError("plan and assessment must use their migration contract types")
+    if not isinstance(registry, MigrationWorkerRegistry):
+        raise TypeError("registry must be a MigrationWorkerRegistry")
+    if not isinstance(policy, MigrationAuthorizationPolicy):
+        raise TypeError("policy must be a MigrationAuthorizationPolicy")
+    now_text = _utc(now, "now")
+    instant = _instant(now_text, "now")
+    if not authorization.is_current(instant):
+        raise ValueError("migration authorization is not currently valid")
+    if plan.status != "PLANNED" or authorization.route_plan_digest != plan.plan_digest:
+        raise ValueError("authorization does not match the current planned route")
+    if authorization.worker_assessment_digest != assessment.assessment_digest:
+        raise ValueError("authorization does not match the current worker assessment")
+    if assessment.route_plan_digest != plan.plan_digest or assessment.evaluated_at != plan.evaluated_at:
+        raise ValueError("worker assessment does not match the exact route plan")
+    if authorization.policy_digest != policy.policy_digest:
+        raise ValueError("authorization policy digest does not match the active policy")
+    if _instant(authorization.approved_at, "approved_at") < _instant(plan.evaluated_at, "plan.evaluated_at"):
+        raise ValueError("authorization approval predates the route plan")
+    if _instant(authorization.expires_at, "expires_at") - _instant(authorization.approved_at, "approved_at") > __import__("datetime").timedelta(seconds=policy.max_lifetime_seconds):
+        raise ValueError("authorization lifetime exceeds the active policy")
+    assessed_transitions = tuple(item[0] for item in assessment.evaluations)
+    if assessed_transitions != plan.transitions:
+        raise ValueError("worker assessment does not cover the exact ordered route transitions")
+    if not plan.transitions:
+        if assessment.status != "NO_WORK_REQUIRED" or authorization.grants:
+            raise ValueError("no-op route authorization must have no worker grants")
+        return
+    if assessment.status != "QUALIFIED" or len(authorization.grants) != len(plan.transitions):
+        raise ValueError("authorization must contain one grant for every qualified route transition")
+    registrations = {
+        (item.manifest.worker_id, item.manifest.worker_version): item
+        for item in registry.registrations()
+    }
+    expiry = _instant(authorization.expires_at, "expires_at")
+    for (transition, resolution), grant in zip(assessment.evaluations, authorization.grants):
+        if resolution.status != "QUALIFIED":
+            raise ValueError(f"worker assessment is no longer qualified: {transition.transition_id}")
+        if (
+            grant.transition_id != transition.transition_id
+            or grant.worker_id != transition.worker_id
+            or grant.worker_version != transition.worker_version
+        ):
+            raise ValueError("authorization grant does not match its exact transition worker")
+        registration = registrations.get((grant.worker_id, grant.worker_version))
+        if registration is None or registration.qualification is None:
+            raise ValueError(f"authorized worker is no longer registered: {grant.worker_id}")
+        manifest = registration.manifest
+        qualification = registration.qualification
+        current = registry.resolve(transition, instant)
+        if current.status != "QUALIFIED":
+            raise ValueError(f"authorized worker is not currently qualified: {grant.worker_id}")
+        if (
+            current.manifest_digest != grant.manifest_digest
+            or current.qualification_id != grant.qualification_id
+            or current.qualification_digest != grant.qualification_digest
+            or current.manifest_digest != resolution.manifest_digest
+            or current.qualification_digest != resolution.qualification_digest
+        ):
+            raise ValueError("authorized worker manifest or qualification has changed")
+        valid_until = _instant(qualification.valid_until, "qualification.valid_until")
+        if grant.qualification_valid_until != qualification.valid_until or expiry > valid_until:
+            raise ValueError("authorization outlives or mismatches the worker qualification")
+        if policy.allowed_worker_ids and grant.worker_id not in policy.allowed_worker_ids:
+            raise ValueError(f"worker is not permitted by the active policy: {grant.worker_id}")
+        if not set(grant.permissions).issubset(policy.allowed_permissions):
+            raise ValueError("authorization grant exceeds the active policy permissions")
+        if not set(grant.permissions).issubset(manifest.permissions):
+            raise ValueError("authorization grant exceeds the worker's declared permissions")
+        for field in ("timeout_seconds", "max_input_bytes", "max_output_bytes", "max_changed_files"):
+            value = getattr(grant.limits, field)
+            if value > getattr(policy, field.replace("timeout_seconds", "max_timeout_seconds").replace("max_input_bytes", "max_input_bytes").replace("max_output_bytes", "max_output_bytes").replace("max_changed_files", "max_changed_files")):
+                raise ValueError(f"authorization grant exceeds the active policy resource limit: {field}")
+            if value > getattr(manifest.limits, field):
+                raise ValueError(f"authorization grant exceeds the worker resource limit: {field}")
+
+
+
 def serialize_migration_authorization_policy(policy: MigrationAuthorizationPolicy) -> bytes:
     if not isinstance(policy, MigrationAuthorizationPolicy):
         raise TypeError("policy must be a MigrationAuthorizationPolicy")
@@ -523,4 +619,5 @@ __all__ = [
     "MigrationAuthorization", "authorize_migration",
     "serialize_migration_authorization", "deserialize_migration_authorization",
     "serialize_migration_authorization_policy", "deserialize_migration_authorization_policy",
+    "validate_migration_authorization",
 ]
