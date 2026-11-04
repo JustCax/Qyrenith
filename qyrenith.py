@@ -1173,7 +1173,7 @@ def benchmark_projects(root: Path) -> List[Dict[str,Any]]:
                     ensure_state_dir(work)
                     local_worker=work/".qyrenith/benchmark-worker.py"; local_worker.write_text(worker.read_text(encoding="utf-8"),encoding="utf-8")
                     save_json(work/STATE_DIR/"adapters.json", {"adapters":[{"name":worker_name,"version":"1.0.0","command":[sys.executable,".qyrenith/benchmark-worker.py"],"capabilities":["port"],"supported_loaders":["neoforge"],"supported_minecraft_versions":["1.21","1.21.1"],"task_types":["port"],"risk_profile":"bounded-golden-fixture","evidence_requirements":["verified-mapping"]}]})
-                    result_obj=run_external_worker(work,worker_name,{"operation":"port","task":manifest["task"]},120)
+                    result_obj=run_external_worker(work,worker_name,{"operation":"port","task":manifest["task"]},120,approve_command=True,approval_store=Path(td)/"worker-approvals.sqlite3")
                     changed=result_obj.get("files_changed",[]) if isinstance(result_obj,dict) else []
                     expected_changed=manifest.get("expected_changed_files",[])
                     unchanged_ok=True
