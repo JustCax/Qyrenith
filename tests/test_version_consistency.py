@@ -1,4 +1,5 @@
 """Version baseline gate: package, CLI, citation, and release notes must agree."""
+import hashlib
 import importlib.util
 import re
 import subprocess
@@ -39,6 +40,24 @@ class TestVersionConsistency(unittest.TestCase):
         changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
         self.assertIn("## 1.1.0", changelog)
 
+
+    def test_gradle_wrapper_binary_matches_official_checksum(self):
+        wrapper = ROOT / "examples" / "example-neoforge-mod" / "gradle" / "wrapper" / "gradle-wrapper.jar"
+        digest = hashlib.sha256(wrapper.read_bytes()).hexdigest()
+        self.assertEqual(
+            digest,
+            "7d3a4ac4de1c32b59bc6a4eb8ecb8e612ccd0cf1ae1e99f66902da64df296172",
+        )
+
+    def test_gradle_distribution_checksum_is_pinned(self):
+        properties = (
+            ROOT / "examples" / "example-neoforge-mod" / "gradle" / "wrapper"
+            / "gradle-wrapper.properties"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            "distributionSha256Sum=7197a12f450794931532469d4ff21a59ea2c1cd59a3ec3f89c035c3c420a6999",
+            properties,
+        )
 
     def test_all_github_actions_are_pinned_to_immutable_shas(self):
         workflows = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
