@@ -17,26 +17,26 @@ Never upgrade a status based on documentation alone. Every requirement has a pos
 
 | Requirement ID | Implementation target | Acceptance test target | Evidence artifact | Dependencies | Current status |
 |---|---|---|---|---|---|
-| QDAS-01 | `qyrenith_engine/qdas/` | `tests/test_qdas_01.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-02 | `qyrenith_engine/qdas/` | `tests/test_qdas_02.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-03 | `qyrenith_engine/qdas/` | `tests/test_qdas_03.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-04 | `qyrenith_engine/qdas/` | `tests/test_qdas_04.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-05 | `qyrenith_engine/qdas/` | `tests/test_qdas_05.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-06 | `qyrenith_engine/qdas/` | `tests/test_qdas_06.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-07 | `qyrenith_engine/qdas/` | `tests/test_qdas_07.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-08 | `qyrenith_engine/qdas/` | `tests/test_qdas_08.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-09 | `qyrenith_engine/qdas/` | `tests/test_qdas_09.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-10 | `qyrenith_engine/qdas/` | `tests/test_qdas_10.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-11 | `qyrenith_engine/qdas/` | `tests/test_qdas_11.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-12 | `qyrenith_engine/qdas/` | `tests/test_qdas_12.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-13 | `qyrenith_engine/qdas/` | `tests/test_qdas_13.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-14 | `qyrenith_engine/qdas/` | `tests/test_qdas_14.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-15 | `qyrenith_engine/qdas/` | `tests/test_qdas_15.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-16 | `qyrenith_engine/qdas/` | `tests/test_qdas_16.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-17 | `qyrenith_engine/qdas/` | `tests/test_qdas_17.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-18 | `qyrenith_engine/qdas/` | `tests/test_qdas_18.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-19 | `qyrenith_engine/qdas/` | `tests/test_qdas_19.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
-| QDAS-20 | `qyrenith_engine/qdas/` | `tests/test_qdas_20.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-01 | `qyrenith_engine/qdas/` | `tests/test_qdas_events.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-02 | `qyrenith_engine/qdas/` | `tests/test_qdas_events.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-03 | `qyrenith_engine/qdas/` | `tests/test_qdas_diagnosis.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-04 | `qyrenith_engine/qdas/` | `tests/test_qdas_diagnosis.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-05 | `qyrenith_engine/qdas/` | `tests/test_qdas_isolation.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-06 | `qyrenith_engine/qdas/` | `tests/test_qdas_isolation.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-07 | `qyrenith_engine/qdas/` | `tests/test_qdas_reverification.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-08 | `qyrenith_engine/qdas/` | `tests/test_qdas_reverification.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-09 | `qyrenith_engine/qdas/` | `tests/test_qdas_reverification.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-10 | `qyrenith_engine/qdas/` | `tests/test_qdas_permissions_and_budgets.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-11 | `qyrenith_engine/qdas/` | `tests/test_qdas_permissions_and_budgets.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-12 | `qyrenith_engine/qdas/` | `tests/test_qdas_permissions_and_budgets.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-13 | `qyrenith_engine/qdas/` | `tests/test_qdas_self_verification.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-14 | `qyrenith_engine/qdas/` | `tests/test_qdas_self_verification.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-15 | `qyrenith_engine/qdas/` | `tests/test_qdas_self_verification.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-16 | `qyrenith_engine/qdas/` | `tests/test_qdas_failure_intelligence.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-17 | `qyrenith_engine/qdas/` | `tests/test_qdas_failure_intelligence.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-18 | `qyrenith_engine/qdas/` | `tests/test_qdas_failure_intelligence.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-19 | `qyrenith_engine/qdas/` | `tests/test_qdas_failure_intelligence.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-20 | `qyrenith_engine/qdas/` | `tests/test_qdas_failure_intelligence.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
 | SA-01 | `qyrenith_engine/audit/static/` | `tests/test_audit_static.py` (positive + negative/adversarial cases) | Parser, graph, rule, finding and coverage records | Evidence model; language adapters | PARTIAL |
 | SA-02 | `qyrenith_engine/audit/static/` | `tests/test_audit_static.py` (positive + negative/adversarial cases) | Parser, graph, rule, finding and coverage records | Evidence model; language adapters | PARTIAL |
 | SA-03 | `qyrenith_engine/audit/static/` | `tests/test_audit_static.py` (positive + negative/adversarial cases) | Parser, graph, rule, finding and coverage records | Evidence model; language adapters | PARTIAL |
