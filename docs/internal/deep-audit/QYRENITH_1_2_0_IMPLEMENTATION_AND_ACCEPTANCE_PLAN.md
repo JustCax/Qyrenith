@@ -25,6 +25,22 @@
 - Integrate only where acceptance tests prove safety; retain explicit non-claims otherwise.
 - Re-run complete 1.1.0 regression suite and the full platform matrix.
 
+### Phase 1 exit gate — mandatory before QDAS implementation
+
+Do not begin Phase 2 until all of the following are true:
+
+- The complete 1.1.0 regression suite and required Windows/Linux/macOS matrix pass on the same commit.
+- Existing migration identity, knowledge, planner, worker registry, authorization, ledger, snapshot, and workspace contracts have no unresolved critical/high defect.
+- Owner-controlled trust-store loading, exact-digest trust/revocation, and approval-time/validation-time freshness checks are implemented and tested.
+- Worker qualification is backed by a controlled conformance runner or authenticated attestation with independently collected evidence.
+- Human approval is authenticated through a trusted host channel; caller-supplied strings and CLI flags do not count.
+- Filesystem, process, environment, secret, and network restrictions are enforced by an OS sandbox or equivalent host-controlled boundary.
+- The assurance ledger is integrated into the relevant lifecycle and cannot be treated as independent proof when its local store is replaceable.
+- Workspace and recovery behavior has adversarial tests; any unsupported isolation guarantee remains explicitly unavailable.
+- The PR description, public docs, internal specs, traceability matrix, CLI behavior, and package contents agree.
+
+If any item is missing, keep the affected execution path disabled/propose-only, record the blocker, and do not declare Phase 1 complete.
+
 ### Phase 2 — QDAS foundation
 - Implement event schema and ingestion.
 - Implement failure taxonomy and evidence lineage.
