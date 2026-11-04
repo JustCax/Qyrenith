@@ -260,7 +260,8 @@ class TestMigrationAuthorization(unittest.TestCase):
 
     def test_rejects_approval_after_worker_qualification_expires(self):
         with self.assertRaisesRegex(ValueError, "not qualified at approval time"):
-            authorize(approved_at=datetime(2026, 11, 5, 0, 0, tzinfo=timezone.utc),\n                      expires_at=datetime(2026, 11, 5, 0, 1, tzinfo=timezone.utc))
+            authorize(approved_at=datetime(2026, 11, 5, 0, 0, tzinfo=timezone.utc),
+                      expires_at=datetime(2026, 11, 5, 0, 1, tzinfo=timezone.utc))
 
     def test_rejects_permission_escalation_beyond_policy(self):
         with self.assertRaisesRegex(ValueError, "authorization policy"):
