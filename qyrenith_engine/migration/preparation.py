@@ -11,7 +11,7 @@ from pathlib import Path
 import re
 from typing import Any
 
-from .knowledge import strict_object_pairs
+from .knowledge import KnowledgeCatalog, strict_object_pairs
 from .model import MigrationIdentity
 from .planner import MultiTargetPlan
 from .snapshot import ProjectSnapshot, verify_project_snapshot
@@ -127,12 +127,25 @@ class MultiTargetWorkspaceBatch:
             "created_at": self.created_at,
         }
 
-    def validate_for_plan(self, plan: MultiTargetPlan, snapshot: ProjectSnapshot) -> None:
-        """Reject a batch reused with a different plan, target set, or source snapshot."""
+    def validate_for_plan(
+        self,
+        plan: MultiTargetPlan,
+        snapshot: ProjectSnapshot,
+        knowledge: KnowledgeCatalog,
+        *,
+        now: datetime | None = None,
+    ) -> None:
+        """Reject stale plan, snapshot, catalog, trust, or transition evidence."""
         if not isinstance(plan, MultiTargetPlan):
             raise TypeError("plan must be a MultiTargetPlan")
         if not isinstance(snapshot, ProjectSnapshot):
             raise TypeError("snapshot must be a ProjectSnapshot")
+        if not isinstance(knowledge, KnowledgeCatalog):
+            raise TypeError("knowledge must be a KnowledgeCatalog")
+        instant = datetime.now(timezone.utc) if now is None else now
+        if not isinstance(instant, datetime) or instant.tzinfo is None or instant.utcoffset() is None:
+            raise WorkspaceError("validation time must be timezone-aware")
+        instant = instant.astimezone(timezone.utc)
         ordered_plans = tuple(sorted(plan.targets, key=lambda item: item.target.stable_key))
         if (
             plan.plan_digest != self.plan_digest
@@ -142,6 +155,25 @@ class MultiTargetWorkspaceBatch:
             or tuple(item.plan_digest for item in ordered_plans) != self.target_plan_digests
         ):
             raise WorkspaceError("workspace batch does not match the exact multi-target plan and snapshot")
+        expected_knowledge_digest = ordered_plans[0].knowledge_digest
+        expected_trust_digest = ordered_plans[0].knowledge_trust_digest
+        if any(
+            item.knowledge_digest != expected_knowledge_digest
+            or item.knowledge_trust_digest != expected_trust_digest
+            for item in ordered_plans
+        ):
+            raise WorkspaceError("target plans do not share one knowledge/trust snapshot")
+        if knowledge.content_digest != expected_knowledge_digest:
+            raise WorkspaceError("knowledge catalog changed after multi-target planning")
+        if not knowledge.is_trusted_at(instant):
+            raise WorkspaceError("knowledge trust policy is not current for workspace preparation")
+        if knowledge.trust_digest_at(instant) != expected_trust_digest:
+            raise WorkspaceError("knowledge trust decision changed after multi-target planning")
+        if any(
+            not knowledge.validates_transition(transition, instant)
+            for route in ordered_plans for transition in route.transitions
+        ):
+            raise WorkspaceError("knowledge claims are not usable for workspace preparation")
 
     @property
     def batch_digest(self) -> str:
@@ -239,6 +271,7 @@ def prepare_multi_target_workspaces(
     snapshot: ProjectSnapshot,
     workspace_parent: str | os.PathLike[str],
     plan: MultiTargetPlan,
+    knowledge: KnowledgeCatalog,
     *,
     now: datetime | None = None,
 ) -> MultiTargetWorkspaceBatch:
@@ -251,6 +284,8 @@ def prepare_multi_target_workspaces(
         raise TypeError("snapshot must be a ProjectSnapshot")
     if not isinstance(plan, MultiTargetPlan):
         raise TypeError("plan must be a MultiTargetPlan")
+    if not isinstance(knowledge, KnowledgeCatalog):
+        raise TypeError("knowledge must be a KnowledgeCatalog")
     if not plan.plannable:
         raise WorkspaceError(
             f"multi-target workspace preparation requires PLANNED routes; got {plan.status}"
@@ -260,6 +295,26 @@ def prepare_multi_target_workspaces(
     plan_instant = _parse_timestamp(plan.targets[0].evaluated_at)
     if created_instant < plan_instant:
         raise WorkspaceError("workspace preparation time cannot precede route planning")
+    ordered_plans = tuple(sorted(plan.targets, key=lambda item: item.target.stable_key))
+    expected_knowledge_digest = ordered_plans[0].knowledge_digest
+    expected_trust_digest = ordered_plans[0].knowledge_trust_digest
+    if any(
+        item.knowledge_digest != expected_knowledge_digest
+        or item.knowledge_trust_digest != expected_trust_digest
+        for item in ordered_plans
+    ):
+        raise WorkspaceError("target plans do not share one knowledge/trust snapshot")
+    if knowledge.content_digest != expected_knowledge_digest:
+        raise WorkspaceError("knowledge catalog changed after multi-target planning")
+    if not knowledge.is_trusted_at(created_instant):
+        raise WorkspaceError("knowledge trust policy is not current for workspace preparation")
+    if knowledge.trust_digest_at(created_instant) != expected_trust_digest:
+        raise WorkspaceError("knowledge trust decision changed after multi-target planning")
+    if any(
+        not knowledge.validates_transition(transition, created_instant)
+        for route in ordered_plans for transition in route.transitions
+    ):
+        raise WorkspaceError("knowledge claims are not usable for workspace preparation")
 
     try:
         source_before = verify_project_snapshot(source_root, snapshot)
@@ -268,7 +323,6 @@ def prepare_multi_target_workspaces(
     if not source_before.matches:
         raise WorkspaceError("source project changed after the multi-target snapshot was captured")
 
-    ordered_plans = tuple(sorted(plan.targets, key=lambda item: item.target.stable_key))
     descriptors = create_isolated_workspaces(
         source_root,
         snapshot,
@@ -298,7 +352,7 @@ def prepare_multi_target_workspaces(
             workspaces=descriptors,
             created_at=created_at,
         )
-        batch.validate_for_plan(plan, snapshot)
+        batch.validate_for_plan(plan, snapshot, knowledge, now=created_instant)
         return batch
     except BaseException as exc:
         cleanup_errors: list[str] = []
