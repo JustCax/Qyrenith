@@ -10,7 +10,7 @@ spec = importlib.util.spec_from_file_location("qyrenith_version_gate", ROOT / "q
 qyrenith = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(qyrenith)
 
-EXPECTED = "1.1.0"
+EXPECTED = (ROOT / "VERSION.txt").read_text(encoding="utf-8").strip()
 
 
 class TestVersionConsistency(unittest.TestCase):
