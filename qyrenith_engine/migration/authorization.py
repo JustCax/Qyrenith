@@ -10,7 +10,7 @@ import hashlib
 import json
 from typing import Any
 
-from .knowledge import strict_object_pairs
+from .knowledge import KnowledgeCatalog, strict_object_pairs
 from .planner import RoutePlan
 from .worker import (
     MigrationWorkerRegistry,
@@ -382,6 +382,7 @@ def authorize_migration(
     expires_at: datetime,
     permissions: tuple[WorkerPermission, ...],
     limits: WorkerResourceLimits,
+    knowledge: KnowledgeCatalog,
 ) -> MigrationAuthorization:
     """Create a short-lived, exact-plan authorization after fresh worker re-resolution.
 
@@ -397,6 +398,8 @@ def authorize_migration(
         raise TypeError("registry must be a MigrationWorkerRegistry")
     if not isinstance(policy, MigrationAuthorizationPolicy):
         raise TypeError("policy must be a MigrationAuthorizationPolicy")
+    if not isinstance(knowledge, KnowledgeCatalog):
+        raise TypeError("knowledge must be a KnowledgeCatalog")
     if plan.status != "PLANNED" or assessment.status not in {"QUALIFIED", "NO_WORK_REQUIRED"}:
         raise ValueError("only a PLANNED route with a satisfied worker gate can be authorized")
     if assessment.route_plan_digest != plan.plan_digest:
@@ -417,6 +420,12 @@ def authorize_migration(
     approved = _instant(approved_text, "approved_at")
     expiry = _instant(expiry_text, "expires_at")
     planned = _instant(plan.evaluated_at, "plan.evaluated_at")
+    if knowledge.content_digest != plan.knowledge_digest:
+        raise ValueError("knowledge catalog changed after route planning")
+    if not knowledge.is_trusted_at(approved):
+        raise ValueError("knowledge trust policy is not current at approval time")
+    if knowledge.trust_digest_at(approved) != plan.knowledge_trust_digest:
+        raise ValueError("knowledge trust decision changed after route planning")
     if approved < planned:
         raise ValueError("approval cannot predate the route plan evaluation")
     if expiry <= approved:
@@ -508,6 +517,7 @@ def validate_migration_authorization(
     registry: MigrationWorkerRegistry,
     policy: MigrationAuthorizationPolicy,
     *,
+    knowledge: KnowledgeCatalog,
     now: datetime,
 ) -> None:
     """Validate an authorization immediately before a future controlled side effect.
@@ -523,8 +533,16 @@ def validate_migration_authorization(
         raise TypeError("registry must be a MigrationWorkerRegistry")
     if not isinstance(policy, MigrationAuthorizationPolicy):
         raise TypeError("policy must be a MigrationAuthorizationPolicy")
+    if not isinstance(knowledge, KnowledgeCatalog):
+        raise TypeError("knowledge must be a KnowledgeCatalog")
     now_text = _utc(now, "now")
     instant = _instant(now_text, "now")
+    if knowledge.content_digest != plan.knowledge_digest:
+        raise ValueError("knowledge catalog changed after route planning")
+    if not knowledge.is_trusted_at(instant):
+        raise ValueError("knowledge trust policy is not current at validation time")
+    if knowledge.trust_digest_at(instant) != plan.knowledge_trust_digest:
+        raise ValueError("knowledge trust decision changed after route planning")
     if not authorization.is_current(instant):
         raise ValueError("migration authorization is not currently valid")
     if plan.status != "PLANNED" or authorization.route_plan_digest != plan.plan_digest:
