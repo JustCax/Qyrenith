@@ -365,6 +365,9 @@ class KnowledgeCatalog:
             raise AttributeError("KnowledgeCatalog is immutable")
         object.__setattr__(self, name, value)
 
+    def __delattr__(self, name) -> None:
+        raise AttributeError("KnowledgeCatalog is immutable")
+
     def __init__(
         self,
         claims: tuple[MigrationKnowledgeClaim, ...] = (),
