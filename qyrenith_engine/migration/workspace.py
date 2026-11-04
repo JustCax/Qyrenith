@@ -92,6 +92,8 @@ class WorkspaceDescriptor:
                 raise WorkspaceError("workspace_path must be bound to workspace_id")
             if project.parent != workspace or project.name != "project":
                 raise WorkspaceError("project_path must be the workspace's direct project child")
+        except WorkspaceError:
+            raise
         except (OSError, ValueError) as exc:
             raise WorkspaceError("workspace paths are not canonical") from exc
 
