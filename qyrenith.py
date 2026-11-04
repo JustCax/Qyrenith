@@ -3691,7 +3691,6 @@ def main():
     try:
         # This mode deliberately bypasses require_qyrenith(root): the target is an
         # unrelated external project and is inspected without writing Qyrenith state.
-        if args.command=="snapshot": return cmd_snapshot(args)
         if args.command=="external-check": return cmd_external_check(args)
         if args.command=="external-verify": return cmd_external_verify(args)
         if args.command=="self-test": return self_test()
