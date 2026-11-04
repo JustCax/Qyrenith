@@ -20,6 +20,8 @@ An adapter declares stable ID, version, implementation digest, supported languag
 - **LA-11 Unknown domains:** unknown domains may be represented and inspected generically but cannot be labeled supported without executable evidence.
 - **LA-12 QDAS integration:** QDAS consumes adapter capability and qualification data and checks adapter changes against conformance fixtures.
 
+- **LA-13 Adapter trust:** adapter manifests and qualification records discovered in a project are untrusted declarations. They cannot authorize execution or establish QUALIFIED status without explicit local approval and independently validated implementation/conformance evidence.
+
 ## 4. Compatibility policy
 Adapters must declare exact supported ranges and unsupported features. Version-family guesses are not accepted as compatibility evidence. Capability negotiation must fail closed when required features are missing.
 
