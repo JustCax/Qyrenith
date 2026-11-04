@@ -153,8 +153,21 @@ class TestMigrationAuthorization(unittest.TestCase):
             authorize(permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.NETWORK))
 
     def test_rejects_permission_not_declared_by_worker(self):
+        plan, assessment, registry, _, limits = fixture()
+        policy = MigrationAuthorizationPolicy(
+            allowed_permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.PUBLISH_ARTIFACT),
+            max_timeout_seconds=300, max_input_bytes=8 * 1024 * 1024,
+            max_output_bytes=4 * 1024 * 1024, max_changed_files=1000,
+            max_lifetime_seconds=900, allowed_worker_ids=("fixture-worker",),
+        )
         with self.assertRaisesRegex(ValueError, "worker declaration"):
-            authorize(permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.EXECUTE_PROCESS))
+            authorize_migration(
+                plan, assessment, registry, policy,
+                approved_by="reviewer", approved_at=NOW,
+                expires_at=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
+                permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.PUBLISH_ARTIFACT),
+                limits=limits,
+            )
 
     def test_rejects_limits_above_policy_ceiling(self):
         with self.assertRaisesRegex(ValueError, "authorization policy"):
