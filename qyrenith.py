@@ -681,8 +681,12 @@ def worker_command_digest(root: Path, command: Sequence[str], entry: Dict[str, A
                 candidate = Path(argument)
         else:
             path_value = Path(argument)
-            if path_value.is_absolute() or "/" in argument or "\\" in argument or argument.startswith("."):
-                candidate = path_value if path_value.is_absolute() else root / path_value
+            local_candidate = path_value if path_value.is_absolute() else root / path_value
+            if (
+                path_value.is_absolute() or "/" in argument or "\\" in argument
+                or argument.startswith(".") or local_candidate.is_file()
+            ):
+                candidate = local_candidate
         if candidate is not None:
             candidates.append((index, candidate))
     entrypoint = entry.get("entrypoint")
@@ -736,7 +740,9 @@ def _worker_command_is_approved(
             parent.mkdir(parents=True, exist_ok=True)
         if parent.is_symlink() or not parent.is_dir():
             raise OSError("approval store directory is not a real directory")
-        if path.exists() and (path.is_symlink() or not path.is_file()):
+        if path.is_symlink():
+            raise OSError("approval store must not be a symbolic link")
+        if path.exists() and not path.is_file():
             raise OSError("approval store is not a regular file")
         if not path.exists() and not approve:
             return False
@@ -780,7 +786,9 @@ def _worker_command_is_approved(
 
 
 def run_external_worker(root: Path, adapter_name: str, request: Dict[str, Any], timeout: int = 120, *, approve_command: bool = False, approval_store: Optional[Path] = None) -> Dict[str, Any]:
-    """Run one explicitly declared worker without shell execution. Worker output never authorizes SUCCESS."""
+    """Run one user-approved worker command without shell execution or SUCCESS authority."""
+    if type(approve_command) is not bool:
+        die("USAGE", "approve_command must be a boolean")
     if timeout < 1 or timeout > 600:
         die("USAGE", "Worker timeout must be between 1 and 600 seconds")
     cfg=load_json(root/STATE_DIR/"adapters.json", {})
@@ -808,8 +816,8 @@ def run_external_worker(root: Path, adapter_name: str, request: Dict[str, Any], 
     if required_capability is not None and required_capability not in capabilities:
         die("STOPPED", f"Adapter {adapter_name} does not declare capability: {required_capability}")
     # A declared trust claim is not merely informational: if its executable
-    # provenance has drifted, refuse to execute the adapter. UNKNOWN remains
-    # runnable only because the caller explicitly named the adapter.
+    # provenance has drifted, refuse to execute the adapter. Every command,
+    # including UNKNOWN adapters, also requires a user-level hash approval.
     trust=adapter_trust_record(root,entry)
     if trust.get("declared") in {"VERIFIED","COMMUNITY"} and trust.get("effective") != trust.get("declared"):
         die("STOPPED", f"Adapter trust failed for {adapter_name}: {trust.get('reason')}")
@@ -835,6 +843,17 @@ def run_external_worker(root: Path, adapter_name: str, request: Dict[str, Any], 
             "command_sha256":command_digest,
             "summary":"This exact worker command has not been approved by the user.",
             "unresolved":["Review the command and rerun worker-run with --yes to approve this exact command fingerprint."],
+        }
+        save_json(root/STATE_DIR/WORKER_RESULT,result)
+        return result
+    if worker_command_digest(root, command, entry, safe_env) != command_digest:
+        result={
+            "schema":1,
+            "worker":adapter_name,
+            "status":"COMMAND_CHANGED",
+            "verified_by_doctor":False,
+            "command_sha256":command_digest,
+            "unresolved":["The worker command or one of its file inputs changed after approval; review and approve the new fingerprint."],
         }
         save_json(root/STATE_DIR/WORKER_RESULT,result)
         return result
