@@ -947,6 +947,7 @@ __all__ = [
     "MigrationWorkerRegistry",
     "WorkerPermission",
     "WorkerQualification",
+    "WorkerTrustPolicy",
     "WorkerRegistration",
     "WorkerResolution",
     "WorkerResourceLimits",
