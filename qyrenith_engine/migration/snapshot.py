@@ -224,7 +224,10 @@ class ProjectSnapshot:
         return {**self.to_dict(), "snapshot_digest": self.snapshot_digest}
 
     def to_json_bytes(self) -> bytes:
-        return _canonical(self.to_document()) + b"\n"
+        encoded = _canonical(self.to_document()) + b"\n"
+        if len(encoded) > 64 * 1024 * 1024:
+            raise SnapshotError("project snapshot export exceeds the 64 MiB limit")
+        return encoded
 
     @classmethod
     def from_document(cls, document: object) -> "ProjectSnapshot":
