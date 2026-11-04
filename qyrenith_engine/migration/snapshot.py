@@ -160,11 +160,32 @@ class ProjectSnapshot:
         paths = [item.path for item in entries]
         if paths != sorted(paths) or len(paths) != len(set(paths)) or len(paths) != len({path.casefold() for path in paths}):
             raise SnapshotError("snapshot entries must have unique, portable canonical path order")
+        entry_map = {item.path: item for item in entries}
+        total_bytes = 0
+        for item in entries:
+            parts = item.path.split("/")
+            if len(parts) > self.limits.max_depth or len(item.path) > self.limits.max_path_length:
+                raise SnapshotError("snapshot entry exceeds its declared depth or path limit")
+            for index in range(1, len(parts)):
+                parent = "/".join(parts[:index])
+                if parent not in entry_map or entry_map[parent].kind != "directory":
+                    raise SnapshotError("snapshot entries must include every directory parent")
+            if item.kind == "file":
+                if item.size > self.limits.max_file_bytes:
+                    raise SnapshotError("snapshot file exceeds its declared per-file limit")
+                total_bytes += item.size
+        if total_bytes > self.limits.max_total_bytes:
+            raise SnapshotError("snapshot files exceed their declared aggregate byte limit")
         if not isinstance(self.excluded_paths, (tuple, list)):
             raise SnapshotError("excluded_paths must be a sequence")
         exclusions = tuple(_safe_relative_path(item) for item in self.excluded_paths)
         if exclusions != tuple(sorted(set(exclusions))):
             raise SnapshotError("excluded paths must be unique and canonically sorted")
+        if any(
+            any(other.startswith(path + "/") for other in exclusions if other != path)
+            for path in exclusions
+        ):
+            raise SnapshotError("excluded paths must not redundantly contain nested exclusions")
         object.__setattr__(self, "entries", entries)
         object.__setattr__(self, "excluded_paths", exclusions)
         object.__setattr__(self, "captured_at", _validate_timestamp(self.captured_at))
@@ -419,8 +440,12 @@ class SnapshotVerification:
             raise SnapshotError("MATCH requires identical snapshot digests")
         if self.status == "CHANGED" and self.expected_digest == self.actual_digest:
             raise SnapshotError("CHANGED requires different snapshot digests")
-        if len(self.changed_paths) > 10_000:
+        if not isinstance(self.changed_paths, (tuple, list)) or len(self.changed_paths) > 10_000:
             raise SnapshotError("changed_paths exceeds the 10000-entry result limit")
+        changed = tuple(_safe_relative_path(path) for path in self.changed_paths)
+        if changed != tuple(sorted(set(changed))):
+            raise SnapshotError("changed_paths must be unique and canonically sorted")
+        object.__setattr__(self, "changed_paths", changed)
         object.__setattr__(self, "checked_at", _validate_timestamp(self.checked_at))
 
     @property
