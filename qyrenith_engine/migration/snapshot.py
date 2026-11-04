@@ -316,12 +316,21 @@ def _validate_timestamp(value: object) -> str:
 
 
 def _same_object(before: os.stat_result, after: os.stat_result) -> bool:
+    # Windows exposes file identity and creation-time metadata differently
+    # between FindFirstFile/DirEntry and a file descriptor. Keep the portable
+    # checks there; POSIX additionally verifies device/inode and ctime.
+    portable_match = (
+        stat.S_IFMT(before.st_mode) == stat.S_IFMT(after.st_mode)
+        and before.st_size == after.st_size
+        and before.st_mtime_ns == after.st_mtime_ns
+    )
+    if not portable_match:
+        return False
+    if os.name == "nt":
+        return True
     return (
         before.st_dev == after.st_dev
         and before.st_ino == after.st_ino
-        and stat.S_IFMT(before.st_mode) == stat.S_IFMT(after.st_mode)
-        and before.st_size == after.st_size
-        and before.st_mtime_ns == after.st_mtime_ns
         and before.st_ctime_ns == after.st_ctime_ns
     )
 
@@ -350,7 +359,7 @@ def _hash_regular_file(path: Path, expected: os.stat_result, limits: SnapshotLim
                 break
             total += len(chunk)
             if total > limits.max_file_bytes or total > remaining:
-                raise SnapshotError(f"project exceeds configured byte limits: {path.name}")
+                raise SnapshotError(f"project exceeds max_total_bytes: {path.name}")
             hasher.update(chunk)
         after = os.fstat(descriptor)
         if not _same_object(before, after) or total != after.st_size:
