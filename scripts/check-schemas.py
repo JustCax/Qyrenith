@@ -204,6 +204,11 @@ require(policy_schema["properties"]["allowed_permissions"].get("uniqueItems") is
         "authorization policy permissions must be unique")
 require(policy_schema["properties"]["allowed_worker_ids"].get("uniqueItems") is True,
         "authorization policy worker allowlist must be unique")
+require(policy_schema["properties"]["allowed_permissions"]["items"].get("enum") is not None and
+        set(policy_schema["properties"]["allowed_permissions"]["items"]["enum"]) == EXPECTED_WORKER_PERMISSIONS,
+        "authorization policy permission vocabulary mismatch")
+require(policy_schema["properties"]["allowed_worker_ids"].get("maxItems") == 10000,
+        "authorization policy worker allowlist must be bounded")
 require(policy_schema["properties"]["max_lifetime_seconds"].get("maximum") == 86400,
         "authorization policy lifetime ceiling mismatch")
 
@@ -218,6 +223,8 @@ require(authorization["properties"]["authorization_digest"].get("pattern") == "^
         "authorization document must carry an integrity digest")
 require(authorization["properties"]["grants"].get("maxItems") == 10000,
         "authorization grants must be bounded")
+require(set(authorization["$defs"]["grant"]["properties"]["permissions"]["items"].get("enum", [])) == EXPECTED_WORKER_PERMISSIONS,
+        "authorization grant permission vocabulary mismatch")
 require(authorization["$defs"]["grant"]["additionalProperties"] is False,
         "authorization grants must reject undeclared fields")
 require(authorization["$defs"]["grant"]["properties"]["permissions"]["uniqueItems"] is True,
