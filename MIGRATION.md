@@ -10,7 +10,7 @@ This document describes the first domain-neutral migration planning primitives. 
 
 The migration core provides typed project-state identities, typed transition declarations, evidence-scoped knowledge claims, deterministic route planning, and independent multi-target route plans.
 
-It does not currently discover project state, transform source files, select or launch workers, create isolated workspaces, run builds, validate application behavior, authorize side effects, or complete a managed migration. Those capabilities require later integration phases and independent acceptance evidence.
+It does not currently transform source files, select or launch workers, create isolated workspaces, run builds, validate application behavior, authorize side effects, or complete a managed migration. Project state can now be fingerprinted through the explicit snapshot API, but automatic project discovery is still a separate capability. Those capabilities require later integration phases and independent acceptance evidence.
 
 Minecraft remains the first reference domain, but the identity and planning contracts do not require Minecraft-specific fields.
 
@@ -183,7 +183,17 @@ assert not plan.plannable
 
 A real VERIFIED claim must be supported by reviewable evidence whose scope exactly matches the transition. Do not use placeholder evidence identifiers or invented hashes in a production knowledge catalog.
 
-## 9. Assurance ledger boundary
+## 9. Project snapshots
+
+`capture_project_snapshot(root)` creates a deterministic, bounded inventory of a project without modifying it. The snapshot binds canonical relative paths, entry types, portable permission bits, regular-file sizes and SHA-256 content digests, and symbolic-link targets. It records symbolic links but never follows them. Special filesystem objects, non-portable paths, unsafe root types, and files or trees that exceed configured limits fail closed.
+
+The default exclusions are `.git`, `.qyrenith`, `.backups`, and `__pycache__`. Callers may supply an explicit exclusion list and `SnapshotLimits`. Exclusions and limits are part of the snapshot digest, so two snapshots made under different policies are not interchangeable. Capture timestamps are retained for audit but deliberately excluded from the content digest.
+
+`verify_project_snapshot(root, snapshot)` recaptures the project using the exact policy stored in the snapshot and reports `MATCH` or `CHANGED`, including a bounded list of changed paths. Snapshot documents have strict canonical JSON import/export and digest verification.
+
+This is a read-only fingerprint, not an atomic filesystem transaction, Git commit attestation, backup, or sandbox. Filesystem changes during capture are detected where the platform exposes stable metadata, but callers must still revalidate immediately before any side effect. A snapshot digest establishes content identity, not trust or authorship.
+
+## 10. Assurance ledger boundary
 
 `AssuranceLedger` is a separate append-only JSONL record store. It validates record shape, scoped relative paths, digests, commit identifiers, sequence numbers, and a SHA-256 hash chain. Writes use a single-writer lock, bounded input/output, temporary-file replacement, and directory synchronization where supported.
 
