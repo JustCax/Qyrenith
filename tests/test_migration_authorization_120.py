@@ -158,6 +158,20 @@ class TestMigrationAuthorization(unittest.TestCase):
         self.assertEqual(grant.limits, limits)
         self.assertEqual(len(authorization.authorization_digest), 64)
 
+    def test_authorization_rejects_untrusted_worker_qualification(self):
+        plan, _, registry, policy, limits = fixture()
+        untrusted_registry = MigrationWorkerRegistry(registry.registrations())
+        untrusted_assessment = assess_route_workers(plan, untrusted_registry)
+        self.assertEqual(untrusted_assessment.status, "UNKNOWN")
+        with self.assertRaisesRegex(ValueError, "worker gate"):
+            authorize_migration(
+                plan, untrusted_assessment, untrusted_registry, policy,
+                approved_by="test-reviewer", approved_at=NOW,
+                expires_at=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
+                permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
+                limits=limits,
+            )
+
     def test_execution_gate_accepts_current_exact_authorization(self):
         authorization = authorize()
         plan, assessment, registry, policy, _ = fixture()
