@@ -401,9 +401,10 @@ class TestMigrationAuthorization(unittest.TestCase):
             permissions=original.manifest.permissions,
             limits=original.manifest.limits,
         )
-        altered_registry = MigrationWorkerRegistry((WorkerRegistration(
-            altered_manifest, original.qualification,
-        ),))
+        altered_registry = MigrationWorkerRegistry(
+            (WorkerRegistration(altered_manifest, original.qualification),),
+            trust_policy=registry._trust_policy,
+        )
         with self.assertRaisesRegex(ValueError, "not current at plan evaluation"):
             authorize_migration(
                 plan, assessment, altered_registry, policy,
