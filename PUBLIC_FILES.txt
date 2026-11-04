@@ -111,6 +111,7 @@ schemas/migration-worker-manifest.schema.json
 schemas/migration-worker-qualification.schema.json
 schemas/migration-worker-assessment.schema.json
 schemas/migration-authorization.schema.json
+schemas/migration-authorization-policy.schema.json
 schemas/worker-handoff.schema.json
 schemas/worker-result.schema.json
 scripts/check-doc-links.py
