@@ -166,7 +166,9 @@ These are planning primitives only. They do not discover a project, modify files
 - [x] Validate snapshot schema, canonical serialization, release packaging, and CLI behavior in CI.
 - [x] Add single-target isolated workspace materialization from a verified source snapshot; reject symlinks and remove partial workspaces on failure.
 - [x] Bind each workspace descriptor to its target identity and source snapshot digest; support baseline revalidation.
-- [ ] Add batch multi-target lifecycle management and target-to-target isolation verification.
+- [x] Add bounded batch creation with duplicate-target rejection, source revalidation between copies, and rollback of prior copies on failure.
+- [x] Test target-to-target filesystem independence and rollback when the source changes mid-batch.
+- [ ] Add persistent successful-workspace lifecycle/cleanup management.
 - [ ] Select and verify a Git-aware isolation strategy (worktree or equivalent) when commit metadata is required.
 - [ ] Bind every target to the same source commit/fingerprint.
 - [ ] Prevent target-to-target file leakage.
