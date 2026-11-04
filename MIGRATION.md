@@ -201,7 +201,7 @@ The ledger is not yet integrated into the managed migration workflow. A caller-s
 
 A local hash chain can detect accidental or partial tampering when its trusted tail is preserved. An actor able to replace the entire ledger can recompute the chain. The ledger is not a digital signature, remote transparency service, database transaction coordinator, or OS security boundary.
 
-## 10. Plan-bound authorization
+## 11. Plan-bound authorization
 
 `MigrationAuthorizationPolicy` defines a local permission allowlist, worker allowlist, resource ceilings, and maximum authorization lifetime. Policies have canonical JSON import/export, a content digest, and a strict JSON Schema so the exact policy can be retained alongside an authorization record. `validate_migration_authorization(...)` is the pre-side-effect consistency gate: it rechecks the exact plan and assessment, active policy digest, authorization time window, worker registration and qualification, grant scope, permissions, and resource ceilings. `authorize_migration(plan, assessment, registry, policy, ...)` creates an immutable authorization bound to the exact route-plan digest, worker-assessment digest, and policy digest.
 
@@ -269,7 +269,7 @@ validate_migration_authorization(
 
 The example records caller-supplied attribution only. It does not authenticate the operator, persist files by itself, or launch a worker. A real executor must additionally enforce the grant at the operating-system and workspace boundaries.
 
-## 11. Current limitations
+## 12. Current limitations
 
 The current migration package is a planning and record-keeping foundation. It does not yet provide:
 
