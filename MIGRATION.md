@@ -287,6 +287,33 @@ assert verify_workspace_baseline(forge_workspace, snapshot).matches
 
 Each call allocates a separate workspace. The example deliberately stops before worker execution; target-specific changes and verification belong to later orchestration gates.
 
+### 10.1 Plan-bound multi-target workspace preparation
+
+`prepare_multi_target_workspaces(source_root, snapshot, workspace_parent, multi_target_plan)` connects a fully `PLANNED` `MultiTargetPlan` to the isolated-workspace batch API. It refuses `PARTIAL`, `UNKNOWN`, `BLOCKED`, and `UNSUPPORTED` plans before creating any target directories. It sorts target routes deterministically, verifies the source snapshot before and after preparation, creates one independent workspace per target, verifies each workspace baseline, and rolls back the whole batch if a post-creation check fails.
+
+The returned `MultiTargetWorkspaceBatch` binds the exact multi-target plan digest, source identity, snapshot digest, ordered target identities, each target route-plan digest, workspace descriptors, and creation time. Its canonical JSON document has a batch digest. `batch.validate_for_plan(plan, snapshot)` prevents reuse with a different plan or source snapshot. Revalidate the individual workspace baselines before any later operation.
+
+This is preparation, not execution: it does not run workers, authorize side effects, create Git worktrees, or provide an OS sandbox.
+
+```python
+from qyrenith_engine.migration import (
+    capture_project_snapshot,
+    prepare_multi_target_workspaces,
+)
+
+snapshot = capture_project_snapshot(source_root)
+multi_target_plan = plan_targets(source_identity, targets, transitions, knowledge)
+batch = prepare_multi_target_workspaces(
+    source_root, snapshot, workspace_parent, multi_target_plan
+)
+batch.validate_for_plan(multi_target_plan, snapshot)
+
+for descriptor in batch.workspaces:
+    assert verify_workspace_baseline(descriptor, snapshot).matches
+
+batch_bytes = batch.to_json_bytes()
+```
+
 ## 11. Assurance ledger boundary
 
 `AssuranceLedger` is a separate append-only JSONL record store. It validates record shape, scoped relative paths, digests, commit identifiers, sequence numbers, and a SHA-256 hash chain. Writes use a single-writer lock, bounded input/output, temporary-file replacement, and directory synchronization where supported.
