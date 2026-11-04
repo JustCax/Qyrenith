@@ -408,6 +408,53 @@ def create_isolated_workspace(
         raise
 
 
+
+def create_isolated_workspaces(
+    source_root: str | os.PathLike[str],
+    snapshot: ProjectSnapshot,
+    workspace_parent: str | os.PathLike[str],
+    targets: tuple[MigrationIdentity, ...] | list[MigrationIdentity],
+) -> tuple[WorkspaceDescriptor, ...]:
+    """Create a bounded set of independent target copies as one rollback unit.
+
+    If any target workspace fails to materialize, every workspace created by
+    this call is removed. The source is revalidated for each target, so a source
+    change between target copies aborts the batch instead of mixing baselines.
+    """
+    if not isinstance(targets, (tuple, list)) or not 1 <= len(targets) <= 64:
+        raise WorkspaceError("targets must contain between 1 and 64 MigrationIdentity values")
+    if any(not isinstance(item, MigrationIdentity) for item in targets):
+        raise TypeError("every target must be a MigrationIdentity")
+    keys = [item.stable_key for item in targets]
+    if len(keys) != len(set(keys)):
+        raise WorkspaceError("target identities in a workspace batch must be unique")
+    created: list[WorkspaceDescriptor] = []
+    try:
+        for target in targets:
+            created.append(
+                create_isolated_workspace(source_root, snapshot, workspace_parent, target)
+            )
+    except BaseException as exc:
+        cleanup_failures = []
+        for descriptor in reversed(created):
+            try:
+                _remove_failed_workspace(Path(descriptor.workspace_path))
+            except OSError:
+                cleanup_failures.append(descriptor.workspace_path)
+        if cleanup_failures:
+            remaining = ", ".join(cleanup_failures)
+            raise WorkspaceError(
+                f"workspace batch failed and rollback left partial workspaces: {remaining}"
+            ) from exc
+        if isinstance(exc, WorkspaceError):
+            raise
+        if isinstance(exc, (OSError, ValueError, TypeError, SnapshotError)):
+            raise WorkspaceError(f"workspace batch failed: {exc}") from exc
+        raise
+    return tuple(created)
+
+
+
 def verify_workspace_baseline(
     descriptor: WorkspaceDescriptor,
     snapshot: ProjectSnapshot,
@@ -434,6 +481,7 @@ def deserialize_workspace_descriptor(data: bytes | str) -> WorkspaceDescriptor:
 
 __all__ = [
     "WorkspaceDescriptor", "WorkspaceError", "create_isolated_workspace",
+    "create_isolated_workspaces",
     "verify_workspace_baseline", "serialize_workspace_descriptor",
     "deserialize_workspace_descriptor",
 ]
