@@ -11,7 +11,7 @@ The current branch contains typed migration identity and transitions, evidence-s
 - **MI-02 Transition validation:** use the shared atomic transition validator for planner edges, worker scope, authorization, and execution requests.
 - **MI-03 Knowledge qualification:** require exact source/target evidence, current validity, conflict-free claims, and reviewed provenance.
 - **MI-04 Worker conformance:** execute a versioned conformance suite in a controlled lab; qualification binds worker bytes, manifest, suite, result, scope, reviewer, and expiry.
-- **MI-05 Approval authentication:** define a trusted approval identity and record-integrity boundary; caller-supplied reviewer strings alone are not authentication.
+- **MI-05 Approval authentication and freshness:** define a trusted approval identity and record-integrity boundary; caller-supplied reviewer strings alone are not authentication. Revalidate the exact knowledge catalog digest, trust decision, and every referenced claim's validity at approval time and immediately before a side effect. Changed, revoked, expired, or untrusted knowledge blocks the action.
 - **MI-06 Runtime enforcement:** enforce every permission and resource limit at the side-effect boundary; policy records alone do not enforce OS permissions.
 - **MI-07 Workspace isolation:** preserve source baseline, target independence, safe path handling, cleanup, and explicit isolation-level reporting. Add Git-aware behavior only with tests for commit identity and worktree cleanup.
 - **MI-08 Execution orchestration:** execute one typed transition at a time; capture before/after snapshots, worker result, diff, build/test evidence, recovery point, and ledger event.
