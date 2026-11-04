@@ -372,13 +372,59 @@ def _hash_regular_file(path: Path, expected: os.stat_result, limits: SnapshotLim
         os.close(descriptor)
 
 
+def _hash_regular_file_at(
+    directory_fd: int,
+    name: str,
+    display_path: str,
+    expected: os.stat_result,
+    limits: SnapshotLimits,
+    remaining: int,
+) -> tuple[int, str]:
+    """Hash a regular file relative to an already-open, pinned parent directory."""
+    if expected.st_size > limits.max_file_bytes:
+        raise SnapshotError(f"file exceeds max_file_bytes: {display_path}")
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0)
+    if hasattr(os, "O_BINARY"):
+        flags |= os.O_BINARY
+    try:
+        descriptor = os.open(name, flags, dir_fd=directory_fd)
+    except OSError as exc:
+        raise SnapshotError(f"cannot safely open regular file: {display_path}") from exc
+    try:
+        before = os.fstat(descriptor)
+        if not stat.S_ISREG(before.st_mode) or not _same_object(expected, before):
+            raise SnapshotError(f"file changed before it could be read: {display_path}")
+        hasher = hashlib.sha256()
+        total = 0
+        while True:
+            chunk = os.read(descriptor, min(_CHUNK_SIZE, remaining - total + 1))
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > limits.max_file_bytes or total > remaining:
+                raise SnapshotError(f"project exceeds max_total_bytes: {display_path}")
+            hasher.update(chunk)
+        after = os.fstat(descriptor)
+        if not _same_object(before, after) or total != after.st_size:
+            raise SnapshotError(f"file changed while it was being read: {display_path}")
+        return total, hasher.hexdigest()
+    finally:
+        os.close(descriptor)
+
+
 def capture_project_snapshot(
     root: str | os.PathLike[str],
     *,
     excluded_paths: tuple[str, ...] = _DEFAULT_EXCLUSIONS,
     limits: SnapshotLimits | None = None,
 ) -> ProjectSnapshot:
-    """Capture a bounded, read-only snapshot without following symlinks."""
+    """Capture a bounded, read-only snapshot without following symlinks.
+
+    POSIX systems use descriptor-relative traversal with O_NOFOLLOW so replacing
+    a directory or file between enumeration and opening cannot redirect the walk.
+    Platforms without the required descriptor APIs use the documented portable
+    metadata-checked fallback.
+    """
     policy = SnapshotLimits() if limits is None else limits
     if not isinstance(policy, SnapshotLimits):
         raise TypeError("limits must be SnapshotLimits")
@@ -388,18 +434,43 @@ def capture_project_snapshot(
     if len(exclusions) > 10_000:
         raise SnapshotError("excluded_paths exceeds the 10000-entry limit")
     try:
-        root_path = Path(root).absolute()
+        root_input = Path(root).absolute()
+        input_stat = root_input.lstat()
+        if stat.S_ISLNK(input_stat.st_mode):
+            raise SnapshotError("project root must be a real directory, not a symlink")
+        root_path = root_input.resolve(strict=True)
         root_stat = root_path.lstat()
+    except SnapshotError:
+        raise
     except (OSError, TypeError, ValueError) as exc:
         raise SnapshotError("project root must be an existing directory") from exc
     if not stat.S_ISDIR(root_stat.st_mode) or stat.S_ISLNK(root_stat.st_mode):
         raise SnapshotError("project root must be a real directory, not a symlink")
+
     entries: list[SnapshotEntry] = []
     total_bytes = 0
     enumerated_entries = 0
     exclusion_set = set(exclusions)
 
-    def walk(directory: Path, relative: str, depth: int) -> None:
+    def relative_path(relative: str, name: str) -> str:
+        rel = f"{relative}/{name}" if relative else name
+        _safe_relative_path(rel)
+        if len(rel) > policy.max_path_length:
+            raise SnapshotError("project path exceeds max_path_length")
+        components = rel.split("/")
+        if len(components) > policy.max_depth:
+            raise SnapshotError("project exceeds max_depth")
+        return rel
+
+    def is_excluded(rel: str) -> bool:
+        components = rel.split("/")
+        return any(
+            "/".join(components[:index]) in exclusion_set
+            for index in range(1, len(components) + 1)
+        )
+
+    def walk_path(directory: Path, relative: str, depth: int) -> None:
+        """Portable fallback for platforms without descriptor-relative traversal."""
         nonlocal total_bytes, enumerated_entries
         if depth > policy.max_depth:
             raise SnapshotError("project exceeds max_depth")
@@ -416,16 +487,9 @@ def capture_project_snapshot(
             for child in children:
                 if len(entries) >= policy.max_entries:
                     raise SnapshotError("project exceeds max_entries")
-                name = child.name
-                rel = f"{relative}/{name}" if relative else name
-                _safe_relative_path(rel)
-                if len(rel) > policy.max_path_length:
-                    raise SnapshotError("project path exceeds max_path_length")
-                components = rel.split("/")
-                if any("/".join(components[:index]) in exclusion_set for index in range(1, len(components) + 1)):
+                rel = relative_path(relative, child.name)
+                if is_excluded(rel):
                     continue
-                if len(components) > policy.max_depth:
-                    raise SnapshotError("project exceeds max_depth")
                 try:
                     item_stat = child.stat(follow_symlinks=False)
                 except OSError as exc:
@@ -433,33 +497,116 @@ def capture_project_snapshot(
                 mode = stat.S_IMODE(item_stat.st_mode)
                 if stat.S_ISDIR(item_stat.st_mode):
                     entries.append(SnapshotEntry(rel, "directory", mode))
-                    if len(entries) > policy.max_entries:
-                        raise SnapshotError("project exceeds max_entries")
-                    walk(Path(child.path), rel, depth + 1)
+                    walk_path(Path(child.path), rel, depth + 1)
                 elif stat.S_ISREG(item_stat.st_mode):
                     remaining = policy.max_total_bytes - total_bytes
                     size, digest = _hash_regular_file(Path(child.path), item_stat, policy, remaining)
                     total_bytes += size
                     entries.append(SnapshotEntry(rel, "file", mode, size, digest))
-                    if len(entries) > policy.max_entries:
-                        raise SnapshotError("project exceeds max_entries")
                 elif stat.S_ISLNK(item_stat.st_mode):
                     target = os.readlink(child.path)
                     after_link = Path(child.path).lstat()
                     if not _same_object(item_stat, after_link):
                         raise SnapshotError(f"symbolic link changed during snapshot capture: {rel}")
                     entries.append(SnapshotEntry(rel, "symlink", mode, link_target=target))
-                    if len(entries) > policy.max_entries:
-                        raise SnapshotError("project exceeds max_entries")
                 else:
                     raise SnapshotError(f"unsupported filesystem object: {rel}")
+                if len(entries) > policy.max_entries:
+                    raise SnapshotError("project exceeds max_entries")
             after_dir = directory.stat(follow_symlinks=False)
             if not _same_object(before_dir, after_dir):
                 raise SnapshotError(f"directory changed during snapshot capture: {relative or '.'}")
         except OSError as exc:
             raise SnapshotError(f"cannot enumerate project directory: {relative or '.'}") from exc
 
-    walk(root_path, "", 0)
+    def walk_descriptor(directory_fd: int, relative: str, depth: int) -> None:
+        """Walk a pinned directory using only descriptor-relative, no-follow operations."""
+        nonlocal total_bytes, enumerated_entries
+        if depth > policy.max_depth:
+            raise SnapshotError("project exceeds max_depth")
+        try:
+            before_dir = os.fstat(directory_fd)
+            with os.scandir(directory_fd) as iterator:
+                names = []
+                for child in iterator:
+                    enumerated_entries += 1
+                    if enumerated_entries > policy.max_entries:
+                        raise SnapshotError("project traversal exceeds max_entries")
+                    names.append(child.name)
+            for name in sorted(names):
+                if len(entries) >= policy.max_entries:
+                    raise SnapshotError("project exceeds max_entries")
+                rel = relative_path(relative, name)
+                if is_excluded(rel):
+                    continue
+                try:
+                    item_stat = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+                except OSError as exc:
+                    raise SnapshotError(f"cannot stat project entry: {rel}") from exc
+                mode = stat.S_IMODE(item_stat.st_mode)
+                if stat.S_ISDIR(item_stat.st_mode):
+                    entries.append(SnapshotEntry(rel, "directory", mode))
+                    child_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
+                    child_fd = os.open(name, child_flags, dir_fd=directory_fd)
+                    try:
+                        opened_stat = os.fstat(child_fd)
+                        if not stat.S_ISDIR(opened_stat.st_mode) or not _same_object(item_stat, opened_stat):
+                            raise SnapshotError(f"directory changed before it could be traversed: {rel}")
+                        walk_descriptor(child_fd, rel, depth + 1)
+                    finally:
+                        os.close(child_fd)
+                elif stat.S_ISREG(item_stat.st_mode):
+                    remaining = policy.max_total_bytes - total_bytes
+                    size, digest = _hash_regular_file_at(
+                        directory_fd, name, rel, item_stat, policy, remaining
+                    )
+                    total_bytes += size
+                    entries.append(SnapshotEntry(rel, "file", mode, size, digest))
+                elif stat.S_ISLNK(item_stat.st_mode):
+                    target = os.readlink(name, dir_fd=directory_fd)
+                    after_link = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+                    if not _same_object(item_stat, after_link):
+                        raise SnapshotError(f"symbolic link changed during snapshot capture: {rel}")
+                    entries.append(SnapshotEntry(rel, "symlink", mode, link_target=target))
+                else:
+                    raise SnapshotError(f"unsupported filesystem object: {rel}")
+                if len(entries) > policy.max_entries:
+                    raise SnapshotError("project exceeds max_entries")
+            after_dir = os.fstat(directory_fd)
+            if not _same_object(before_dir, after_dir):
+                raise SnapshotError(f"directory changed during snapshot capture: {relative or '.'}")
+        except SnapshotError:
+            raise
+        except OSError as exc:
+            raise SnapshotError(f"cannot enumerate project directory: {relative or '.'}") from exc
+
+    supports_descriptor_traversal = (
+        os.name != "nt"
+        and hasattr(os, "O_DIRECTORY")
+        and hasattr(os, "O_NOFOLLOW")
+        and os.open in os.supports_dir_fd
+        and os.scandir in os.supports_fd
+    )
+    if supports_descriptor_traversal:
+        root_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
+        try:
+            root_fd = os.open(root_path, root_flags)
+        except OSError as exc:
+            raise SnapshotError("project root could not be opened without following symlinks") from exc
+        try:
+            opened_root_stat = os.fstat(root_fd)
+            if not stat.S_ISDIR(opened_root_stat.st_mode) or not _same_object(root_stat, opened_root_stat):
+                raise SnapshotError("project root changed before snapshot traversal")
+            walk_descriptor(root_fd, "", 0)
+            final_fd_stat = os.fstat(root_fd)
+            final_path_stat = root_path.lstat()
+            if not _same_object(final_fd_stat, final_path_stat):
+                raise SnapshotError("project root changed during snapshot capture")
+        finally:
+            os.close(root_fd)
+    else:
+        walk_path(root_path, "", 0)
+
     entries.sort(key=lambda item: item.path)
     return ProjectSnapshot(
         entries=tuple(entries),
