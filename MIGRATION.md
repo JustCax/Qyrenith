@@ -82,7 +82,7 @@ Catalog digesting is a consistency/integrity mechanism, not a signature or proof
 
 Example of the explicit import decision:
 
-\`\`\`python
+```python
 from qyrenith_engine.migration import KnowledgeCatalog, KnowledgeTrustPolicy
 
 catalog_bytes = open("reviewed-knowledge.json", "rb").read()
@@ -95,7 +95,7 @@ policy = KnowledgeTrustPolicy(
 )
 trusted = KnowledgeCatalog.from_json_bytes(catalog_bytes, trust_policy=policy)
 assert trusted.is_trusted
-\`\`\`
+```
 
 The trust policy must be loaded from a protected local source. Do not store an authoritative trust policy beside untrusted project input.
 
@@ -147,12 +147,12 @@ The registry returns one of these states for a pinned transition:
 
 The `assess_route_workers(plan, registry)` API evaluates every planned edge at the exact route-plan timestamp. It returns `QUALIFIED` only when every edge resolves to a current matching qualification; it returns `UNKNOWN` for missing/unselected/unqualified/untrusted/stale workers, `BLOCKED` for disabled or incompatible workers, `ROUTE_NOT_PLANNED` when the route itself is not PLANNED, and `NO_WORK_REQUIRED` for a no-op route. The assessment digest binds the route digest and ordered transition/resolution pairs. `assessment.qualified` is true only when a worker was actually qualified; `assessment.worker_gate_satisfied` is also true for a no-op route with no worker operation. Neither property grants execution permission.
 
-A `WorkerQualification` records the manifest digest, conformance-suite identity and version, suite digest, result digest, PASS status, test count, reviewer attribution, qualification time, and expiry. It is a record of a reviewed result; it is not proof that this library ran the suite. The current registry does not execute conformance tests, sign qualifications, authenticate reviewer identities, fetch worker packages, or launch workers. A qualification record must come from a separately controlled and reviewed process. The registry now returns \`UNTRUSTED\` unless the exact qualification digest is allowlisted by a \`WorkerTrustPolicy\`; the active policy digest is bound into route-worker assessments and migration authorization.
+A `WorkerQualification` records the manifest digest, conformance-suite identity and version, suite digest, result digest, PASS status, test count, reviewer attribution, qualification time, and expiry. It is a record of a reviewed result; it is not proof that this library ran the suite. The current registry does not execute conformance tests, sign qualifications, authenticate reviewer identities, fetch worker packages, or launch workers. A qualification record must come from a separately controlled and reviewed process. The registry now returns `UNTRUSTED` unless the exact qualification digest is allowlisted by a `WorkerTrustPolicy`; the active policy digest is bound into route-worker assessments and migration authorization.
 
 Example local qualification allowlisting (the trust policy must be protected and reviewed separately):
 
-\`\`\`python
-from qyrenith_engine.migration import MigrationWorkerRegistry, WorkerTrustPolicy
+```python
+from qyrenith_engine.migration import MigrationWorkerRegistry, WorkerRegistration, WorkerTrustPolicy
 
 worker_trust = WorkerTrustPolicy(
     policy_id="locally-reviewed-workers",
@@ -164,7 +164,7 @@ registry = MigrationWorkerRegistry(
     (WorkerRegistration(manifest, qualification),),
     trust_policy=worker_trust,
 )
-\`\`\` **Remaining trust limitation:** the policy itself is not cryptographically authenticated, and an allowlisted record still does not prove that the declared conformance suite actually ran. Load the policy only from an owner-controlled source. The conformance runner and independently collected result evidence remain required before worker execution.
+``` **Remaining trust limitation:** the policy itself is not cryptographically authenticated, and an allowlisted record still does not prove that the declared conformance suite actually ran. Load the policy only from an owner-controlled source. The conformance runner and independently collected result evidence remain required before worker execution.
 
 Manifest permissions are declarations, not grants. The registry returns permissions and resource limits to the caller; a future execution authority must independently decide whether the current task is allowed to use them. In particular, `WRITE_PROJECT`, `EXECUTE_PROCESS`, `NETWORK`, and `PUBLISH_ARTIFACT` must never be treated as implicitly approved by worker registration.
 
