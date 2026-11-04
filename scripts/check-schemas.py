@@ -49,6 +49,10 @@ EXPECTED = {
     "migration-project-snapshot.schema.json": [
         "schema", "entries", "excluded_paths", "limits", "captured_at", "snapshot_digest",
     ],
+    "migration-workspace-descriptor.schema.json": [
+        "schema", "workspace_id", "workspace_path", "project_path", "target",
+        "source_snapshot_digest", "file_count", "total_bytes", "created_at", "descriptor_digest",
+    ],
 }
 EXPECTED_TRANSITION_KINDS = {
     "VERSION_UPGRADE", "LOADER_CONVERSION", "FRAMEWORK_CHANGE", "PLATFORM_MIGRATION",
@@ -214,6 +218,19 @@ require(policy_schema["properties"]["allowed_worker_ids"].get("maxItems") == 100
         "authorization policy worker allowlist must be bounded")
 require(policy_schema["properties"]["max_lifetime_seconds"].get("maximum") == 86400,
         "authorization policy lifetime ceiling mismatch")
+
+workspace = schemas["migration-workspace-descriptor.schema.json"]
+require(workspace["properties"]["workspace_id"].get("pattern") == "^[0-9a-f]{32}$",
+        "workspace descriptors must carry a canonical unique workspace ID")
+require(workspace["properties"]["source_snapshot_digest"].get("pattern") == "^[0-9a-f]{64}$",
+        "workspace descriptors must bind a source snapshot digest")
+require(workspace["properties"]["descriptor_digest"].get("pattern") == "^[0-9a-f]{64}$",
+        "workspace descriptors must carry an integrity digest")
+require(workspace["properties"]["file_count"].get("maximum") == 1000000 and
+        workspace["properties"]["total_bytes"].get("maximum") == 17179869184,
+        "workspace descriptor resource counts must be bounded")
+require(workspace["$defs"]["identity"]["required"] == list(workspace["$defs"]["identity"]["properties"]),
+        "workspace target identity must explicitly represent every dimension")
 
 snapshot = schemas["migration-project-snapshot.schema.json"]
 require(snapshot["properties"]["snapshot_digest"].get("pattern") == "^[0-9a-f]{64}$",
