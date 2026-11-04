@@ -3,7 +3,10 @@ from .analysis import analyze_project, build_change_impact, compare_baselines
 from .boundary import inspect_project_boundary
 from .execution import run_bounded_process
 from .migration import (
-    MigrationAuthorization, MigrationAuthorizationPolicy, MigrationStepGrant, authorize_migration,\n    deserialize_migration_authorization, serialize_migration_authorization,\n    deserialize_migration_authorization_policy, serialize_migration_authorization_policy, validate_migration_authorization,
+    MigrationAuthorization, MigrationAuthorizationPolicy, MigrationStepGrant, authorize_migration,
+    deserialize_migration_authorization, serialize_migration_authorization,
+    deserialize_migration_authorization_policy, serialize_migration_authorization_policy,
+    validate_migration_authorization,
     AssuranceLedger, AssuranceLedgerError, LedgerLockedError, verify_assurance_chain,
     EvidenceReference, KnowledgeCatalog, KnowledgeStatus, MigrationIdentity,
     MigrationKnowledgeClaim, MigrationTransition, MultiTargetPlan, RoutePlan,
