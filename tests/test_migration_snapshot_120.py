@@ -113,7 +113,10 @@ class TestProjectSnapshot(unittest.TestCase):
                 link = snapshot.entries[0]
                 self.assertEqual(link.kind, "symlink")
                 self.assertEqual(link.path, "external-link")
-                self.assertEqual(link.link_target, str(external))
+                if os.name == "nt":
+                    self.assertEqual(Path(link.link_target).name, external.name)
+                else:
+                    self.assertEqual(link.link_target, str(external))
             finally:
                 (root / "external-link").unlink(missing_ok=True)
                 (external / "secret.txt").unlink(missing_ok=True)
