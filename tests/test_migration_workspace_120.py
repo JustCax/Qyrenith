@@ -262,6 +262,36 @@ class TestIsolatedWorkspace(unittest.TestCase):
                 create_isolated_workspace(source, snapshot, parent, target_identity())
             self.assertEqual(list(parent.iterdir()), [])
 
+    def test_workspace_baseline_rejects_tampered_persisted_descriptor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            source = base / "source"
+            parent = base / "workspaces"
+            source.mkdir()
+            parent.mkdir()
+            (source / "main.py").write_text("pass\\n", encoding="utf-8")
+            snapshot = capture_project_snapshot(source)
+            descriptor = create_isolated_workspace(source, snapshot, parent, target_identity())
+            metadata = Path(descriptor.workspace_path) / "workspace.json"
+            tampered = metadata.read_bytes().replace(b"minecraft", b"unreal__")
+            metadata.write_bytes(tampered)
+            with self.assertRaisesRegex(WorkspaceError, "digest mismatch"):
+                verify_workspace_baseline(descriptor, snapshot)
+
+    def test_workspace_baseline_rejects_missing_persisted_descriptor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            source = base / "source"
+            parent = base / "workspaces"
+            source.mkdir()
+            parent.mkdir()
+            (source / "main.py").write_text("pass\\n", encoding="utf-8")
+            snapshot = capture_project_snapshot(source)
+            descriptor = create_isolated_workspace(source, snapshot, parent, target_identity())
+            (Path(descriptor.workspace_path) / "workspace.json").unlink()
+            with self.assertRaisesRegex(WorkspaceError, "metadata could not be validated"):
+                verify_workspace_baseline(descriptor, snapshot)
+
     def test_workspace_baseline_verification_rejects_another_snapshot(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
