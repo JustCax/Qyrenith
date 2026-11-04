@@ -162,6 +162,8 @@ These are planning primitives only. They do not discover a project, modify files
 - [x] Record symbolic links without following them; reject special filesystem objects and non-portable paths.
 - [x] Detect observable concurrent file/directory changes during capture.
 - [x] Revalidate a project against the exact captured snapshot and report changed paths.
+- [x] Expose read-only `snapshot capture` and `snapshot verify` CLI operations with explicit match/change exit codes.
+- [x] Validate snapshot schema, canonical serialization, release packaging, and CLI behavior in CI.
 - [ ] Select and verify an isolation strategy (worktree or equivalent).
 - [ ] Bind every target to the same source commit/fingerprint.
 - [ ] Prevent target-to-target file leakage.
