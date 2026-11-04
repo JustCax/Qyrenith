@@ -376,7 +376,7 @@ def capture_project_snapshot(
     limits: SnapshotLimits | None = None,
 ) -> ProjectSnapshot:
     """Capture a bounded, read-only snapshot without following symlinks."""
-    policy = limits or SnapshotLimits()
+    policy = SnapshotLimits() if limits is None else limits
     if not isinstance(policy, SnapshotLimits):
         raise TypeError("limits must be SnapshotLimits")
     if not isinstance(excluded_paths, (tuple, list)):
@@ -393,10 +393,11 @@ def capture_project_snapshot(
         raise SnapshotError("project root must be a real directory, not a symlink")
     entries: list[SnapshotEntry] = []
     total_bytes = 0
+    enumerated_entries = 0
     exclusion_set = set(exclusions)
 
     def walk(directory: Path, relative: str, depth: int) -> None:
-        nonlocal total_bytes
+        nonlocal total_bytes, enumerated_entries
         if depth > policy.max_depth:
             raise SnapshotError("project exceeds max_depth")
         try:
@@ -404,9 +405,10 @@ def capture_project_snapshot(
             children = []
             with os.scandir(directory) as iterator:
                 for child in iterator:
+                    enumerated_entries += 1
+                    if enumerated_entries > policy.max_entries:
+                        raise SnapshotError("project traversal exceeds max_entries")
                     children.append(child)
-                    if len(children) > policy.max_entries:
-                        raise SnapshotError("directory exceeds max_entries")
             children.sort(key=lambda item: item.name)
             for child in children:
                 if len(entries) >= policy.max_entries:
@@ -475,7 +477,7 @@ class SnapshotVerification:
             raise SnapshotError("expected_digest must be a SHA-256 digest")
         if self.actual_digest is not None and (not isinstance(self.actual_digest, str) or not _SHA256.fullmatch(self.actual_digest)):
             raise SnapshotError("actual_digest must be a SHA-256 digest or None")
-        if self.status not in {"MATCH", "CHANGED", "ERROR"}:
+        if not isinstance(self.status, str) or self.status not in {"MATCH", "CHANGED"}:
             raise SnapshotError("unsupported snapshot verification status")
         if self.status == "MATCH" and self.expected_digest != self.actual_digest:
             raise SnapshotError("MATCH requires identical snapshot digests")
