@@ -191,16 +191,15 @@ class ProjectSnapshot:
         exclusions = tuple(_safe_relative_path(item) for item in self.excluded_paths)
         if exclusions != tuple(sorted(set(exclusions))) or len(exclusions) != len({item.casefold() for item in exclusions}):
             raise SnapshotError("excluded paths must be unique and canonically sorted")
-        if any(
-            any(other.startswith(path + "/") for other in exclusions if other != path)
-            for path in exclusions
-        ):
-            raise SnapshotError("excluded paths must not redundantly contain nested exclusions")
-        if any(
-            any(item.path == excluded or item.path.startswith(excluded + "/") for excluded in exclusions)
-            for item in entries
-        ):
-            raise SnapshotError("snapshot entries cannot contain excluded paths")
+        exclusion_set = set(exclusions)
+        for excluded in exclusions:
+            parts = excluded.split("/")
+            if any("/".join(parts[:index]) in exclusion_set for index in range(1, len(parts))):
+                raise SnapshotError("excluded paths must not redundantly contain nested exclusions")
+        for item in entries:
+            parts = item.path.split("/")
+            if any("/".join(parts[:index]) in exclusion_set for index in range(1, len(parts) + 1)):
+                raise SnapshotError("snapshot entries cannot contain excluded paths")
         object.__setattr__(self, "entries", entries)
         object.__setattr__(self, "excluded_paths", exclusions)
         object.__setattr__(self, "captured_at", _validate_timestamp(self.captured_at))
@@ -238,7 +237,11 @@ class ProjectSnapshot:
             raise SnapshotError("unsupported project snapshot schema")
         payload = {key: value for key, value in document.items() if key != "snapshot_digest"}
         payload.pop("captured_at", None)
-        if not isinstance(document["snapshot_digest"], str) or _digest(payload) != document["snapshot_digest"]:
+        try:
+            computed_digest = _digest(payload)
+        except (TypeError, ValueError) as exc:
+            raise SnapshotError("project snapshot contains invalid canonical values") from exc
+        if not isinstance(document["snapshot_digest"], str) or computed_digest != document["snapshot_digest"]:
             raise SnapshotError("project snapshot digest mismatch")
         if not isinstance(document["limits"], dict) or set(document["limits"]) != {
             "max_entries", "max_file_bytes", "max_total_bytes", "max_depth", "max_path_length"
@@ -253,12 +256,15 @@ class ProjectSnapshot:
             }:
                 raise SnapshotError("snapshot entry has missing or unexpected fields")
             entries.append(SnapshotEntry(**item))
-        snapshot = cls(
-            entries=tuple(entries),
-            excluded_paths=tuple(document["excluded_paths"]),
-            limits=SnapshotLimits(**document["limits"]),
-            captured_at=document["captured_at"],
-        )
+        try:
+            snapshot = cls(
+                entries=tuple(entries),
+                excluded_paths=tuple(document["excluded_paths"]),
+                limits=SnapshotLimits(**document["limits"]),
+                captured_at=document["captured_at"],
+            )
+        except (TypeError, KeyError) as exc:
+            raise SnapshotError("project snapshot contains invalid contract fields") from exc
         if snapshot.to_document() != document:
             raise SnapshotError("project snapshot document is not canonical")
         return snapshot
