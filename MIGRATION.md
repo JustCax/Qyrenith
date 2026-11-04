@@ -80,6 +80,25 @@ The import size is limited to 16 MiB and each claim's evidence array is bounded.
 
 Catalog digesting is a consistency/integrity mechanism, not a signature or proof of origin. Catalogs constructed directly in trusted application code are treated as local inputs. JSON imports are **untrusted by default** and cannot qualify a route. To trust an imported catalog, the caller must supply a `KnowledgeTrustPolicy` whose allowlist contains that exact catalog digest. The policy must itself be loaded from an owner-controlled local trust store; its digest is not a signature. A changed/merged catalog has a different digest and requires a new review decision. This closes the default-import trust gap while retaining an explicit local trust boundary; it does not authenticate the human reviewer.
 
+Example of the explicit import decision:
+
+\`\`\`python
+from qyrenith_engine.migration import KnowledgeCatalog, KnowledgeTrustPolicy
+
+catalog_bytes = open("reviewed-knowledge.json", "rb").read()
+untrusted = KnowledgeCatalog.from_json_bytes(catalog_bytes)
+policy = KnowledgeTrustPolicy(
+    policy_id="local-reviewed-catalogs",
+    reviewed_by="operator-review-attribution",
+    reviewed_at="2026-11-04T00:00:00Z",
+    trusted_catalog_digests=(untrusted.content_digest,),
+)
+trusted = KnowledgeCatalog.from_json_bytes(catalog_bytes, trust_policy=policy)
+assert trusted.is_trusted
+\`\`\`
+
+The trust policy must be loaded from a protected local source. Do not store an authoritative trust policy beside untrusted project input.
+
 ## 5. Route-planning result states
 
 `plan_route(source, target, transitions, knowledge)` evaluates all knowledge at one captured UTC instant. Pass `evaluated_at` explicitly when a reproducible historical decision is required.
