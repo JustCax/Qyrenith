@@ -2,12 +2,12 @@
 
 ## 1. Release principle
 
-1.2.0 is complete only when all accepted requirements in the 15-specification set are implemented, tested, integrated, documented, and supported by retained evidence. A specification, stub, placeholder, TODO, or passing narrow unit test does not constitute feature completion.
+1.2.0 is complete only when all accepted requirements across the seventeen normative specifications are implemented, tested, integrated, documented, and supported by retained evidence. The deep-audit README is the navigation index. A specification, stub, placeholder, TODO, or passing narrow unit test does not constitute feature completion.
 
 ## 2. Mandatory sequence
 
 ### Phase 0 — Documentation baseline
-- Create and cross-link all fifteen specifications.
+- Create and cross-link all seventeen normative specifications and the specification index.
 - Map every requirement to implementation modules, tests, evidence, and acceptance owner.
 - Resolve contradictions with existing public/internal docs.
 - Review all security, trust, permission, isolation, and non-claim language.
@@ -34,14 +34,6 @@
 ### Phase 3 — Remaining fourteen capability modules
 Implement each module in small dependency-ordered slices. For every slice: QDAS capture → plan → approval → implementation → targeted tests → full regression → static/security audit → diff review → evidence record. QDAS assists but does not self-certify its own changes.
 
-### Phase 4 — Integration and release readiness
-- Cross-module contract and adversarial testing.
-- Full supported OS/Python CI matrix on the exact release candidate commit.
-- Clean build/install/package tests and deterministic archive manifest checks.
-- Documentation-link and schema validation.
-- External independent verification and owner review.
-- Release remains unpublished until explicit owner authorization.
-
 ## 3. Capability modules
 
 The fourteen capability modules after QDAS are:
@@ -60,7 +52,7 @@ The fourteen capability modules after QDAS are:
 13. Migration platform integration.
 14. Integrated reporting, orchestration, and acceptance controls.
 
-The master architecture and this plan are governance documents, not additional runtime modules. Detailed capability contracts are specified in the companion documents.
+The master architecture and this plan are governance documents. The migration integration and reporting specifications define the final two capability modules. The README is an index, not a runtime module.
 
 ## 4. Requirement traceability
 
