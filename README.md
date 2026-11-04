@@ -47,11 +47,11 @@ evidence listed actually runs. Everything else stays registered but unclaimed.
 
 | Domain | Level | Evidence |
 |---|---|---|
-| Minecraft | L5 — production | CI gate, policy engine, recovery tests, adversarial/failure-quality cases, golden migration benchmark. A real Gradle/JAR build remains a mandatory real gate and is never claimed as satisfied offline. |
+| Minecraft | L4 — advanced verification (pre-production) | CI gate, policy engine, recovery tests, adversarial/failure-quality cases, and a golden source-migration benchmark. L5 production maturity is not claimed: a real public end-to-end migration with a successful Gradle/JAR build and behavioral validation is still required. |
 | Python | L2 — verified | `python-compile` + `python-unittest` adapters (standard library only), reproducible verification benchmark, failure-detection test. |
 | JavaScript/TypeScript/Node | L2 — verified | `node-tests` adapter (built-in `node --test` runner, no npm required), reproducible verification benchmark, failure-detection test. |
 | Rust | L2 — verified | `rust-check` adapter (`cargo check`, no linker required), reproducible verification benchmark, failure-detection test. |
-| Roblox, Skyrim, GTA/FiveM, Unity, Godot, Unreal Engine, Java, C/C++ | L0 — registered | Routing names only. No adapters, benchmarks, or validation yet. |
+| Roblox, Skyrim, GTA/FiveM, Unity, Godot, Unreal Engine, Java, C/C++ | L0 — planned / registry-only | Routing names only. No adapters, benchmarks, or validation yet; these are planned extension domains, not supported integrations. |
 
 ## Design principle
 
@@ -146,7 +146,7 @@ The Doctor maintains an append-only evidence ledger and separates `OBSERVED`, `U
 
 ## Worker adapters
 
-The Doctor can discover specialist skills and project-local adapters. See `ADAPTERS.md`. Worker choice is advisory; only Doctor verification can produce a successful workflow result.
+The Doctor can discover specialist skills and project-local adapters. See `ADAPTERS.md`. Discovery never launches a worker. The first execution of an exact external worker command requires explicit approval with `worker-run --yes`; approval is stored per user and bound to a SHA-256 command fingerprint. A changed command or file entrypoint requires re-approval. Worker choice is advisory; only Doctor verification can produce a successful workflow result.
 
 ## Recovery and security
 
@@ -303,7 +303,7 @@ The main command surface, grouped by purpose. Run `python qyrenith.py --help` fo
 | `evidence` | Inspect the evidence ledger |
 | `skills` | Discover/rank installed skills |
 | `adapters` | Discover worker/skill adapters |
-| `worker-run` | Run one explicitly declared external worker without granting Doctor SUCCESS authority |
+| `worker-run` | Run one explicitly declared external worker; first execution requires `--yes` to approve its exact command fingerprint; never grants Doctor SUCCESS authority |
 
 ### Tests, security, and recovery
 
