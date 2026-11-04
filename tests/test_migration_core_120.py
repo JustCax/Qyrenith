@@ -228,6 +228,9 @@ class TestVerifiedKnowledge(unittest.TestCase):
             verified_by=first.verified_by,
             verified_at=first.verified_at,
             valid_until=first.valid_until,
+            verified_with=first.verified_with,
+            verifier_version=first.verifier_version,
+            verifier_digest=first.verifier_digest,
         )
         self.assertEqual(
             KnowledgeCatalog((with_two,)).content_digest,
@@ -245,7 +248,10 @@ class TestVerifiedKnowledge(unittest.TestCase):
             statement="Changed statement.", assertion=original.assertion,
             source=source, target=target, status=KnowledgeStatus.VERIFIED,
             evidence=original.evidence, verified_by=original.verified_by,
-            verified_at=original.verified_at,
+            verified_at=original.verified_at, valid_until=original.valid_until,
+            verified_with=original.verified_with,
+            verifier_version=original.verifier_version,
+            verifier_digest=original.verifier_digest,
         )
         with self.assertRaises(ValueError):
             catalog.merge(KnowledgeCatalog((changed,)))
