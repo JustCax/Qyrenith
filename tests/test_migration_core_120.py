@@ -412,6 +412,7 @@ class TestUniversalPlanner(unittest.TestCase):
 
     def test_multi_target_plan_constructor_enforces_64_target_bound(self):
         from datetime import datetime, timezone
+        from qyrenith_engine.migration.planner import MultiTargetPlan
         source = identity("1.20.1")
         route = plan_route(
             source, source, (), KnowledgeCatalog(()),
