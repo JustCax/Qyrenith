@@ -181,7 +181,7 @@ class WorkspaceDescriptor:
             canonical = _canonical(document)
         except (json.JSONDecodeError, TypeError, ValueError) as exc:
             raise WorkspaceError("invalid workspace descriptor JSON") from exc
-        if source.encode("utf-8") not in {canonical, canonical + b"\n"}:
+        if source.encode("utf-8") not in {canonical, canonical + b"\n", canonical + b"\r\n"}:
             raise WorkspaceError("workspace descriptor JSON is not canonical")
         return cls.from_document(document)
 
