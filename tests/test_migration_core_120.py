@@ -342,7 +342,7 @@ class TestUniversalPlanner(unittest.TestCase):
         self.assertTrue(trusted.is_trusted)
         self.assertEqual(trusted_plan.status, "PLANNED")
         self.assertNotEqual(untrusted_plan.plan_digest, trusted_plan.plan_digest)
-        self.assertEqual(trusted_plan.knowledge_trust_digest, trusted.trust_digest)
+        self.assertEqual(trusted_plan.knowledge_trust_digest, trusted.trust_digest_at(datetime(2026, 11, 4, tzinfo=timezone.utc)))
 
     def test_empty_merge_preserves_existing_trust_decision(self):
         source, target = identity("1.20.1"), identity("1.21")
