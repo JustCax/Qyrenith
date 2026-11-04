@@ -165,13 +165,14 @@ These are planning primitives only. They do not discover a project, modify files
 - [x] Expose read-only `snapshot capture` and `snapshot verify` CLI operations with explicit match/change exit codes.
 - [x] Validate snapshot schema, canonical serialization, release packaging, and CLI behavior in CI.
 - [x] Add single-target isolated workspace materialization from a verified source snapshot; reject symlinks and remove partial workspaces on failure.
-- [x] Bind each workspace descriptor to its target identity and source snapshot digest; support baseline revalidation.
+- [x] Bind each workspace descriptor to its workspace ID/path, target identity, and source snapshot digest; validate persisted descriptor metadata before baseline checks.
 - [x] Add bounded batch creation with duplicate-target rejection, source revalidation between copies, and rollback of prior copies on failure.
 - [x] Test target-to-target filesystem independence and rollback when the source changes mid-batch.
+- [x] Bind every target copy to the same source snapshot fingerprint.
 - [ ] Add persistent successful-workspace lifecycle/cleanup management.
 - [ ] Select and verify a Git-aware isolation strategy (worktree or equivalent) when commit metadata is required.
-- [ ] Bind every target to the same source commit/fingerprint.
-- [ ] Prevent target-to-target file leakage.
+- [ ] Bind every target to the same Git commit when commit metadata is available.
+- [x] Verify file-level independence between target copies; process-level isolation remains deferred.
 - [ ] Keep build, evidence, and verdicts independent.
 
 ### MP-07 — Minecraft reference integration
@@ -185,4 +186,4 @@ These are planning primitives only. They do not discover a project, modify files
 
 ## Explicit non-claims
 
-The current code does not provide universal automatic code conversion, API mapping discovery, Minecraft cross-loader conversion, target workspace isolation, build execution, or production migration support for any newly added domain. Worker manifests and qualification records are validated, but the conformance suite is not executed or signed by this registry. The assurance ledger exists as a standalone primitive but is not yet bound to the existing managed migration workflow. A route being PLANNED means only that the current knowledge catalog qualifies its typed edges for planning; execution authorization and migration success are separate future gates.
+The current code does not provide universal automatic code conversion, API mapping discovery, Minecraft cross-loader conversion, Git-worktree or OS-level process isolation, build execution, or production migration support for any newly added domain. Worker manifests and qualification records are validated, but the conformance suite is not executed or signed by this registry. The assurance ledger exists as a standalone primitive but is not yet bound to the existing managed migration workflow. A route being PLANNED means only that the current knowledge catalog qualifies its typed edges for planning; execution authorization and migration success are separate future gates.
