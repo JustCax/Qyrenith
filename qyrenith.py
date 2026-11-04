@@ -3653,16 +3653,20 @@ def cmd_snapshot(args):
                 excluded_paths=(".git", ".qyrenith", ".backups", "__pycache__", *tuple(args.snapshot_exclude)),
                 limits=limits,
             )
+            encoded = snapshot.to_json_bytes()
+            sys.stdout.buffer.write(encoded)
         except (OSError, TypeError, ValueError) as exc:
             die("PREFLIGHT_FAILURE", f"snapshot capture could not complete: {exc}")
-        sys.stdout.buffer.write(snapshot.to_json_bytes())
         return 0
 
     if not args.snapshot_file:
         die("PREFLIGHT_FAILURE", "snapshot verify requires --snapshot-file.")
     try:
         snapshot_path = Path(args.snapshot_file).expanduser()
-        data = snapshot_path.read_bytes()
+        with snapshot_path.open("rb") as stream:
+            data = stream.read(64 * 1024 * 1024 + 1)
+        if len(data) > 64 * 1024 * 1024:
+            raise ValueError("snapshot file exceeds the 64 MiB import limit")
         expected = deserialize_project_snapshot(data)
         result = verify_project_snapshot(root, expected)
     except (OSError, TypeError, ValueError) as exc:
