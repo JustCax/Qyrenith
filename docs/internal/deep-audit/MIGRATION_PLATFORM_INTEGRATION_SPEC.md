@@ -22,7 +22,7 @@ The current branch contains typed migration identity and transitions, evidence-s
 - **MI-13 QDAS:** use QDAS to audit migration changes, failure handling, and regression repairs; QDAS does not bypass migration authorization.
 - **MI-14 Honest support claims:** a planned route, registered adapter, qualified worker, or copied workspace is not a completed migration.
 
-- **MI-15 Qualification trust:** a matching qualification record is not proof that a conformance suite actually ran or that its reviewer is authentic. A worker may be assessed QUALIFIED only after the suite result is independently collected or a trusted attestation is verified under an explicit trust policy. Untrusted/imported records remain UNKNOWN/UNQUALIFIED, and the local trust policy must be current at the assessment timestamp.
+- **MI-15 Qualification trust:** a matching qualification record is not proof that a conformance suite actually ran or that its reviewer is authentic. The current exact-digest local allowlist is a provisional trust gate only; it does not establish production qualification. Release acceptance requires a controlled conformance runner with independently collected results or a trusted authenticated attestation. Untrusted/imported records remain UNKNOWN/UNTRUSTED, and any local trust policy must be current at the assessment timestamp. A local allowlist alone must never authorize worker execution.
 
 ## 4. Required lifecycle
 `DISCOVER → IDENTIFY → SNAPSHOT → PLAN → QUALIFY → AUTHORIZE → ISOLATE → EXECUTE_STEP → VERIFY_STEP → RECORD → RECOVER_OR_CONTINUE → FINAL_AUDIT`.
