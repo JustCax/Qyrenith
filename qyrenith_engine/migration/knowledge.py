@@ -444,7 +444,7 @@ class KnowledgeCatalog:
         return self.is_trusted_at()
 
     def is_trusted_at(self, now: datetime | None = None) -> bool:
-        if not self.is_trusted_at(now):
+        if not self._trusted:
             return False
         return self._trust_policy is None or self._trust_policy.is_current(now)
 
