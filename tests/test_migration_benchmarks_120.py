@@ -1,4 +1,5 @@
 """Executable domain-neutral migration benchmark fixtures."""
+import hashlib
 import json
 import unittest
 from datetime import datetime
@@ -18,6 +19,7 @@ from qyrenith_engine.migration import (
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "benchmarks" / "semantic-migration" / "ROUTES.json"
+VERIFIER_DIGEST = "sha256:" + hashlib.sha256((ROOT / "qyrenith_engine/migration/knowledge.py").read_bytes()).hexdigest()
 
 
 def load_fixture():
@@ -35,6 +37,7 @@ def build_case(item):
         origin="synthetic-benchmark",
         locator="ROUTES.json#" + item["case_id"],
         observed_at=item["observed_at"],
+        digest="sha256:" + hashlib.sha256(json.dumps(item, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest(),
     )
     claim = MigrationKnowledgeClaim(
         claim_id="claim-" + item["case_id"],
@@ -48,6 +51,9 @@ def build_case(item):
         verified_by=item["verified_by"],
         verified_at=item["verified_at"],
         valid_until=item["valid_until"],
+        verified_with="qyrenith-semantic-fixture-validator",
+        verifier_version="1",
+        verifier_digest=VERIFIER_DIGEST,
     )
     edge = MigrationTransition(
         transition_id="transition-" + item["case_id"],
