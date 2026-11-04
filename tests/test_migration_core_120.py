@@ -325,9 +325,10 @@ class TestUniversalPlanner(unittest.TestCase):
         edge = MigrationTransition(
             "imported-edge", source, target, TransitionKind.VERSION_UPGRADE, (claim.claim_id,)
         )
+        evaluation_time = datetime(2026, 11, 4, tzinfo=timezone.utc)
 
         self.assertFalse(imported.is_trusted)
-        untrusted_plan = plan_route(source, target, (edge,), imported)
+        untrusted_plan = plan_route(source, target, (edge,), imported, evaluated_at=evaluation_time)
         self.assertEqual(untrusted_plan.status, "UNKNOWN")
 
         policy = KnowledgeTrustPolicy(
@@ -338,11 +339,11 @@ class TestUniversalPlanner(unittest.TestCase):
         )
         self.assertEqual(KnowledgeTrustPolicy.from_json_bytes(policy.to_json_bytes()), policy)
         trusted = KnowledgeCatalog.from_json_bytes(encoded, trust_policy=policy)
-        trusted_plan = plan_route(source, target, (edge,), trusted)
+        trusted_plan = plan_route(source, target, (edge,), trusted, evaluated_at=evaluation_time)
         self.assertTrue(trusted.is_trusted)
         self.assertEqual(trusted_plan.status, "PLANNED")
         self.assertNotEqual(untrusted_plan.plan_digest, trusted_plan.plan_digest)
-        self.assertEqual(trusted_plan.knowledge_trust_digest, trusted.trust_digest_at(datetime(2026, 11, 4, tzinfo=timezone.utc)))
+        self.assertEqual(trusted_plan.knowledge_trust_digest, trusted.trust_digest_at(evaluation_time))
 
     def test_empty_merge_preserves_existing_trust_decision(self):
         source, target = identity("1.20.1"), identity("1.21")
