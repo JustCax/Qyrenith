@@ -111,7 +111,7 @@ QDAS consumes normalized events from the execution and verification layers and e
 
 ## 8. Acceptance gate
 
-All QDAS-01..20 requirements need implementation and positive/negative tests. QDAS must demonstrate at least one deterministic failure-to-diagnosis-to-repair-to-reverification scenario in a disposable fixture, plus safe-stop scenarios. The independent CI run must pass. QDAS cannot be marked complete solely by its own report.
+All QDAS-01..22 requirements need implementation and positive/negative/adversarial tests. QDAS must demonstrate at least one deterministic failure-to-diagnosis-to-repair-to-reverification scenario in a disposable fixture, plus safe-stop scenarios. The independent CI run must pass. QDAS cannot be marked complete solely by its own report.
 
 ## 9. Explicit non-claims
 
