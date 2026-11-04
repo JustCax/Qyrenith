@@ -20,6 +20,8 @@ Every claim is scoped by subject, source identity, target identity, dimensions, 
 - **UK-11 Migration planner:** compatibility knowledge may qualify typed migration edges only when exact source/target scope and evidence are valid.
 - **UK-12 Auditability:** preserve superseded claims and reasoned lifecycle history.
 
+- **UK-13 Import trust boundary:** an imported `VERIFIED` label, reviewer string, timestamp, or unkeyed digest is not authentication. Imported claims are untrusted for route qualification until accepted by an explicit local trust policy or validated against a configured trusted attestation. Unknown trust must produce UNKNOWN/BLOCKED, never PLANNED.
+
 ## 4. Separation of knowledge domains
 Migration compatibility knowledge and general audit/failure knowledge may share provenance primitives but must retain separate schemas and semantics. A build failure observed in one environment does not prove an API incompatibility universally.
 
