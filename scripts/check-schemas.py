@@ -41,6 +41,11 @@ EXPECTED = {
         "schema", "route_plan_digest", "worker_assessment_digest", "policy_digest",
         "approved_by", "approved_at", "expires_at", "grants", "authorization_digest",
     ],
+    "migration-authorization-policy.schema.json": [
+        "schema", "allowed_permissions", "max_timeout_seconds", "max_input_bytes",
+        "max_output_bytes", "max_changed_files", "max_lifetime_seconds",
+        "allowed_worker_ids", "policy_digest",
+    ],
 }
 EXPECTED_TRANSITION_KINDS = {
     "VERSION_UPGRADE", "LOADER_CONVERSION", "FRAMEWORK_CHANGE", "PLATFORM_MIGRATION",
@@ -191,6 +196,16 @@ require(blocked_evaluations.get("minItems") == 1 and "contains" in blocked_evalu
         "BLOCKED assessment must contain a disabled or incompatible worker result")
 require(assessment_rules.get("QUALIFIED", {}).get("properties", {}).get("evaluations", {}).get("items", {}).get("properties", {}).get("resolution", {}).get("properties", {}).get("status", {}).get("const") == "QUALIFIED",
         "QUALIFIED aggregate must contain only qualified worker resolutions")
+
+policy_schema = schemas["migration-authorization-policy.schema.json"]
+require(policy_schema["properties"]["policy_digest"].get("pattern") == "^[0-9a-f]{64}$",
+        "authorization policy must carry a canonical digest")
+require(policy_schema["properties"]["allowed_permissions"].get("uniqueItems") is True,
+        "authorization policy permissions must be unique")
+require(policy_schema["properties"]["allowed_worker_ids"].get("uniqueItems") is True,
+        "authorization policy worker allowlist must be unique")
+require(policy_schema["properties"]["max_lifetime_seconds"].get("maximum") == 86400,
+        "authorization policy lifetime ceiling mismatch")
 
 authorization = schemas["migration-authorization.schema.json"]
 require(authorization["properties"]["route_plan_digest"].get("pattern") == "^[0-9a-f]{64}$",
