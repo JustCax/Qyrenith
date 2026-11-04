@@ -43,10 +43,10 @@ class TestVersionConsistency(unittest.TestCase):
         self.assertTrue(workflows, "GitHub Actions workflows must exist")
         for workflow in workflows:
             for line_number, line in enumerate(workflow.read_text(encoding="utf-8").splitlines(), 1):
-                if re.match(r"^\\s*uses\\s*:", line):
+                if re.match(r"^\s*uses\s*:", line):
                     self.assertRegex(
                         line,
-                        r"^\\s*uses\\s*:\\s*[^@\\s]+@[0-9a-f]{40}(?:\\s+#.*)?\\s*$",
+                        r"^\s*uses\s*:\s*[^@\s]+@[0-9a-f]{40}(?:\s+#.*)?\s*$",
                         f"{workflow.relative_to(ROOT)}:{line_number} must pin its action to a full commit SHA",
                     )
 
