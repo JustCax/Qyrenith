@@ -6,7 +6,7 @@ Minecraft remains the first flagship domain; domain-specific knowledge lives in 
 and workers while the safety/verification core stays generic. Standard library only.
 """
 from __future__ import annotations
-import argparse, datetime as dt, hashlib, json, os, re, shutil, signal, stat, subprocess, sys, tempfile, threading, time, zipfile, shlex
+import argparse, datetime as dt, hashlib, json, os, re, shutil, stat, sys, tempfile, threading, time, zipfile, shlex
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
