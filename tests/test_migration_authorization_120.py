@@ -47,7 +47,7 @@ TARGET = MigrationIdentity(
 )
 
 
-def fixture():
+def knowledge_catalog():
     claim = MigrationKnowledgeClaim(
         claim_id="authorization-claim",
         subject="runtime.compatibility",
@@ -68,6 +68,13 @@ def fixture():
         verifier_version="2",
         verifier_digest=VERIFIER_DIGEST,
     )
+    return KnowledgeCatalog((claim,))
+
+
+def fixture():
+    catalog = knowledge_catalog()
+    claim = catalog.get("authorization-claim")
+    assert claim is not None
     edge = MigrationTransition(
         transition_id="authorization-transition",
         source=SOURCE,
@@ -114,7 +121,7 @@ def fixture():
         (WorkerRegistration(manifest, qualification),),
         trust_policy=worker_trust,
     )
-    plan = plan_route(SOURCE, TARGET, (edge,), KnowledgeCatalog((claim,)), evaluated_at=NOW)
+    plan = plan_route(SOURCE, TARGET, (edge,), catalog, evaluated_at=NOW)
     assessment = assess_route_workers(plan, registry)
     policy = MigrationAuthorizationPolicy(
         allowed_permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
@@ -140,6 +147,7 @@ def authorize(*, approved_at=NOW, expires_at=datetime(2026, 11, 4, 18, 10, tzinf
         expires_at=expires_at,
         permissions=permissions,
         limits=limits or default_limits,
+        knowledge=knowledge_catalog(),
     )
 
 
