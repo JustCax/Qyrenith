@@ -489,8 +489,17 @@ class WorkerTrustPolicy:
     def to_json_bytes(self) -> bytes:
         return _canonical_bytes(self.to_document()) + b"\n"
 
-    def trusts(self, qualification_digest: str) -> bool:
-        return qualification_digest in self.trusted_qualification_digests
+    def is_current(self, now: datetime | None = None) -> bool:
+        instant = datetime.now(timezone.utc) if now is None else now
+        if not isinstance(instant, datetime) or instant.tzinfo is None or instant.utcoffset() is None:
+            raise ValueError("now must be a timezone-aware datetime")
+        return parse_timestamp(self.reviewed_at) <= instant.astimezone(timezone.utc)
+
+    def trusts(self, qualification_digest: str, now: datetime | None = None) -> bool:
+        return (
+            qualification_digest in self.trusted_qualification_digests
+            and self.is_current(now)
+        )
 
     @classmethod
     def from_document(cls, document: object) -> "WorkerTrustPolicy":
@@ -741,7 +750,7 @@ class MigrationWorkerRegistry:
             )
         if (
             self._trust_policy is None
-            or not self._trust_policy.trusts(qualification.qualification_digest)
+            or not self._trust_policy.trusts(qualification.qualification_digest, instant)
         ):
             return WorkerResolution(
                 "UNTRUSTED", manifest.worker_id, manifest.worker_version,
