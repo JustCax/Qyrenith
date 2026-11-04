@@ -62,6 +62,7 @@ class MultiTargetWorkspaceBatch:
     plan_digest: str
     snapshot_digest: str
     source: MigrationIdentity
+    targets: tuple[MigrationIdentity, ...]
     target_plan_digests: tuple[str, ...]
     workspaces: tuple[WorkspaceDescriptor, ...]
     created_at: str
@@ -76,14 +77,19 @@ class MultiTargetWorkspaceBatch:
                 raise WorkspaceError(f"{name} must be a lowercase SHA-256 digest")
         if not isinstance(self.source, MigrationIdentity):
             raise WorkspaceError("source must be a MigrationIdentity")
+        if not isinstance(self.targets, (tuple, list)):
+            raise WorkspaceError("targets must be a sequence")
         if not isinstance(self.target_plan_digests, (tuple, list)):
             raise WorkspaceError("target_plan_digests must be a sequence")
         if not isinstance(self.workspaces, (tuple, list)):
             raise WorkspaceError("workspaces must be a sequence")
+        targets = tuple(self.targets)
         plan_digests = tuple(self.target_plan_digests)
         descriptors = tuple(self.workspaces)
-        if not 1 <= len(plan_digests) <= 64 or len(plan_digests) != len(descriptors):
-            raise WorkspaceError("batch must bind 1 to 64 matching target plans and workspaces")
+        if not 1 <= len(plan_digests) <= 64 or len(plan_digests) != len(descriptors) or len(targets) != len(descriptors):
+            raise WorkspaceError("batch must bind 1 to 64 matching targets, plans, and workspaces")
+        if any(not isinstance(item, MigrationIdentity) for item in targets):
+            raise WorkspaceError("targets must contain MigrationIdentity values")
         if any(not isinstance(item, str) or not _SHA256.fullmatch(item) for item in plan_digests):
             raise WorkspaceError("every target plan digest must be a lowercase SHA-256 digest")
         if len(plan_digests) != len(set(plan_digests)):
@@ -92,9 +98,12 @@ class MultiTargetWorkspaceBatch:
             raise WorkspaceError("workspaces must contain WorkspaceDescriptor values")
         if any(item.source_snapshot_digest != self.snapshot_digest for item in descriptors):
             raise WorkspaceError("every workspace must bind the batch source snapshot")
-        target_keys = tuple(item.target.stable_key for item in descriptors)
+        target_keys = tuple(item.stable_key for item in targets)
+        workspace_target_keys = tuple(item.target.stable_key for item in descriptors)
         if len(target_keys) != len(set(target_keys)):
-            raise WorkspaceError("workspace target identities must be unique")
+            raise WorkspaceError("target identities must be unique")
+        if target_keys != workspace_target_keys:
+            raise WorkspaceError("workspace targets must match the ordered target-plan bindings")
         workspace_paths = tuple(item.workspace_path for item in descriptors)
         if len(workspace_paths) != len(set(workspace_paths)):
             raise WorkspaceError("workspace paths must be unique")
@@ -102,6 +111,7 @@ class MultiTargetWorkspaceBatch:
         if len(parents) != 1:
             raise WorkspaceError("all target workspaces must share one workspace parent")
         _parse_timestamp(self.created_at)
+        object.__setattr__(self, "targets", targets)
         object.__setattr__(self, "target_plan_digests", plan_digests)
         object.__setattr__(self, "workspaces", descriptors)
 
@@ -111,6 +121,7 @@ class MultiTargetWorkspaceBatch:
             "plan_digest": self.plan_digest,
             "snapshot_digest": self.snapshot_digest,
             "source": self.source.to_dict(),
+            "targets": [item.to_dict() for item in self.targets],
             "target_plan_digests": list(self.target_plan_digests),
             "workspaces": [item.to_document() for item in self.workspaces],
             "created_at": self.created_at,
@@ -133,7 +144,7 @@ class MultiTargetWorkspaceBatch:
     def from_document(cls, document: object) -> "MultiTargetWorkspaceBatch":
         expected = {
             "schema", "plan_digest", "snapshot_digest", "source",
-            "target_plan_digests", "workspaces", "created_at", "batch_digest",
+            "targets", "target_plan_digests", "workspaces", "created_at", "batch_digest",
         }
         if not isinstance(document, dict) or set(document) != expected:
             raise WorkspaceError("multi-target workspace batch has missing or unexpected fields")
@@ -150,6 +161,8 @@ class MultiTargetWorkspaceBatch:
         identity_fields = set(MigrationIdentity.__dataclass_fields__)
         if set(document["source"]) != identity_fields:
             raise WorkspaceError("batch source identity has missing or unexpected fields")
+        if not isinstance(document["targets"], list):
+            raise WorkspaceError("targets must be an array")
         if not isinstance(document["target_plan_digests"], list):
             raise WorkspaceError("target_plan_digests must be an array")
         if not isinstance(document["workspaces"], list):
@@ -159,6 +172,7 @@ class MultiTargetWorkspaceBatch:
                 plan_digest=document["plan_digest"],
                 snapshot_digest=document["snapshot_digest"],
                 source=MigrationIdentity(**document["source"]),
+                targets=tuple(MigrationIdentity(**item) for item in document["targets"]),
                 target_plan_digests=tuple(document["target_plan_digests"]),
                 workspaces=tuple(
                     WorkspaceDescriptor.from_document(item) for item in document["workspaces"]
@@ -263,6 +277,7 @@ def prepare_multi_target_workspaces(
             plan_digest=plan.plan_digest,
             snapshot_digest=snapshot.snapshot_digest,
             source=plan.source,
+            targets=tuple(item.target for item in ordered_plans),
             target_plan_digests=tuple(item.plan_digest for item in ordered_plans),
             workspaces=descriptors,
             created_at=created_at,
