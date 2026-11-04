@@ -4,7 +4,7 @@ Authorization is an explicit approval record, not an execution mechanism. This
 module never launches workers, mutates projects, or authenticates approver identity.
 """
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from enum import Enum
 import hashlib
 import json
@@ -535,7 +535,7 @@ def validate_migration_authorization(
         raise ValueError("authorization policy digest does not match the active policy")
     if _instant(authorization.approved_at, "approved_at") < _instant(plan.evaluated_at, "plan.evaluated_at"):
         raise ValueError("authorization approval predates the route plan")
-    if _instant(authorization.expires_at, "expires_at") - _instant(authorization.approved_at, "approved_at") > __import__("datetime").timedelta(seconds=policy.max_lifetime_seconds):
+    if _instant(authorization.expires_at, "expires_at") - _instant(authorization.approved_at, "approved_at") > timedelta(seconds=policy.max_lifetime_seconds):
         raise ValueError("authorization lifetime exceeds the active policy")
     assessed_transitions = tuple(item[0] for item in assessment.evaluations)
     if assessed_transitions != plan.transitions:
@@ -574,6 +574,7 @@ def validate_migration_authorization(
             or current.qualification_digest != grant.qualification_digest
             or current.manifest_digest != resolution.manifest_digest
             or current.qualification_digest != resolution.qualification_digest
+            or current.qualification_id != resolution.qualification_id
         ):
             raise ValueError("authorized worker manifest or qualification has changed")
         valid_until = _instant(qualification.valid_until, "qualification.valid_until")
@@ -585,9 +586,15 @@ def validate_migration_authorization(
             raise ValueError("authorization grant exceeds the active policy permissions")
         if not set(grant.permissions).issubset(manifest.permissions):
             raise ValueError("authorization grant exceeds the worker's declared permissions")
-        for field in ("timeout_seconds", "max_input_bytes", "max_output_bytes", "max_changed_files"):
+        policy_limits = {
+            "timeout_seconds": policy.max_timeout_seconds,
+            "max_input_bytes": policy.max_input_bytes,
+            "max_output_bytes": policy.max_output_bytes,
+            "max_changed_files": policy.max_changed_files,
+        }
+        for field, policy_limit in policy_limits.items():
             value = getattr(grant.limits, field)
-            if value > getattr(policy, field.replace("timeout_seconds", "max_timeout_seconds").replace("max_input_bytes", "max_input_bytes").replace("max_output_bytes", "max_output_bytes").replace("max_changed_files", "max_changed_files")):
+            if value > policy_limit:
                 raise ValueError(f"authorization grant exceeds the active policy resource limit: {field}")
             if value > getattr(manifest.limits, field):
                 raise ValueError(f"authorization grant exceeds the worker resource limit: {field}")
