@@ -202,7 +202,17 @@ python qyrenith.py snapshot verify --project . --snapshot-file ../source.snapsho
 
 Capture writes canonical JSON to standard output; redirect it to a file outside the project when you want to retain it. Verification exits with code 0 for `MATCH`, 1 for `CHANGED`, and a preflight error code when the snapshot cannot be read or checked. Neither command creates Qyrenith state inside the inspected project.
 
-## 10. Assurance ledger boundary
+## 10. Isolated target workspaces
+
+`create_isolated_workspace(source_root, snapshot, workspace_parent, target)` creates one new, independent target directory under an existing trusted workspace parent. The parent must be outside the source project. The operation requires the source to match the supplied snapshot before copying, copies only regular files represented in that snapshot, verifies each copied file's size and digest, checks the materialized project against the same snapshot, and rechecks the source before returning.
+
+Snapshots containing symbolic links are rejected for materialization. This avoids reproducing potentially external link targets in a target workspace. Empty directories and portable permission bits are preserved where the host filesystem supports them. A canonical `workspace.json` descriptor binds the unique workspace ID, exact target identity, source snapshot digest, project path, file count, byte count, and creation time. `verify_workspace_baseline(descriptor, snapshot)` checks that a workspace still matches its original baseline.
+
+Call the function once per target with the same source snapshot to obtain independent directories. A failed creation removes its partial workspace. The caller owns successful workspace retention and cleanup.
+
+This is a filesystem copy, not a Git worktree: Git metadata excluded by the source snapshot is not copied, no branch or commit is created, and no worker or build process is launched. Workspace separation is not an OS sandbox; processes later launched inside a workspace still require explicit runtime isolation and permission enforcement.
+
+## 11. Assurance ledger boundary
 
 `AssuranceLedger` is a separate append-only JSONL record store. It validates record shape, scoped relative paths, digests, commit identifiers, sequence numbers, and a SHA-256 hash chain. Writes use a single-writer lock, bounded input/output, temporary-file replacement, and directory synchronization where supported.
 
@@ -210,7 +220,7 @@ The ledger is not yet integrated into the managed migration workflow. A caller-s
 
 A local hash chain can detect accidental or partial tampering when its trusted tail is preserved. An actor able to replace the entire ledger can recompute the chain. The ledger is not a digital signature, remote transparency service, database transaction coordinator, or OS security boundary.
 
-## 11. Plan-bound authorization
+## 12. Plan-bound authorization
 
 `MigrationAuthorizationPolicy` defines a local permission allowlist, worker allowlist, resource ceilings, and maximum authorization lifetime. Policies have canonical JSON import/export, a content digest, and a strict JSON Schema so the exact policy can be retained alongside an authorization record. `validate_migration_authorization(...)` is the pre-side-effect consistency gate: it rechecks the exact plan and assessment, active policy digest, authorization time window, worker registration and qualification, grant scope, permissions, and resource ceilings. `authorize_migration(plan, assessment, registry, policy, ...)` creates an immutable authorization bound to the exact route-plan digest, worker-assessment digest, and policy digest.
 
@@ -278,7 +288,7 @@ validate_migration_authorization(
 
 The example records caller-supplied attribution only. It does not authenticate the operator, persist files by itself, or launch a worker. A real executor must additionally enforce the grant at the operating-system and workspace boundaries.
 
-## 12. Current limitations
+## 13. Current limitations
 
 The current migration package is a planning and record-keeping foundation. It does not yet provide:
 
