@@ -148,6 +148,8 @@ class MultiTargetWorkspaceBatch:
         if not isinstance(instant, datetime) or instant.tzinfo is None or instant.utcoffset() is None:
             raise WorkspaceError("validation time must be timezone-aware")
         instant = instant.astimezone(timezone.utc)
+        if instant < _parse_timestamp(self.created_at):
+            raise WorkspaceError("validation time cannot precede workspace batch preparation")
         ordered_plans = tuple(sorted(plan.targets, key=lambda item: item.target.stable_key))
         if (
             plan.plan_digest != self.plan_digest
@@ -157,6 +159,8 @@ class MultiTargetWorkspaceBatch:
             or tuple(item.plan_digest for item in ordered_plans) != self.target_plan_digests
         ):
             raise WorkspaceError("workspace batch does not match the exact multi-target plan and snapshot")
+        if _parse_timestamp(self.created_at) < _parse_timestamp(ordered_plans[0].evaluated_at):
+            raise WorkspaceError("workspace batch creation cannot precede route planning")
         expected_knowledge_digest = ordered_plans[0].knowledge_digest
         expected_trust_digest = ordered_plans[0].knowledge_trust_digest
         if any(
