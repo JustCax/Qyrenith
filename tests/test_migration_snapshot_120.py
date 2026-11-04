@@ -150,9 +150,11 @@ class TestProjectSnapshot(unittest.TestCase):
                         swapped = True
                 return original_scandir(path)
 
-            with mock.patch("os.scandir", side_effect=replace_directory_before_scan):
-                with self.assertRaises(SnapshotError):
-                    capture_project_snapshot(root, excluded_paths=())
+            original_supports_fd = os.supports_fd
+            with mock.patch("os.scandir", side_effect=replace_directory_before_scan) as patched_scandir:
+                with mock.patch("os.supports_fd", original_supports_fd | {patched_scandir}):
+                    with self.assertRaises(SnapshotError):
+                        capture_project_snapshot(root, excluded_paths=())
             self.assertTrue(swapped)
             self.assertTrue((outside / "secret.txt").is_file())
 
