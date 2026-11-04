@@ -145,6 +145,8 @@ class MultiTargetPlan:
             raise ValueError("multi-target source must be a MigrationIdentity")
         if not isinstance(self.targets, (tuple, list)) or not self.targets:
             raise ValueError("multi-target plan must contain at least one route")
+        if len(self.targets) > 64:
+            raise ValueError("multi-target plan exceeds the 64-target limit")
         if any(not isinstance(item, RoutePlan) for item in self.targets):
             raise ValueError("multi-target plan entries must be RoutePlan values")
         if any(item.source != self.source for item in self.targets):
@@ -283,6 +285,8 @@ def plan_targets(
     """Plan each target independently from the same source and time snapshot."""
     if not isinstance(targets, (tuple, list)) or not targets:
         raise ValueError("at least one migration target is required")
+    if len(targets) > 64:
+        raise ValueError("multi-target requests exceed the 64-target limit")
     if any(not isinstance(target, MigrationIdentity) for target in targets):
         raise TypeError("targets must contain MigrationIdentity values")
     keys = [target.stable_key for target in targets]
