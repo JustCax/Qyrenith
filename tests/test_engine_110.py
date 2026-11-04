@@ -49,7 +49,7 @@ class TestStaticAnalysis(unittest.TestCase):
     def test_symlinked_source_directory_blocks_incomplete_inventory(self):
         with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
             root = Path(directory)
-            (Path(outside) / "hidden.py").write_text("pass\\n", encoding="utf-8")
+            (Path(outside) / "hidden.py").write_text("pass\n", encoding="utf-8")
             try:
                 (root / "external").symlink_to(Path(outside), target_is_directory=True)
             except OSError as exc:
@@ -93,7 +93,7 @@ class TestStaticAnalysis(unittest.TestCase):
     def test_empty_impact_input_is_unknown(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / "module.py").write_text("pass\\n", encoding="utf-8")
+            (root / "module.py").write_text("pass\n", encoding="utf-8")
             self.assertEqual(build_change_impact(root, [])["status"], "UNKNOWN")
 
     def test_transitive_import_impact(self):
@@ -196,7 +196,7 @@ class TestBoundaryAndExecution(unittest.TestCase):
             report = run_bounded_worker(
                 [sys.executable, "-c", script],
                 directory,
-                b"{}\\n",
+                b"{}\n",
                 timeout=30,
                 output_limit=256,
             )
@@ -209,11 +209,11 @@ class TestBoundaryAndExecution(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             script = "import sys; sys.stdin.read(); print('protocol'); print('diagnostic', file=sys.stderr)"
             report = run_bounded_worker(
-                [sys.executable, "-c", script], directory, b"request\\n", timeout=5
+                [sys.executable, "-c", script], directory, b"request\n", timeout=5
             )
             self.assertEqual(report["status"], "PASS")
-            self.assertEqual(report["stdout"], "protocol\\n")
-            self.assertEqual(report["stderr"], "diagnostic\\n")
+            self.assertEqual(report["stdout"], "protocol\n")
+            self.assertEqual(report["stderr"], "diagnostic\n")
             self.assertFalse(report["input_incomplete"])
 
 
