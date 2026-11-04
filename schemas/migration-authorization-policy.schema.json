@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qyrenith.dev/schemas/migration-authorization-policy.schema.json",
+  "title": "Qyrenith Migration Authorization Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "allowed_permissions",
+    "max_timeout_seconds",
+    "max_input_bytes",
+    "max_output_bytes",
+    "max_changed_files",
+    "max_lifetime_seconds",
+    "allowed_worker_ids",
+    "policy_digest"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "allowed_permissions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "READ_PROJECT",
+          "WRITE_PROJECT",
+          "EXECUTE_PROCESS",
+          "NETWORK",
+          "INSTALL_DEPENDENCIES",
+          "GIT_WRITE",
+          "PUBLISH_ARTIFACT"
+        ]
+      }
+    },
+    "max_timeout_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3600
+    },
+    "max_input_bytes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 67108864
+    },
+    "max_output_bytes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 16777216
+    },
+    "max_changed_files": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "max_lifetime_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 86400
+    },
+    "allowed_worker_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 10000,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256
+      }
+    },
+    "policy_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}
