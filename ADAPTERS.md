@@ -74,11 +74,11 @@ The current implementation does not automatically download or execute an undiscl
 
 For an external adapter that declares `VERIFIED` or `COMMUNITY` trust, the manifest may provide an `entrypoint` field identifying the worker file whose SHA-256 is trusted. Qyrenith recomputes that hash immediately before execution. If the observed hash no longer matches the declared hash, execution is stopped with `STOPPED`; the worker is not allowed to run under stale provenance.
 
-`UNKNOWN` adapters may still be executed when the user explicitly names the adapter with `worker-run`, but their output remains advisory and can never authorize Doctor `SUCCESS`.
+`UNKNOWN` adapters are not executable merely because they are named. Before the first launch, the user must explicitly approve the exact command fingerprint with `worker-run --yes`. Approval is stored in a user-level SQLite database under `~/.qyrenith/worker-approvals.sqlite3`, keyed by the resolved project path, adapter name, and SHA-256 of the argv, resolved executable and file entrypoints, adapter version, and reduced environment. A changed command or entrypoint requires a new approval. The command fingerprint is an approval record, not a signature or an OS sandbox; the command still runs with the invoking user's OS permissions.
 
 ### Resource and process boundary
 
-External workers are treated as untrusted processes. Their stdout and stderr are each bounded to 1 MiB. Exceeding either bound stops the worker result before it can be interpreted as migration evidence. Timeouts terminate the worker process group where the platform supports process groups, with a forced termination fallback. The worker never receives the controller's ambient environment; only the reduced execution environment is passed through.
+External workers are treated as untrusted processes. A first-time command requires explicit user approval (`worker-run --yes`); approval is invalidated when the command fingerprint changes. Their stdout and stderr are each bounded to 1 MiB. Exceeding either bound stops the worker result before it can be interpreted as migration evidence. Timeouts terminate the worker process group where the platform supports process groups, with a forced termination fallback. The worker never receives the controller's ambient environment; only the reduced execution environment is passed through.
 
 ## Manifest execution contract
 
