@@ -151,7 +151,7 @@ class WorkspaceDescriptor:
                 total_bytes=document["total_bytes"],
                 created_at=document["created_at"],
             )
-        except (TypeError, KeyError) as exc:
+        except (TypeError, KeyError, ValueError) as exc:
             raise WorkspaceError("workspace descriptor contains invalid contract fields") from exc
         if descriptor.to_document() != document:
             raise WorkspaceError("workspace descriptor is not canonical")
@@ -246,6 +246,16 @@ def _copy_regular_file(
         raise WorkspaceError(f"cannot preserve file mode: {destination.name}") from exc
 
 
+
+def _remove_failed_workspace(path: Path) -> None:
+    def retry_with_write_permissions(function, failed_path, exc_info) -> None:
+        os.chmod(failed_path, 0o700)
+        function(failed_path)
+
+    shutil.rmtree(path, onerror=retry_with_write_permissions)
+
+
+
 def create_isolated_workspace(
     source_root: str | os.PathLike[str],
     snapshot: ProjectSnapshot,
@@ -280,10 +290,16 @@ def create_isolated_workspace(
     parent_resolved = parent.resolve(strict=True)
     if parent_resolved == source_resolved or parent_resolved.is_relative_to(source_resolved):
         raise WorkspaceError("workspace parent must be outside the source project")
-    initial = verify_project_snapshot(source, snapshot)
+    try:
+        initial = verify_project_snapshot(source, snapshot)
+    except (OSError, SnapshotError) as exc:
+        raise WorkspaceError(f"source snapshot could not be verified: {exc}") from exc
     if not initial.matches:
         raise WorkspaceError("source project does not match the supplied snapshot")
-    workspace_dir = Path(tempfile.mkdtemp(prefix=".qyrenith-workspace-", dir=parent_resolved))
+    try:
+        workspace_dir = Path(tempfile.mkdtemp(prefix=".qyrenith-workspace-", dir=parent_resolved))
+    except OSError as exc:
+        raise WorkspaceError(f"cannot allocate an isolated workspace: {exc}") from exc
     project_dir = workspace_dir / "project"
     try:
         project_dir.mkdir(mode=0o755)
@@ -336,8 +352,13 @@ def create_isolated_workspace(
             stream.flush()
             os.fsync(stream.fileno())
         return descriptor
-    except Exception as exc:
-        shutil.rmtree(workspace_dir, ignore_errors=True)
+    except BaseException as exc:
+        try:
+            _remove_failed_workspace(workspace_dir)
+        except OSError as cleanup_error:
+            raise WorkspaceError(
+                f"workspace creation failed and its partial directory could not be removed: {workspace_dir}"
+            ) from cleanup_error
         if isinstance(exc, WorkspaceError):
             raise
         if isinstance(exc, (OSError, ValueError, TypeError, SnapshotError)):
