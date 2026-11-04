@@ -20,20 +20,22 @@ jobs:
       contents: read
     steps:
       - name: Check out the published release tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.release.tag_name }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
+          package-manager-cache: false
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -84,23 +86,26 @@ jobs:
           python -m twine check "$BUNDLE"/pypi/*
 
       - name: Install and smoke-test the built wheel
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         shell: bash
         run: |
           WHEEL="$(find "$RUNNER_TEMP/qyrenith-release/pypi" -maxdepth 1 -name '*.whl' -print -quit)"
           test -n "$WHEEL"
           python -m pip install --no-deps --target "$RUNNER_TEMP/qyrenith-install" "$WHEEL"
-          PYTHONPATH="$RUNNER_TEMP/qyrenith-install" python - <<'PY'
+          EXPECTED_VERSION="${RELEASE_TAG#v}" PYTHONPATH="$RUNNER_TEMP/qyrenith-install" python - <<'PY'
+          import os
           import qyrenith
           import qyrenith_engine.analysis
           import qyrenith_engine.boundary
           import qyrenith_engine.execution
 
-          if qyrenith.VERSION != "1.1.0":
+          if qyrenith.VERSION != os.environ["EXPECTED_VERSION"]:
               raise SystemExit(f"Unexpected installed version: {qyrenith.VERSION}")
           PY
 
       - name: Upload verified release bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: qyrenith-release-${{ github.event.release.tag_name }}
           path: ${{ runner.temp }}/qyrenith-release/
@@ -120,7 +125,7 @@ jobs:
       id-token: write
     steps:
       - name: Download verified Python distributions
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: qyrenith-release-${{ github.event.release.tag_name }}
           path: release-bundle
@@ -140,7 +145,7 @@ jobs:
       contents: write
     steps:
       - name: Download verified release archives
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: qyrenith-release-${{ github.event.release.tag_name }}
           path: release-bundle
