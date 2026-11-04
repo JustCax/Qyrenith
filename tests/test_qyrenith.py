@@ -365,7 +365,7 @@ class TestCommandExecutionBoundary(unittest.TestCase):
 
     def test_cmdrun_enforces_timeout_and_cleans_process_group(self):
         with tempfile.TemporaryDirectory() as td:
-            code, out = qyrenith.cmdrun([sys.executable, "-c", "import time\\ntime.sleep(10)"], Path(td), timeout=1)
+            code, out = qyrenith.cmdrun([sys.executable, "-c", "from time import sleep\nsleep(10)"], Path(td), timeout=1)
             self.assertEqual(code, 124)
             self.assertIn("TIMEOUT", out)
 
@@ -1117,7 +1117,7 @@ class TestSharedRuntimeExecution(unittest.TestCase):
             root = Path(directory)
             started = time.monotonic()
             report = qyrenith._run_isolated_command(
-                root, [sys.executable, "-c", "import time; time.sleep(10)"], timeout=1
+                root, [sys.executable, "-c", "from time import sleep\nsleep(10)"], timeout=1
             )
             self.assertEqual(report["status"], "BLOCKED")
             self.assertEqual(report["reason"], "timeout")
