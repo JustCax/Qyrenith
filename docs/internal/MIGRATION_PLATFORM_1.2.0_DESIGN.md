@@ -44,7 +44,7 @@ The first implementation slice does not attempt to make hostile worker code safe
 
 | Threat | Current control | Residual risk / required future control |
 |---|---|---|
-| Malformed or oversized catalog/manifest input | Strict object fields, duplicate-key rejection, schema version checks, bounded JSON size, array bounds, canonical digest verification | A valid digest does not authenticate the source or prove that the claims are truthful. Trusted publisher/maintainer identity and signed or independently anchored records remain future work. |
+| Malformed or oversized catalog/manifest input | Strict object fields, duplicate-key rejection, schema version checks, bounded JSON size, array bounds, canonical digest verification | JSON-imported catalogs are untrusted by default and require an exact-catalog local allowlist whose trust digest is bound into route plans. A valid digest or local policy does not authenticate the publisher/reviewer or prove that the claims are truthful. A protected trust store and signed or independently anchored records remain future work. |
 | Stale or future-dated compatibility knowledge | Explicit UTC timestamps, expiry, one route evaluation instant, exact source/target identity, conflict groups, no automatic promotion | Clock trust and reviewer identity are not cryptographically established. Revalidation and source-authority policy remain future work. |
 | Compound transition hidden under a narrower transition kind | One shared transition-scope validator is used by both route edges and worker scopes | New transition kinds require explicit allowed-dimension rules and regression fixtures. |
 | Wrong worker version, scope, or capability set | Worker ID and version are pinned; manifest digest, exact scope, transition kind, and required capabilities must match | The registry does not inspect actual worker bytes or run the implementation. A later launcher must verify the measured executable digest before execution. |
@@ -76,7 +76,7 @@ A transition may be PLANNED while its worker assessment is UNKNOWN or BLOCKED. A
 | Identity and transition model | Every transition changes only the dimensions permitted by its declared kind; the same validator is used by route and worker scope records. |
 | Knowledge | No OBSERVED/INFERRED/UNKNOWN/CONFLICTED/STALE claim can qualify a route. Conflicts block every claim in the conflicting exact scope. Expired or future-dated VERIFIED claims are unusable. |
 | Route planning | The same input catalog, edge set, endpoints, hop limit, and evaluation timestamp produce the same route and digest. No missing route is fabricated. |
-| Worker qualification | Only an exact worker ID/version, manifest digest, transition scope, capability set, and current PASS qualification can resolve QUALIFIED. |
+| Worker qualification | Only an exact worker ID/version, manifest digest, transition scope, capability set, current PASS qualification, and exact qualification-digest allowlist match under a time-valid local WorkerTrustPolicy can resolve QUALIFIED; this remains a record-trust state until a controlled conformance runner exists. |
 | Authorization | Every grant is bound to the exact ordered route, assessment, policy, worker manifest, qualification, permission subset, resource ceiling, and expiry no later than qualification expiry. |
 | Worker assessment | Every route edge has an ordered resolution; mixed states aggregate conservatively. Evaluation time must equal the route plan's timestamp. |
 | Assurance | Invalid fields, paths, digest chains, stale locks, duplicate JSON keys, non-WORKED PASS reports, or missing worker provenance are rejected. |
@@ -92,10 +92,10 @@ The first 1.2.0 code slice introduces:
 - MigrationIdentity: a stable, dimension-aware identity for a project state.
 - TransitionKind and MigrationTransition: typed, directed, atomic migration edges.
 - MigrationKnowledgeClaim and EvidenceReference: scoped claims with explicit provenance and review metadata.
-- KnowledgeCatalog: rejects duplicate identifiers and validates every referenced claim against the exact transition scope.
+- KnowledgeCatalog: rejects duplicate identifiers, validates every referenced claim against the exact transition scope, and treats JSON imports as untrusted unless an exact-catalog local trust policy is supplied.
 - plan_route: deterministic shortest-route planning over enabled edges whose complete knowledge set is currently VERIFIED.
 - plan_targets: independent plans for multiple targets, with explicit PLANNED, PARTIAL, UNKNOWN, BLOCKED, or UNSUPPORTED aggregate status.
-- Canonical knowledge catalog export/import with duplicate-key rejection, digest verification, bounded parsing, idempotent merge, and conservative conflict grouping.
+- Canonical knowledge catalog export/import with duplicate-key rejection, digest verification, bounded parsing, idempotent merge, conservative conflict grouping, and explicit local trust policy for imported catalogs.
 - JSON Schemas for migration knowledge, transition declarations, assurance records, worker contracts, and route worker assessments.
 - An executable synthetic benchmark matrix covering all seven atomic transition kinds across Minecraft and non-Minecraft identity domains.
 - A single-writer, atomic JSONL assurance ledger with sequence and SHA-256 hash-chain validation, explicit lock behavior, path checks, and strict PASS evidence requirements.
@@ -186,7 +186,7 @@ These are planning primitives only. They do not discover a project, modify files
 
 ## Explicit non-claims
 
-The current code does not provide universal automatic code conversion, API mapping discovery, Minecraft cross-loader conversion, Git-worktree or OS-level process isolation, build execution, or production migration support for any newly added domain. Worker manifests and qualification records are validated, but the conformance suite is not executed or signed by this registry. The assurance ledger exists as a standalone primitive but is not yet bound to the existing managed migration workflow. A route being PLANNED means only that the current knowledge catalog qualifies its typed edges for planning; execution authorization and migration success are separate future gates.
+The current code does not provide universal automatic code conversion, API mapping discovery, Minecraft cross-loader conversion, Git-worktree or OS-level process isolation, build execution, or production migration support for any newly added domain. Worker manifests and qualification records are validated, but the conformance suite is not executed or signed by this registry. The assurance ledger exists as a standalone primitive but is not yet bound to the existing managed migration workflow. A route being PLANNED means only that the current knowledge catalog qualifies its typed edges under the bound local trust decision; execution authorization and migration success are separate future gates.
 
 
 ---
