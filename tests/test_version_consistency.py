@@ -1,10 +1,7 @@
-"""Version baseline gate: VERSION.txt, VERSION, and CITATION.cff must agree.
-
-The first public release is 1.0.0. This test fails the suite on any future
-drift between the recorded version surfaces.
-"""
+"""Version baseline gate: package, CLI, citation, and release notes must agree."""
 import importlib.util
 import re
+import tomllib
 import unittest
 from pathlib import Path
 
@@ -13,7 +10,7 @@ spec = importlib.util.spec_from_file_location("qyrenith_version_gate", ROOT / "q
 qyrenith = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(qyrenith)
 
-EXPECTED = "1.0.0"
+EXPECTED = "1.1.0"
 
 
 class TestVersionConsistency(unittest.TestCase):
@@ -25,9 +22,20 @@ class TestVersionConsistency(unittest.TestCase):
 
     def test_citation_matches(self):
         text = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
-        m = re.search(r'(?m)^version:\s*["\']?([0-9]+\.[0-9]+\.[0-9]+)', text)
-        self.assertIsNotNone(m, "CITATION.cff must carry a version field")
-        self.assertEqual(m.group(1), EXPECTED)
+        match = re.search(r'(?m)^version:\s*["\']?([0-9]+\.[0-9]+\.[0-9]+)', text)
+        self.assertIsNotNone(match, "CITATION.cff must carry a version field")
+        self.assertEqual(match.group(1), EXPECTED)
+
+    def test_package_metadata_matches_supported_baseline(self):
+        with (ROOT / "pyproject.toml").open("rb") as source:
+            metadata = tomllib.load(source)
+        self.assertEqual(metadata["project"]["version"], EXPECTED)
+        self.assertEqual(metadata["project"]["requires-python"], ">=3.11")
+
+    def test_release_notes_and_changelog_exist(self):
+        self.assertTrue((ROOT / "RELEASE_NOTES_1.1.0.md").is_file())
+        changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+        self.assertIn("## 1.1.0", changelog)
 
     def test_all_surfaces_agree(self):
         version_txt = (ROOT / "VERSION.txt").read_text(encoding="utf-8").strip()
