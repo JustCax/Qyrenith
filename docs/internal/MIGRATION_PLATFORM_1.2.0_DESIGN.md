@@ -214,3 +214,6 @@ QDAS is the first new implementation milestone after the existing migration work
 ### Release rule
 
 All accepted requirements remain release-blocking until implemented and verified. These design documents do not claim implementation completion. See [Implementation and Acceptance Plan](deep-audit/QYRENITH_1_2_0_IMPLEMENTATION_AND_ACCEPTANCE_PLAN.md).
+
+
+The authoritative requirement-to-code/test/evidence/dependency/status map is [the 1.2.0 Requirement Traceability Matrix](deep-audit/REQUIREMENT_TRACEABILITY_MATRIX.md). Its status values are deliberately conservative; foundational code is not treated as full lifecycle acceptance.
