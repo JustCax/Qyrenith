@@ -336,12 +336,18 @@ class TestUniversalPlanner(unittest.TestCase):
             reviewed_at="2026-11-04T00:00:00Z",
             trusted_catalog_digests=(imported.content_digest,),
         )
+        self.assertEqual(KnowledgeTrustPolicy.from_json_bytes(policy.to_json_bytes()), policy)
         trusted = KnowledgeCatalog.from_json_bytes(encoded, trust_policy=policy)
         trusted_plan = plan_route(source, target, (edge,), trusted)
         self.assertTrue(trusted.is_trusted)
         self.assertEqual(trusted_plan.status, "PLANNED")
         self.assertNotEqual(untrusted_plan.plan_digest, trusted_plan.plan_digest)
         self.assertEqual(trusted_plan.knowledge_trust_digest, trusted.trust_digest)
+
+    def test_empty_merge_preserves_existing_trust_decision(self):
+        source, target = identity("1.20.1"), identity("1.21")
+        catalog = KnowledgeCatalog((verified_claim("empty-merge", source, target),))
+        self.assertIs(catalog.merge(), catalog)
 
     def test_untrusted_catalog_merge_does_not_inherit_trust(self):
         source, target = identity("1.20.1"), identity("1.21")
