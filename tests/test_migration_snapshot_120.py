@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 
 from qyrenith_engine.migration.snapshot import (
     ProjectSnapshot,
@@ -122,6 +123,38 @@ class TestProjectSnapshot(unittest.TestCase):
                 (root / "external-link").unlink(missing_ok=True)
                 (external / "secret.txt").unlink(missing_ok=True)
                 external.rmdir()
+
+
+    @unittest.skipIf(os.name == "nt" or os.scandir not in os.supports_fd, "requires POSIX descriptor-relative traversal")
+    def test_directory_replacement_race_fails_closed_without_following_symlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "project"
+            nested = root / "nested"
+            outside = Path(directory) / "outside"
+            root.mkdir()
+            nested.mkdir()
+            outside.mkdir()
+            (nested / "safe.txt").write_text("safe", encoding="utf-8")
+            (outside / "secret.txt").write_text("must-not-be-followed", encoding="utf-8")
+            original_scandir = os.scandir
+            swapped = False
+
+            def replace_directory_before_scan(path):
+                nonlocal swapped
+                if isinstance(path, int) and not swapped:
+                    opened = os.fstat(path)
+                    expected = nested.stat()
+                    if opened.st_dev == expected.st_dev and opened.st_ino == expected.st_ino:
+                        nested.rename(root / "nested-original")
+                        nested.symlink_to(outside, target_is_directory=True)
+                        swapped = True
+                return original_scandir(path)
+
+            with mock.patch("os.scandir", side_effect=replace_directory_before_scan):
+                with self.assertRaises(SnapshotError):
+                    capture_project_snapshot(root, excluded_paths=())
+            self.assertTrue(swapped)
+            self.assertTrue((outside / "secret.txt").is_file())
 
     def test_root_must_not_be_a_symlink(self):
         with tempfile.TemporaryDirectory() as directory:
