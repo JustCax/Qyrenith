@@ -349,6 +349,30 @@ class TestUniversalPlanner(unittest.TestCase):
         catalog = KnowledgeCatalog((verified_claim("empty-merge", source, target),))
         self.assertIs(catalog.merge(), catalog)
 
+    def test_future_dated_catalog_trust_policy_is_not_valid_at_plan_time(self):
+        source, target = identity("1.20.1"), identity("1.21")
+        claim = verified_claim("future-policy", source, target)
+        local = KnowledgeCatalog((claim,))
+        encoded = local.to_json_bytes()
+        imported = KnowledgeCatalog.from_json_bytes(encoded)
+        policy = KnowledgeTrustPolicy(
+            policy_id="future-reviewed-catalog",
+            reviewed_by="local-owner",
+            reviewed_at="2026-11-05T00:00:00Z",
+            trusted_catalog_digests=(imported.content_digest,),
+        )
+        trusted = KnowledgeCatalog.from_json_bytes(encoded, trust_policy=policy)
+        edge = MigrationTransition(
+            "future-policy-edge", source, target, TransitionKind.VERSION_UPGRADE, (claim.claim_id,)
+        )
+        plan = plan_route(
+            source, target, (edge,), trusted,
+            evaluated_at=datetime(2026, 11, 4, tzinfo=timezone.utc),
+        )
+        self.assertTrue(trusted.is_trusted)
+        self.assertFalse(trusted.is_trusted_at(datetime(2026, 11, 4, tzinfo=timezone.utc)))
+        self.assertEqual(plan.status, "UNKNOWN")
+
     def test_untrusted_catalog_merge_does_not_inherit_trust(self):
         source, target = identity("1.20.1"), identity("1.21")
         local = KnowledgeCatalog((verified_claim("local", source, target),))
