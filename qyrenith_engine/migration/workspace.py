@@ -239,11 +239,6 @@ def _copy_regular_file(
     expected_stat: os.stat_result,
     mode: int,
 ) -> None:
-    flags = os.O_RDONLY
-    if hasattr(os, "O_BINARY"):
-        flags |= os.O_BINARY
-    if hasattr(os, "O_NOFOLLOW"):
-        flags |= os.O_NOFOLLOW
     try:
         source_fd = _open_source_file(source_root, relative_path)
     except OSError as exc:
