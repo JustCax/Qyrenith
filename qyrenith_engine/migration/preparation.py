@@ -142,6 +142,8 @@ class MultiTargetWorkspaceBatch:
             raise TypeError("snapshot must be a ProjectSnapshot")
         if not isinstance(knowledge, KnowledgeCatalog):
             raise TypeError("knowledge must be a KnowledgeCatalog")
+        if not plan.plannable:
+            raise WorkspaceError("workspace batch validation requires a PLANNED multi-target plan")
         instant = datetime.now(timezone.utc) if now is None else now
         if not isinstance(instant, datetime) or instant.tzinfo is None or instant.utcoffset() is None:
             raise WorkspaceError("validation time must be timezone-aware")
