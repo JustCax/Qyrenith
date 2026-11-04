@@ -142,7 +142,7 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
             workspace_parent = root / "prepared"
             with self.assertRaisesRegex(WorkspaceError, "requires PLANNED"):
                 prepare_multi_target_workspaces(
-                    source_root, snapshot, workspace_parent, plan
+                    source_root, snapshot, workspace_parent, plan, catalog
                 )
             self.assertFalse(workspace_parent.exists())
 
@@ -161,7 +161,7 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
             self.assertFalse(workspace_parent.exists())
 
     def test_batch_cannot_be_reused_with_another_plan_or_snapshot(self):
-        _, _, _, _, plan = multi_target_plan()
+        _, _, _, catalog, plan = multi_target_plan()
         _, _, _, _, other_plan = multi_target_plan(include_second_claim=False)
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -178,7 +178,7 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
                 batch.validate_for_plan(plan, changed_snapshot, catalog)
 
     def test_failed_post_creation_verification_rolls_back_all_workspaces(self):
-        _, _, _, _, plan = multi_target_plan()
+        _, _, _, catalog, plan = multi_target_plan()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             source_root = root / "source"
@@ -209,7 +209,7 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
             source_root = root / "source"
             snapshot = project_snapshot(source_root)
             batch = prepare_multi_target_workspaces(
-                source_root, snapshot, root / "prepared", plan
+                source_root, snapshot, root / "prepared", plan, catalog
             )
             document = json.loads(batch.to_json_bytes())
             document["plan_digest"] = "0" * 64
