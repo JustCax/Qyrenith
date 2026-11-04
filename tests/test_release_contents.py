@@ -4,6 +4,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+from unittest import mock
 import unittest
 import zipfile
 from pathlib import Path
@@ -31,6 +32,18 @@ class TestReleaseContents(unittest.TestCase):
             self.assertNotIn("..", Path(name).parts)
             self.assertTrue(path.is_file(), name)
             self.assertFalse(path.is_symlink(), name)
+
+    def test_default_release_output_rejects_symlink(self):
+        spec = importlib.util.spec_from_file_location(
+            "qyrenith_release_script", ROOT / "scripts" / "release.py"
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as directory:
+            module.ROOT = Path(directory)
+            with mock.patch.object(Path, "is_symlink", autospec=True, return_value=True):
+                with self.assertRaises(SystemExit):
+                    module.resolve_output_dir(None)
 
     def test_setuptools_manifest_matches_public_file_list(self):
         expected = manifest_files()
