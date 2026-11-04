@@ -1,6 +1,11 @@
 """Tests for version-pinned migration worker contracts and local qualification."""
+import hashlib
 import unittest
 from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+VERIFIER_DIGEST = "sha256:" + hashlib.sha256((ROOT / "qyrenith_engine/migration/knowledge.py").read_bytes()).hexdigest()
 
 from qyrenith_engine.migration import (
     EvidenceReference,
@@ -54,11 +59,15 @@ def verified_claim(claim_id, source, target):
                 origin="qualification-fixture",
                 locator="fixture:" + claim_id,
                 observed_at="2026-11-01T12:00:00Z",
+                digest="sha256:" + "c" * 64,
             ),
         ),
         verified_by="maintainer-review",
         verified_at="2026-11-01T12:00:00Z",
         valid_until="2026-12-01T00:00:00Z",
+        verified_with="qyrenith-migration-knowledge-validator",
+        verifier_version="2",
+        verifier_digest=VERIFIER_DIGEST,
     )
 
 
