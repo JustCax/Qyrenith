@@ -450,6 +450,8 @@ class KnowledgeCatalog:
 
     def merge(self, *others: "KnowledgeCatalog") -> "KnowledgeCatalog":
         """Return a new catalog; imported trust is never silently inherited by a changed digest."""
+        if not others:
+            return self
         merged = dict(self._claims)
         imported = self._imported
         for other in others:
