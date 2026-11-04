@@ -696,7 +696,12 @@ def worker_command_digest(root: Path, command: Sequence[str], entry: Dict[str, A
             local_candidate = path_value if path_value.is_absolute() else root / path_value
             if (
                 path_value.is_absolute() or "/" in argument or "\\" in argument
-                or argument.startswith(".") or local_candidate.is_file()
+                or argument.startswith(".")
+                or (local_candidate.is_file() and local_candidate.suffix.lower() in {
+                    ".py", ".pyw", ".jar", ".class", ".js", ".mjs", ".cjs",
+                    ".sh", ".bash", ".bat", ".cmd", ".exe", ".dll", ".so",
+                    ".dylib", ".wasm",
+                })
             ):
                 candidate = local_candidate
         if candidate is not None:
@@ -759,7 +764,7 @@ def _worker_command_is_approved(
             raise OSError("approval store is not a regular file")
         if not path.exists() and not approve:
             return False
-        if approve:
+        if approve and approval_store is None:
             try:
                 os.chmod(parent, 0o700)
             except OSError:
