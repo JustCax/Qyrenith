@@ -1,0 +1,224 @@
+# Qyrenith 1.2.0 Requirement Traceability Matrix
+
+**Status:** Planning baseline; implementation statuses are conservative and must be updated only with evidence.
+
+## Status semantics
+
+- `NOT_STARTED`: no accepted implementation for this requirement is present.
+- `PARTIAL`: legacy or foundational code exists, but the full requirement and acceptance contract are not yet satisfied.
+- `IMPLEMENTED`: code exists; tests/evidence are not yet sufficient for VERIFIED.
+- `TESTED`: mapped positive and negative tests pass on a recorded environment.
+- `VERIFIED`: all acceptance evidence and independent review requirements are satisfied.
+- `BLOCKED`: a documented prerequisite or safety issue prevents implementation.
+
+Never upgrade a status based on documentation alone. Every requirement has a positive test, negative/adversarial test, evidence artifact, dependency, and implementation target.
+
+## Requirement mapping
+
+| Requirement ID | Implementation target | Acceptance test target | Evidence artifact | Dependencies | Current status |
+|---|---|---|---|---|---|
+| QDAS-01 | `qyrenith_engine/qdas/` | `tests/test_qdas_01.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-02 | `qyrenith_engine/qdas/` | `tests/test_qdas_02.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-03 | `qyrenith_engine/qdas/` | `tests/test_qdas_03.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-04 | `qyrenith_engine/qdas/` | `tests/test_qdas_04.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-05 | `qyrenith_engine/qdas/` | `tests/test_qdas_05.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-06 | `qyrenith_engine/qdas/` | `tests/test_qdas_06.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-07 | `qyrenith_engine/qdas/` | `tests/test_qdas_07.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-08 | `qyrenith_engine/qdas/` | `tests/test_qdas_08.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-09 | `qyrenith_engine/qdas/` | `tests/test_qdas_09.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-10 | `qyrenith_engine/qdas/` | `tests/test_qdas_10.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-11 | `qyrenith_engine/qdas/` | `tests/test_qdas_11.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-12 | `qyrenith_engine/qdas/` | `tests/test_qdas_12.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-13 | `qyrenith_engine/qdas/` | `tests/test_qdas_13.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-14 | `qyrenith_engine/qdas/` | `tests/test_qdas_14.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-15 | `qyrenith_engine/qdas/` | `tests/test_qdas_15.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-16 | `qyrenith_engine/qdas/` | `tests/test_qdas_16.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-17 | `qyrenith_engine/qdas/` | `tests/test_qdas_17.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-18 | `qyrenith_engine/qdas/` | `tests/test_qdas_18.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-19 | `qyrenith_engine/qdas/` | `tests/test_qdas_19.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| QDAS-20 | `qyrenith_engine/qdas/` | `tests/test_qdas_20.py` (positive + negative/adversarial cases) | QDAS lifecycle/event/repair evidence | EV model; RVL; execution boundary | NOT_STARTED |
+| SA-01 | `qyrenith_engine/audit/static/` | `tests/test_audit_static.py` (positive + negative/adversarial cases) | Parser, graph, rule, finding and coverage records | Evidence model; language adapters | PARTIAL |
+| SA-02 | `qyrenith_engine/audit/static/` | `tests/test_audit_static.py` (positive + negative/adversarial cases) | Parser, graph, rule, finding and coverage records | Evidence model; language adapters | PARTIAL |
+| SA-03 | `qyrenith_engine/audit/static/` | `tests/test_audit_static.py` (positive + negative/adversarial cases) | Parser, graph, rule, finding and coverage records | Evidence model; language adapters | PARTIAL |
+| SA-04 | `qyrenith_engine/audit/static/` | `tests/test_audit_static.py` (positive + negative/adversarial cases) | Parser, graph, rule, finding and coverage records | Evidence model; language adapters | PARTIAL |
+| SA-05 | `qyrenith_engine/audit/static/` | `tests/test_audit_static.py` (positive + negative/adversarial cases) | Parser, graph, rule, finding and coverage records | Evidence model; language adapters | PARTIAL |
+| SA-06 | `qyrenith_engine/audit/static/` | `tests/test_audit_static.py` (positive + negative/adversarial cases) | Parser, graph, rule, finding and coverage records | Evidence model; language adapters | PARTIAL |
+| SA-07 | `qyrenith_engine/audit/static/` | `tests/test_audit_static.py` (positive + negative/adversarial cases) | Parser, graph, rule, finding and coverage records | Evidence model; language adapters | PARTIAL |
+| SA-08 | `qyrenith_engine/audit/static/` | `tests/test_audit_static.py` (positive + negative/adversarial cases) | Parser, graph, rule, finding and coverage records | Evidence model; language adapters | PARTIAL |
+| SA-09 | `qyrenith_engine/audit/static/` | `tests/test_audit_static.py` (positive + negative/adversarial cases) | Parser, graph, rule, finding and coverage records | Evidence model; language adapters | PARTIAL |
+| SA-10 | `qyrenith_engine/audit/static/` | `tests/test_audit_static.py` (positive + negative/adversarial cases) | Parser, graph, rule, finding and coverage records | Evidence model; language adapters | PARTIAL |
+| SA-11 | `qyrenith_engine/audit/static/` | `tests/test_audit_static.py` (positive + negative/adversarial cases) | Parser, graph, rule, finding and coverage records | Evidence model; language adapters | PARTIAL |
+| SA-12 | `qyrenith_engine/audit/static/` | `tests/test_audit_static.py` (positive + negative/adversarial cases) | Parser, graph, rule, finding and coverage records | Evidence model; language adapters | PARTIAL |
+| SA-13 | `qyrenith_engine/audit/static/` | `tests/test_audit_static.py` (positive + negative/adversarial cases) | Parser, graph, rule, finding and coverage records | Evidence model; language adapters | PARTIAL |
+| DB-01 | `qyrenith_engine/audit/dynamic/` | `tests/test_audit_dynamic.py` (positive + negative/adversarial cases) | Scenario run, oracle, state and lifecycle records | RVL; evidence model | NOT_STARTED |
+| DB-02 | `qyrenith_engine/audit/dynamic/` | `tests/test_audit_dynamic.py` (positive + negative/adversarial cases) | Scenario run, oracle, state and lifecycle records | RVL; evidence model | NOT_STARTED |
+| DB-03 | `qyrenith_engine/audit/dynamic/` | `tests/test_audit_dynamic.py` (positive + negative/adversarial cases) | Scenario run, oracle, state and lifecycle records | RVL; evidence model | NOT_STARTED |
+| DB-04 | `qyrenith_engine/audit/dynamic/` | `tests/test_audit_dynamic.py` (positive + negative/adversarial cases) | Scenario run, oracle, state and lifecycle records | RVL; evidence model | NOT_STARTED |
+| DB-05 | `qyrenith_engine/audit/dynamic/` | `tests/test_audit_dynamic.py` (positive + negative/adversarial cases) | Scenario run, oracle, state and lifecycle records | RVL; evidence model | NOT_STARTED |
+| DB-06 | `qyrenith_engine/audit/dynamic/` | `tests/test_audit_dynamic.py` (positive + negative/adversarial cases) | Scenario run, oracle, state and lifecycle records | RVL; evidence model | NOT_STARTED |
+| DB-07 | `qyrenith_engine/audit/dynamic/` | `tests/test_audit_dynamic.py` (positive + negative/adversarial cases) | Scenario run, oracle, state and lifecycle records | RVL; evidence model | NOT_STARTED |
+| DB-08 | `qyrenith_engine/audit/dynamic/` | `tests/test_audit_dynamic.py` (positive + negative/adversarial cases) | Scenario run, oracle, state and lifecycle records | RVL; evidence model | NOT_STARTED |
+| DB-09 | `qyrenith_engine/audit/dynamic/` | `tests/test_audit_dynamic.py` (positive + negative/adversarial cases) | Scenario run, oracle, state and lifecycle records | RVL; evidence model | NOT_STARTED |
+| DB-10 | `qyrenith_engine/audit/dynamic/` | `tests/test_audit_dynamic.py` (positive + negative/adversarial cases) | Scenario run, oracle, state and lifecycle records | RVL; evidence model | NOT_STARTED |
+| DB-11 | `qyrenith_engine/audit/dynamic/` | `tests/test_audit_dynamic.py` (positive + negative/adversarial cases) | Scenario run, oracle, state and lifecycle records | RVL; evidence model | NOT_STARTED |
+| DB-12 | `qyrenith_engine/audit/dynamic/` | `tests/test_audit_dynamic.py` (positive + negative/adversarial cases) | Scenario run, oracle, state and lifecycle records | RVL; evidence model | NOT_STARTED |
+| FV-01 | `qyrenith_engine/audit/formal/` | `tests/test_audit_formal.py` (positive + negative/adversarial cases) | Bounded model, assumptions, trace/counterexample | Static IR; evidence model | NOT_STARTED |
+| FV-02 | `qyrenith_engine/audit/formal/` | `tests/test_audit_formal.py` (positive + negative/adversarial cases) | Bounded model, assumptions, trace/counterexample | Static IR; evidence model | NOT_STARTED |
+| FV-03 | `qyrenith_engine/audit/formal/` | `tests/test_audit_formal.py` (positive + negative/adversarial cases) | Bounded model, assumptions, trace/counterexample | Static IR; evidence model | NOT_STARTED |
+| FV-04 | `qyrenith_engine/audit/formal/` | `tests/test_audit_formal.py` (positive + negative/adversarial cases) | Bounded model, assumptions, trace/counterexample | Static IR; evidence model | NOT_STARTED |
+| FV-05 | `qyrenith_engine/audit/formal/` | `tests/test_audit_formal.py` (positive + negative/adversarial cases) | Bounded model, assumptions, trace/counterexample | Static IR; evidence model | NOT_STARTED |
+| FV-06 | `qyrenith_engine/audit/formal/` | `tests/test_audit_formal.py` (positive + negative/adversarial cases) | Bounded model, assumptions, trace/counterexample | Static IR; evidence model | NOT_STARTED |
+| FV-07 | `qyrenith_engine/audit/formal/` | `tests/test_audit_formal.py` (positive + negative/adversarial cases) | Bounded model, assumptions, trace/counterexample | Static IR; evidence model | NOT_STARTED |
+| FV-08 | `qyrenith_engine/audit/formal/` | `tests/test_audit_formal.py` (positive + negative/adversarial cases) | Bounded model, assumptions, trace/counterexample | Static IR; evidence model | NOT_STARTED |
+| FV-09 | `qyrenith_engine/audit/formal/` | `tests/test_audit_formal.py` (positive + negative/adversarial cases) | Bounded model, assumptions, trace/counterexample | Static IR; evidence model | NOT_STARTED |
+| FV-10 | `qyrenith_engine/audit/formal/` | `tests/test_audit_formal.py` (positive + negative/adversarial cases) | Bounded model, assumptions, trace/counterexample | Static IR; evidence model | NOT_STARTED |
+| FP-01 | `qyrenith_engine/audit/fuzz/` | `tests/test_audit_fuzz.py` (positive + negative/adversarial cases) | Seed, generator, minimized input and replay record | RVL; dynamic runner | NOT_STARTED |
+| FP-02 | `qyrenith_engine/audit/fuzz/` | `tests/test_audit_fuzz.py` (positive + negative/adversarial cases) | Seed, generator, minimized input and replay record | RVL; dynamic runner | NOT_STARTED |
+| FP-03 | `qyrenith_engine/audit/fuzz/` | `tests/test_audit_fuzz.py` (positive + negative/adversarial cases) | Seed, generator, minimized input and replay record | RVL; dynamic runner | NOT_STARTED |
+| FP-04 | `qyrenith_engine/audit/fuzz/` | `tests/test_audit_fuzz.py` (positive + negative/adversarial cases) | Seed, generator, minimized input and replay record | RVL; dynamic runner | NOT_STARTED |
+| FP-05 | `qyrenith_engine/audit/fuzz/` | `tests/test_audit_fuzz.py` (positive + negative/adversarial cases) | Seed, generator, minimized input and replay record | RVL; dynamic runner | NOT_STARTED |
+| FP-06 | `qyrenith_engine/audit/fuzz/` | `tests/test_audit_fuzz.py` (positive + negative/adversarial cases) | Seed, generator, minimized input and replay record | RVL; dynamic runner | NOT_STARTED |
+| FP-07 | `qyrenith_engine/audit/fuzz/` | `tests/test_audit_fuzz.py` (positive + negative/adversarial cases) | Seed, generator, minimized input and replay record | RVL; dynamic runner | NOT_STARTED |
+| FP-08 | `qyrenith_engine/audit/fuzz/` | `tests/test_audit_fuzz.py` (positive + negative/adversarial cases) | Seed, generator, minimized input and replay record | RVL; dynamic runner | NOT_STARTED |
+| FP-09 | `qyrenith_engine/audit/fuzz/` | `tests/test_audit_fuzz.py` (positive + negative/adversarial cases) | Seed, generator, minimized input and replay record | RVL; dynamic runner | NOT_STARTED |
+| FP-10 | `qyrenith_engine/audit/fuzz/` | `tests/test_audit_fuzz.py` (positive + negative/adversarial cases) | Seed, generator, minimized input and replay record | RVL; dynamic runner | NOT_STARTED |
+| SS-01 | `qyrenith_engine/audit/security/` | `tests/test_audit_security.py` (positive + negative/adversarial cases) | Security finding, dependency inventory and provenance | Static analysis; knowledge; evidence model | PARTIAL |
+| SS-02 | `qyrenith_engine/audit/security/` | `tests/test_audit_security.py` (positive + negative/adversarial cases) | Security finding, dependency inventory and provenance | Static analysis; knowledge; evidence model | PARTIAL |
+| SS-03 | `qyrenith_engine/audit/security/` | `tests/test_audit_security.py` (positive + negative/adversarial cases) | Security finding, dependency inventory and provenance | Static analysis; knowledge; evidence model | PARTIAL |
+| SS-04 | `qyrenith_engine/audit/security/` | `tests/test_audit_security.py` (positive + negative/adversarial cases) | Security finding, dependency inventory and provenance | Static analysis; knowledge; evidence model | PARTIAL |
+| SS-05 | `qyrenith_engine/audit/security/` | `tests/test_audit_security.py` (positive + negative/adversarial cases) | Security finding, dependency inventory and provenance | Static analysis; knowledge; evidence model | PARTIAL |
+| SS-06 | `qyrenith_engine/audit/security/` | `tests/test_audit_security.py` (positive + negative/adversarial cases) | Security finding, dependency inventory and provenance | Static analysis; knowledge; evidence model | PARTIAL |
+| SS-07 | `qyrenith_engine/audit/security/` | `tests/test_audit_security.py` (positive + negative/adversarial cases) | Security finding, dependency inventory and provenance | Static analysis; knowledge; evidence model | PARTIAL |
+| SS-08 | `qyrenith_engine/audit/security/` | `tests/test_audit_security.py` (positive + negative/adversarial cases) | Security finding, dependency inventory and provenance | Static analysis; knowledge; evidence model | PARTIAL |
+| SS-09 | `qyrenith_engine/audit/security/` | `tests/test_audit_security.py` (positive + negative/adversarial cases) | Security finding, dependency inventory and provenance | Static analysis; knowledge; evidence model | PARTIAL |
+| SS-10 | `qyrenith_engine/audit/security/` | `tests/test_audit_security.py` (positive + negative/adversarial cases) | Security finding, dependency inventory and provenance | Static analysis; knowledge; evidence model | PARTIAL |
+| SS-11 | `qyrenith_engine/audit/security/` | `tests/test_audit_security.py` (positive + negative/adversarial cases) | Security finding, dependency inventory and provenance | Static analysis; knowledge; evidence model | PARTIAL |
+| SS-12 | `qyrenith_engine/audit/security/` | `tests/test_audit_security.py` (positive + negative/adversarial cases) | Security finding, dependency inventory and provenance | Static analysis; knowledge; evidence model | PARTIAL |
+| RC-01 | `qyrenith_engine/audit/root_cause/` | `tests/test_audit_root_cause.py` (positive + negative/adversarial cases) | Typed graph, impact path and ranked hypothesis | Static/dynamic findings; evidence model | PARTIAL |
+| RC-02 | `qyrenith_engine/audit/root_cause/` | `tests/test_audit_root_cause.py` (positive + negative/adversarial cases) | Typed graph, impact path and ranked hypothesis | Static/dynamic findings; evidence model | PARTIAL |
+| RC-03 | `qyrenith_engine/audit/root_cause/` | `tests/test_audit_root_cause.py` (positive + negative/adversarial cases) | Typed graph, impact path and ranked hypothesis | Static/dynamic findings; evidence model | PARTIAL |
+| RC-04 | `qyrenith_engine/audit/root_cause/` | `tests/test_audit_root_cause.py` (positive + negative/adversarial cases) | Typed graph, impact path and ranked hypothesis | Static/dynamic findings; evidence model | PARTIAL |
+| RC-05 | `qyrenith_engine/audit/root_cause/` | `tests/test_audit_root_cause.py` (positive + negative/adversarial cases) | Typed graph, impact path and ranked hypothesis | Static/dynamic findings; evidence model | PARTIAL |
+| RC-06 | `qyrenith_engine/audit/root_cause/` | `tests/test_audit_root_cause.py` (positive + negative/adversarial cases) | Typed graph, impact path and ranked hypothesis | Static/dynamic findings; evidence model | PARTIAL |
+| RC-07 | `qyrenith_engine/audit/root_cause/` | `tests/test_audit_root_cause.py` (positive + negative/adversarial cases) | Typed graph, impact path and ranked hypothesis | Static/dynamic findings; evidence model | PARTIAL |
+| RC-08 | `qyrenith_engine/audit/root_cause/` | `tests/test_audit_root_cause.py` (positive + negative/adversarial cases) | Typed graph, impact path and ranked hypothesis | Static/dynamic findings; evidence model | PARTIAL |
+| RC-09 | `qyrenith_engine/audit/root_cause/` | `tests/test_audit_root_cause.py` (positive + negative/adversarial cases) | Typed graph, impact path and ranked hypothesis | Static/dynamic findings; evidence model | PARTIAL |
+| RC-10 | `qyrenith_engine/audit/root_cause/` | `tests/test_audit_root_cause.py` (positive + negative/adversarial cases) | Typed graph, impact path and ranked hypothesis | Static/dynamic findings; evidence model | PARTIAL |
+| RC-11 | `qyrenith_engine/audit/root_cause/` | `tests/test_audit_root_cause.py` (positive + negative/adversarial cases) | Typed graph, impact path and ranked hypothesis | Static/dynamic findings; evidence model | PARTIAL |
+| UK-01 | `qyrenith_engine/knowledge/` | `tests/test_knowledge_universal.py` (positive + negative/adversarial cases) | Scoped knowledge claim, lifecycle and provenance | Evidence model; migration knowledge | PARTIAL |
+| UK-02 | `qyrenith_engine/knowledge/` | `tests/test_knowledge_universal.py` (positive + negative/adversarial cases) | Scoped knowledge claim, lifecycle and provenance | Evidence model; migration knowledge | PARTIAL |
+| UK-03 | `qyrenith_engine/knowledge/` | `tests/test_knowledge_universal.py` (positive + negative/adversarial cases) | Scoped knowledge claim, lifecycle and provenance | Evidence model; migration knowledge | PARTIAL |
+| UK-04 | `qyrenith_engine/knowledge/` | `tests/test_knowledge_universal.py` (positive + negative/adversarial cases) | Scoped knowledge claim, lifecycle and provenance | Evidence model; migration knowledge | PARTIAL |
+| UK-05 | `qyrenith_engine/knowledge/` | `tests/test_knowledge_universal.py` (positive + negative/adversarial cases) | Scoped knowledge claim, lifecycle and provenance | Evidence model; migration knowledge | PARTIAL |
+| UK-06 | `qyrenith_engine/knowledge/` | `tests/test_knowledge_universal.py` (positive + negative/adversarial cases) | Scoped knowledge claim, lifecycle and provenance | Evidence model; migration knowledge | PARTIAL |
+| UK-07 | `qyrenith_engine/knowledge/` | `tests/test_knowledge_universal.py` (positive + negative/adversarial cases) | Scoped knowledge claim, lifecycle and provenance | Evidence model; migration knowledge | PARTIAL |
+| UK-08 | `qyrenith_engine/knowledge/` | `tests/test_knowledge_universal.py` (positive + negative/adversarial cases) | Scoped knowledge claim, lifecycle and provenance | Evidence model; migration knowledge | PARTIAL |
+| UK-09 | `qyrenith_engine/knowledge/` | `tests/test_knowledge_universal.py` (positive + negative/adversarial cases) | Scoped knowledge claim, lifecycle and provenance | Evidence model; migration knowledge | PARTIAL |
+| UK-10 | `qyrenith_engine/knowledge/` | `tests/test_knowledge_universal.py` (positive + negative/adversarial cases) | Scoped knowledge claim, lifecycle and provenance | Evidence model; migration knowledge | PARTIAL |
+| UK-11 | `qyrenith_engine/knowledge/` | `tests/test_knowledge_universal.py` (positive + negative/adversarial cases) | Scoped knowledge claim, lifecycle and provenance | Evidence model; migration knowledge | PARTIAL |
+| UK-12 | `qyrenith_engine/knowledge/` | `tests/test_knowledge_universal.py` (positive + negative/adversarial cases) | Scoped knowledge claim, lifecycle and provenance | Evidence model; migration knowledge | PARTIAL |
+| RVL-01 | `qyrenith_engine/lab/` | `tests/test_verification_lab.py` (positive + negative/adversarial cases) | Run manifest, environment fingerprint and process result | Execution boundary; snapshots | PARTIAL |
+| RVL-02 | `qyrenith_engine/lab/` | `tests/test_verification_lab.py` (positive + negative/adversarial cases) | Run manifest, environment fingerprint and process result | Execution boundary; snapshots | PARTIAL |
+| RVL-03 | `qyrenith_engine/lab/` | `tests/test_verification_lab.py` (positive + negative/adversarial cases) | Run manifest, environment fingerprint and process result | Execution boundary; snapshots | PARTIAL |
+| RVL-04 | `qyrenith_engine/lab/` | `tests/test_verification_lab.py` (positive + negative/adversarial cases) | Run manifest, environment fingerprint and process result | Execution boundary; snapshots | PARTIAL |
+| RVL-05 | `qyrenith_engine/lab/` | `tests/test_verification_lab.py` (positive + negative/adversarial cases) | Run manifest, environment fingerprint and process result | Execution boundary; snapshots | PARTIAL |
+| RVL-06 | `qyrenith_engine/lab/` | `tests/test_verification_lab.py` (positive + negative/adversarial cases) | Run manifest, environment fingerprint and process result | Execution boundary; snapshots | PARTIAL |
+| RVL-07 | `qyrenith_engine/lab/` | `tests/test_verification_lab.py` (positive + negative/adversarial cases) | Run manifest, environment fingerprint and process result | Execution boundary; snapshots | PARTIAL |
+| RVL-08 | `qyrenith_engine/lab/` | `tests/test_verification_lab.py` (positive + negative/adversarial cases) | Run manifest, environment fingerprint and process result | Execution boundary; snapshots | PARTIAL |
+| RVL-09 | `qyrenith_engine/lab/` | `tests/test_verification_lab.py` (positive + negative/adversarial cases) | Run manifest, environment fingerprint and process result | Execution boundary; snapshots | PARTIAL |
+| RVL-10 | `qyrenith_engine/lab/` | `tests/test_verification_lab.py` (positive + negative/adversarial cases) | Run manifest, environment fingerprint and process result | Execution boundary; snapshots | PARTIAL |
+| MA-01 | `qyrenith_engine/audit/meta/` | `tests/test_audit_meta.py` (positive + negative/adversarial cases) | Mutation outcome, benchmark metrics and blind-spot report | All analyzers; fixture corpus | NOT_STARTED |
+| MA-02 | `qyrenith_engine/audit/meta/` | `tests/test_audit_meta.py` (positive + negative/adversarial cases) | Mutation outcome, benchmark metrics and blind-spot report | All analyzers; fixture corpus | NOT_STARTED |
+| MA-03 | `qyrenith_engine/audit/meta/` | `tests/test_audit_meta.py` (positive + negative/adversarial cases) | Mutation outcome, benchmark metrics and blind-spot report | All analyzers; fixture corpus | NOT_STARTED |
+| MA-04 | `qyrenith_engine/audit/meta/` | `tests/test_audit_meta.py` (positive + negative/adversarial cases) | Mutation outcome, benchmark metrics and blind-spot report | All analyzers; fixture corpus | NOT_STARTED |
+| MA-05 | `qyrenith_engine/audit/meta/` | `tests/test_audit_meta.py` (positive + negative/adversarial cases) | Mutation outcome, benchmark metrics and blind-spot report | All analyzers; fixture corpus | NOT_STARTED |
+| MA-06 | `qyrenith_engine/audit/meta/` | `tests/test_audit_meta.py` (positive + negative/adversarial cases) | Mutation outcome, benchmark metrics and blind-spot report | All analyzers; fixture corpus | NOT_STARTED |
+| MA-07 | `qyrenith_engine/audit/meta/` | `tests/test_audit_meta.py` (positive + negative/adversarial cases) | Mutation outcome, benchmark metrics and blind-spot report | All analyzers; fixture corpus | NOT_STARTED |
+| MA-08 | `qyrenith_engine/audit/meta/` | `tests/test_audit_meta.py` (positive + negative/adversarial cases) | Mutation outcome, benchmark metrics and blind-spot report | All analyzers; fixture corpus | NOT_STARTED |
+| MA-09 | `qyrenith_engine/audit/meta/` | `tests/test_audit_meta.py` (positive + negative/adversarial cases) | Mutation outcome, benchmark metrics and blind-spot report | All analyzers; fixture corpus | NOT_STARTED |
+| MA-10 | `qyrenith_engine/audit/meta/` | `tests/test_audit_meta.py` (positive + negative/adversarial cases) | Mutation outcome, benchmark metrics and blind-spot report | All analyzers; fixture corpus | NOT_STARTED |
+| MA-11 | `qyrenith_engine/audit/meta/` | `tests/test_audit_meta.py` (positive + negative/adversarial cases) | Mutation outcome, benchmark metrics and blind-spot report | All analyzers; fixture corpus | NOT_STARTED |
+| MA-12 | `qyrenith_engine/audit/meta/` | `tests/test_audit_meta.py` (positive + negative/adversarial cases) | Mutation outcome, benchmark metrics and blind-spot report | All analyzers; fixture corpus | NOT_STARTED |
+| EV-01 | `qyrenith_engine/evidence/` | `tests/test_evidence_model.py` (positive + negative/adversarial cases) | Canonical evidence record, lineage and verdict support | Canonical serialization; migration ledger primitives | PARTIAL |
+| EV-02 | `qyrenith_engine/evidence/` | `tests/test_evidence_model.py` (positive + negative/adversarial cases) | Canonical evidence record, lineage and verdict support | Canonical serialization; migration ledger primitives | PARTIAL |
+| EV-03 | `qyrenith_engine/evidence/` | `tests/test_evidence_model.py` (positive + negative/adversarial cases) | Canonical evidence record, lineage and verdict support | Canonical serialization; migration ledger primitives | PARTIAL |
+| EV-04 | `qyrenith_engine/evidence/` | `tests/test_evidence_model.py` (positive + negative/adversarial cases) | Canonical evidence record, lineage and verdict support | Canonical serialization; migration ledger primitives | PARTIAL |
+| EV-05 | `qyrenith_engine/evidence/` | `tests/test_evidence_model.py` (positive + negative/adversarial cases) | Canonical evidence record, lineage and verdict support | Canonical serialization; migration ledger primitives | PARTIAL |
+| EV-06 | `qyrenith_engine/evidence/` | `tests/test_evidence_model.py` (positive + negative/adversarial cases) | Canonical evidence record, lineage and verdict support | Canonical serialization; migration ledger primitives | PARTIAL |
+| EV-07 | `qyrenith_engine/evidence/` | `tests/test_evidence_model.py` (positive + negative/adversarial cases) | Canonical evidence record, lineage and verdict support | Canonical serialization; migration ledger primitives | PARTIAL |
+| EV-08 | `qyrenith_engine/evidence/` | `tests/test_evidence_model.py` (positive + negative/adversarial cases) | Canonical evidence record, lineage and verdict support | Canonical serialization; migration ledger primitives | PARTIAL |
+| EV-09 | `qyrenith_engine/evidence/` | `tests/test_evidence_model.py` (positive + negative/adversarial cases) | Canonical evidence record, lineage and verdict support | Canonical serialization; migration ledger primitives | PARTIAL |
+| EV-10 | `qyrenith_engine/evidence/` | `tests/test_evidence_model.py` (positive + negative/adversarial cases) | Canonical evidence record, lineage and verdict support | Canonical serialization; migration ledger primitives | PARTIAL |
+| LA-01 | `qyrenith_engine/adapters/` | `tests/test_language_domain_adapters.py` (positive + negative/adversarial cases) | Adapter manifest, capability and qualification record | Protocol schemas; evidence model | PARTIAL |
+| LA-02 | `qyrenith_engine/adapters/` | `tests/test_language_domain_adapters.py` (positive + negative/adversarial cases) | Adapter manifest, capability and qualification record | Protocol schemas; evidence model | PARTIAL |
+| LA-03 | `qyrenith_engine/adapters/` | `tests/test_language_domain_adapters.py` (positive + negative/adversarial cases) | Adapter manifest, capability and qualification record | Protocol schemas; evidence model | PARTIAL |
+| LA-04 | `qyrenith_engine/adapters/` | `tests/test_language_domain_adapters.py` (positive + negative/adversarial cases) | Adapter manifest, capability and qualification record | Protocol schemas; evidence model | PARTIAL |
+| LA-05 | `qyrenith_engine/adapters/` | `tests/test_language_domain_adapters.py` (positive + negative/adversarial cases) | Adapter manifest, capability and qualification record | Protocol schemas; evidence model | PARTIAL |
+| LA-06 | `qyrenith_engine/adapters/` | `tests/test_language_domain_adapters.py` (positive + negative/adversarial cases) | Adapter manifest, capability and qualification record | Protocol schemas; evidence model | PARTIAL |
+| LA-07 | `qyrenith_engine/adapters/` | `tests/test_language_domain_adapters.py` (positive + negative/adversarial cases) | Adapter manifest, capability and qualification record | Protocol schemas; evidence model | PARTIAL |
+| LA-08 | `qyrenith_engine/adapters/` | `tests/test_language_domain_adapters.py` (positive + negative/adversarial cases) | Adapter manifest, capability and qualification record | Protocol schemas; evidence model | PARTIAL |
+| LA-09 | `qyrenith_engine/adapters/` | `tests/test_language_domain_adapters.py` (positive + negative/adversarial cases) | Adapter manifest, capability and qualification record | Protocol schemas; evidence model | PARTIAL |
+| LA-10 | `qyrenith_engine/adapters/` | `tests/test_language_domain_adapters.py` (positive + negative/adversarial cases) | Adapter manifest, capability and qualification record | Protocol schemas; evidence model | PARTIAL |
+| LA-11 | `qyrenith_engine/adapters/` | `tests/test_language_domain_adapters.py` (positive + negative/adversarial cases) | Adapter manifest, capability and qualification record | Protocol schemas; evidence model | PARTIAL |
+| LA-12 | `qyrenith_engine/adapters/` | `tests/test_language_domain_adapters.py` (positive + negative/adversarial cases) | Adapter manifest, capability and qualification record | Protocol schemas; evidence model | PARTIAL |
+| MC-01 | `qyrenith_engine/audit/maturity/` | `tests/test_audit_maturity.py` (positive + negative/adversarial cases) | Coverage vector and scoped maturity report | All capability coverage records | NOT_STARTED |
+| MC-02 | `qyrenith_engine/audit/maturity/` | `tests/test_audit_maturity.py` (positive + negative/adversarial cases) | Coverage vector and scoped maturity report | All capability coverage records | NOT_STARTED |
+| MC-03 | `qyrenith_engine/audit/maturity/` | `tests/test_audit_maturity.py` (positive + negative/adversarial cases) | Coverage vector and scoped maturity report | All capability coverage records | NOT_STARTED |
+| MC-04 | `qyrenith_engine/audit/maturity/` | `tests/test_audit_maturity.py` (positive + negative/adversarial cases) | Coverage vector and scoped maturity report | All capability coverage records | NOT_STARTED |
+| MC-05 | `qyrenith_engine/audit/maturity/` | `tests/test_audit_maturity.py` (positive + negative/adversarial cases) | Coverage vector and scoped maturity report | All capability coverage records | NOT_STARTED |
+| MC-06 | `qyrenith_engine/audit/maturity/` | `tests/test_audit_maturity.py` (positive + negative/adversarial cases) | Coverage vector and scoped maturity report | All capability coverage records | NOT_STARTED |
+| MC-07 | `qyrenith_engine/audit/maturity/` | `tests/test_audit_maturity.py` (positive + negative/adversarial cases) | Coverage vector and scoped maturity report | All capability coverage records | NOT_STARTED |
+| MC-08 | `qyrenith_engine/audit/maturity/` | `tests/test_audit_maturity.py` (positive + negative/adversarial cases) | Coverage vector and scoped maturity report | All capability coverage records | NOT_STARTED |
+| MI-01 | `qyrenith_engine/migration/` | `tests/test_migration_integration.py` (positive + negative/adversarial cases) | Migration lifecycle, per-step ledger, recovery and final audit | Existing migration core; QDAS; RVL | PARTIAL |
+| MI-02 | `qyrenith_engine/migration/` | `tests/test_migration_integration.py` (positive + negative/adversarial cases) | Migration lifecycle, per-step ledger, recovery and final audit | Existing migration core; QDAS; RVL | PARTIAL |
+| MI-03 | `qyrenith_engine/migration/` | `tests/test_migration_integration.py` (positive + negative/adversarial cases) | Migration lifecycle, per-step ledger, recovery and final audit | Existing migration core; QDAS; RVL | PARTIAL |
+| MI-04 | `qyrenith_engine/migration/` | `tests/test_migration_integration.py` (positive + negative/adversarial cases) | Migration lifecycle, per-step ledger, recovery and final audit | Existing migration core; QDAS; RVL | PARTIAL |
+| MI-05 | `qyrenith_engine/migration/` | `tests/test_migration_integration.py` (positive + negative/adversarial cases) | Migration lifecycle, per-step ledger, recovery and final audit | Existing migration core; QDAS; RVL | PARTIAL |
+| MI-06 | `qyrenith_engine/migration/` | `tests/test_migration_integration.py` (positive + negative/adversarial cases) | Migration lifecycle, per-step ledger, recovery and final audit | Existing migration core; QDAS; RVL | PARTIAL |
+| MI-07 | `qyrenith_engine/migration/` | `tests/test_migration_integration.py` (positive + negative/adversarial cases) | Migration lifecycle, per-step ledger, recovery and final audit | Existing migration core; QDAS; RVL | PARTIAL |
+| MI-08 | `qyrenith_engine/migration/` | `tests/test_migration_integration.py` (positive + negative/adversarial cases) | Migration lifecycle, per-step ledger, recovery and final audit | Existing migration core; QDAS; RVL | PARTIAL |
+| MI-09 | `qyrenith_engine/migration/` | `tests/test_migration_integration.py` (positive + negative/adversarial cases) | Migration lifecycle, per-step ledger, recovery and final audit | Existing migration core; QDAS; RVL | PARTIAL |
+| MI-10 | `qyrenith_engine/migration/` | `tests/test_migration_integration.py` (positive + negative/adversarial cases) | Migration lifecycle, per-step ledger, recovery and final audit | Existing migration core; QDAS; RVL | PARTIAL |
+| MI-11 | `qyrenith_engine/migration/` | `tests/test_migration_integration.py` (positive + negative/adversarial cases) | Migration lifecycle, per-step ledger, recovery and final audit | Existing migration core; QDAS; RVL | PARTIAL |
+| MI-12 | `qyrenith_engine/migration/` | `tests/test_migration_integration.py` (positive + negative/adversarial cases) | Migration lifecycle, per-step ledger, recovery and final audit | Existing migration core; QDAS; RVL | PARTIAL |
+| MI-13 | `qyrenith_engine/migration/` | `tests/test_migration_integration.py` (positive + negative/adversarial cases) | Migration lifecycle, per-step ledger, recovery and final audit | Existing migration core; QDAS; RVL | PARTIAL |
+| MI-14 | `qyrenith_engine/migration/` | `tests/test_migration_integration.py` (positive + negative/adversarial cases) | Migration lifecycle, per-step ledger, recovery and final audit | Existing migration core; QDAS; RVL | PARTIAL |
+| IR-01 | `qyrenith_engine/reporting/` | `tests/test_integrated_reporting.py` (positive + negative/adversarial cases) | Canonical report, coverage, verdict and comparison | All modules; evidence model | NOT_STARTED |
+| IR-02 | `qyrenith_engine/reporting/` | `tests/test_integrated_reporting.py` (positive + negative/adversarial cases) | Canonical report, coverage, verdict and comparison | All modules; evidence model | NOT_STARTED |
+| IR-03 | `qyrenith_engine/reporting/` | `tests/test_integrated_reporting.py` (positive + negative/adversarial cases) | Canonical report, coverage, verdict and comparison | All modules; evidence model | NOT_STARTED |
+| IR-04 | `qyrenith_engine/reporting/` | `tests/test_integrated_reporting.py` (positive + negative/adversarial cases) | Canonical report, coverage, verdict and comparison | All modules; evidence model | NOT_STARTED |
+| IR-05 | `qyrenith_engine/reporting/` | `tests/test_integrated_reporting.py` (positive + negative/adversarial cases) | Canonical report, coverage, verdict and comparison | All modules; evidence model | NOT_STARTED |
+| IR-06 | `qyrenith_engine/reporting/` | `tests/test_integrated_reporting.py` (positive + negative/adversarial cases) | Canonical report, coverage, verdict and comparison | All modules; evidence model | NOT_STARTED |
+| IR-07 | `qyrenith_engine/reporting/` | `tests/test_integrated_reporting.py` (positive + negative/adversarial cases) | Canonical report, coverage, verdict and comparison | All modules; evidence model | NOT_STARTED |
+| IR-08 | `qyrenith_engine/reporting/` | `tests/test_integrated_reporting.py` (positive + negative/adversarial cases) | Canonical report, coverage, verdict and comparison | All modules; evidence model | NOT_STARTED |
+| IR-09 | `qyrenith_engine/reporting/` | `tests/test_integrated_reporting.py` (positive + negative/adversarial cases) | Canonical report, coverage, verdict and comparison | All modules; evidence model | NOT_STARTED |
+| IR-10 | `qyrenith_engine/reporting/` | `tests/test_integrated_reporting.py` (positive + negative/adversarial cases) | Canonical report, coverage, verdict and comparison | All modules; evidence model | NOT_STARTED |
+| IR-11 | `qyrenith_engine/reporting/` | `tests/test_integrated_reporting.py` (positive + negative/adversarial cases) | Canonical report, coverage, verdict and comparison | All modules; evidence model | NOT_STARTED |
+| IR-12 | `qyrenith_engine/reporting/` | `tests/test_integrated_reporting.py` (positive + negative/adversarial cases) | Canonical report, coverage, verdict and comparison | All modules; evidence model | NOT_STARTED |
+| IR-13 | `qyrenith_engine/reporting/` | `tests/test_integrated_reporting.py` (positive + negative/adversarial cases) | Canonical report, coverage, verdict and comparison | All modules; evidence model | NOT_STARTED |
+| IR-14 | `qyrenith_engine/reporting/` | `tests/test_integrated_reporting.py` (positive + negative/adversarial cases) | Canonical report, coverage, verdict and comparison | All modules; evidence model | NOT_STARTED |
+
+## Architecture governance requirements
+
+| Requirement ID | Requirement | Implementation target | Acceptance test | Evidence | Status |
+|---|---|---|---|---|---|
+| ARCH-01 | Explicit control/analysis/execution/knowledge/evidence plane boundaries | `qyrenith_engine/` package boundaries | `tests/test_architecture_contracts.py` | Module dependency graph | NOT_STARTED |
+| ARCH-02 | Trust states remain distinct | Shared state and policy contracts | `tests/test_trust_state_separation.py` | State-transition evidence | PARTIAL |
+| ARCH-03 | Verification verdicts remain non-interchangeable | Verdict aggregation | `tests/test_verdict_semantics.py` | Scoped verdict record | NOT_STARTED |
+| ARCH-04 | Unknown, unsupported, inconclusive, and blocked are never pass | All module result adapters | `tests/test_no_false_pass.py` | Negative verdict fixtures | PARTIAL |
+| ARCH-05 | Analysis is read-only; repair requires approved isolation | Analysis and QDAS execution boundary | `tests/test_read_only_and_repair_boundary.py` | Workspace and diff evidence | PARTIAL |
+| ARCH-06 | Native-first analyzer implementation | Native analyzer packages | `tests/test_native_analyzer_contracts.py` | Engine/version manifest | NOT_STARTED |
+| ARCH-07 | Resource exhaustion fails safely | Shared bounded execution | `tests/test_resource_limit_fail_closed.py` | Limit-exceeded event | PARTIAL |
+| ARCH-08 | Qyrenith cannot self-certify its own audit | External verification gate | `tests/test_no_self_certification.py` | External CI attestation/artifacts | NOT_STARTED |
+| ARCH-09 | Internal specifications are excluded from public archives | `PUBLIC_FILES.txt`, packaging | `tests/test_release_contents.py` | Archive inventory | PARTIAL |
+| ARCH-10 | 1.1.0 compatibility remains intact | Legacy CLI and workflow | Existing 1.1.0 regression suites | Regression run evidence | PARTIAL |
+
+## Implementation notes
+
+The target package paths are planned interfaces, not claims that those packages already exist. Existing `qyrenith_engine/analysis.py`, `qyrenith_engine/execution.py`, and `qyrenith_engine/migration/` are legacy/foundation surfaces to be audited before refactoring. Preserve public behavior or introduce explicit compatibility shims and regression tests.
+
+Migration-specific existing tests include `tests/test_migration_core_120.py`, `tests/test_migration_worker_120.py`, `tests/test_migration_authorization_120.py`, `tests/test_migration_assurance_120.py`, `tests/test_migration_snapshot_120.py`, and `tests/test_migration_workspace_120.py`. They prove only their tested contracts, not the complete MI-01..MI-14 lifecycle.
+
+## Change control
+
+Update this matrix in the same change that implements a requirement. A status change to TESTED or VERIFIED must link the exact CI run, test IDs, revision, environment, evidence digests, and reviewer. Any requirement removed from 1.2.0 requires explicit owner approval and an architecture/plan update.
