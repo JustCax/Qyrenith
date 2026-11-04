@@ -127,6 +127,22 @@ class MultiTargetWorkspaceBatch:
             "created_at": self.created_at,
         }
 
+    def validate_for_plan(self, plan: MultiTargetPlan, snapshot: ProjectSnapshot) -> None:
+        """Reject a batch reused with a different plan, target set, or source snapshot."""
+        if not isinstance(plan, MultiTargetPlan):
+            raise TypeError("plan must be a MultiTargetPlan")
+        if not isinstance(snapshot, ProjectSnapshot):
+            raise TypeError("snapshot must be a ProjectSnapshot")
+        ordered_plans = tuple(sorted(plan.targets, key=lambda item: item.target.stable_key))
+        if (
+            plan.plan_digest != self.plan_digest
+            or plan.source != self.source
+            or snapshot.snapshot_digest != self.snapshot_digest
+            or tuple(item.target for item in ordered_plans) != self.targets
+            or tuple(item.plan_digest for item in ordered_plans) != self.target_plan_digests
+        ):
+            raise WorkspaceError("workspace batch does not match the exact multi-target plan and snapshot")
+
     @property
     def batch_digest(self) -> str:
         return hashlib.sha256(_canonical_bytes(self.to_dict())).hexdigest()
@@ -273,7 +289,7 @@ def prepare_multi_target_workspaces(
         source_after = verify_project_snapshot(source_root, snapshot)
         if not source_after.matches:
             raise WorkspaceError("source project changed during multi-target workspace preparation")
-        return MultiTargetWorkspaceBatch(
+        batch = MultiTargetWorkspaceBatch(
             plan_digest=plan.plan_digest,
             snapshot_digest=snapshot.snapshot_digest,
             source=plan.source,
@@ -282,6 +298,8 @@ def prepare_multi_target_workspaces(
             workspaces=descriptors,
             created_at=created_at,
         )
+        batch.validate_for_plan(plan, snapshot)
+        return batch
     except BaseException as exc:
         cleanup_errors: list[str] = []
         for descriptor in descriptors:
