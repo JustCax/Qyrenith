@@ -297,7 +297,7 @@ A local hash chain can detect accidental or partial tampering when its trusted t
 
 ## 12. Plan-bound authorization
 
-`MigrationAuthorizationPolicy` defines a local permission allowlist, worker allowlist, resource ceilings, and maximum authorization lifetime. Policies have canonical JSON import/export, a content digest, and a strict JSON Schema so the exact policy can be retained alongside an authorization record. `validate_migration_authorization(...)` is the pre-side-effect consistency gate: it rechecks the exact plan and assessment, active policy digest, authorization time window, worker registration and qualification, grant scope, permissions, and resource ceilings. `authorize_migration(plan, assessment, registry, policy, ...)` creates an immutable authorization bound to the exact route-plan digest, worker-assessment digest, and policy digest.
+`MigrationAuthorizationPolicy` defines a local permission allowlist, worker allowlist, resource ceilings, and maximum authorization lifetime. Policies have canonical JSON import/export, a content digest, and a strict JSON Schema so the exact policy can be retained alongside an authorization record. `validate_migration_authorization(...)` is the pre-side-effect consistency gate: it rechecks the exact plan and assessment, current knowledge catalog and trust decision, active authorization policy digest, authorization time window, worker registration and qualification, grant scope, permissions, and resource ceilings. `authorize_migration(plan, assessment, registry, policy, ..., knowledge=...)` creates an immutable authorization bound to the exact route-plan digest, worker-assessment digest, and policy digest.
 
 Before issuing grants, the function re-resolves every worker against the registry at the approval timestamp. It rejects a changed manifest or qualification, a qualification that is not current at approval, permissions not allowed by both policy and worker manifest, resource limits above either declared ceiling, and an authorization expiry later than any worker qualification expiry. Every grant is pinned to one transition, worker ID/version, manifest digest, qualification ID/digest, and qualification expiry. Authorization validity uses a half-open time interval: approved_at <= now < expires_at.
 
@@ -313,6 +313,7 @@ Assuming `plan`, `assessment`, and `registry` were produced by the preceding API
 from datetime import datetime, timedelta, timezone
 
 from qyrenith_engine.migration import (
+    KnowledgeCatalog,
     MigrationAuthorizationPolicy,
     WorkerPermission,
     WorkerResourceLimits,
@@ -349,6 +350,7 @@ authorization = authorize_migration(
         WorkerPermission.WRITE_PROJECT,
     ),
     limits=WorkerResourceLimits(60, 1024 * 1024, 512 * 1024, 50),
+    knowledge=knowledge,  # Reload from the owner-controlled trust store before approval.
 )
 
 # Persist both records in the caller's trusted audit store.
@@ -357,7 +359,9 @@ authorization_bytes = serialize_migration_authorization(authorization)
 
 # Revalidate immediately before a future controlled side effect.
 validate_migration_authorization(
-    authorization, plan, assessment, registry, policy, now=datetime.now(timezone.utc)
+    authorization, plan, assessment, registry, policy,
+    knowledge=knowledge,  # Reload again before the side effect.
+    now=datetime.now(timezone.utc),
 )
 ```
 
