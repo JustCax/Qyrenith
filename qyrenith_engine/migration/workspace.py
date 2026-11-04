@@ -189,8 +189,50 @@ class WorkspaceDescriptor:
         return cls.from_document(document)
 
 
+
+def _open_source_file(source_root: Path, relative_path: str) -> int:
+    """Open a snapshot file without following any parent symlink on POSIX."""
+    parts = relative_path.split("/")
+    flags = os.O_RDONLY
+    if hasattr(os, "O_BINARY"):
+        flags |= os.O_BINARY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    supports_relative_open = (
+        os.name != "nt"
+        and hasattr(os, "O_DIRECTORY")
+        and hasattr(os, "O_NOFOLLOW")
+        and os.open in os.supports_dir_fd
+    )
+    try:
+        if not supports_relative_open:
+            return os.open(source_root.joinpath(*parts), flags)
+        root_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+        root_fd = os.open(source_root, root_flags)
+        current_fd = root_fd
+        try:
+            for component in parts[:-1]:
+                next_fd = os.open(
+                    component,
+                    os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                    dir_fd=current_fd,
+                )
+                if current_fd != root_fd:
+                    os.close(current_fd)
+                current_fd = next_fd
+            return os.open(parts[-1], flags, dir_fd=current_fd)
+        finally:
+            if current_fd != root_fd:
+                os.close(current_fd)
+            os.close(root_fd)
+    except OSError as exc:
+        raise WorkspaceError(f"cannot open source path without following symlinks: {relative_path}") from exc
+
+
+
 def _copy_regular_file(
-    source: Path,
+    source_root: Path,
+    relative_path: str,
     destination: Path,
     expected_size: int,
     expected_digest: str,
@@ -203,14 +245,14 @@ def _copy_regular_file(
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
     try:
-        source_fd = os.open(source, flags)
+        source_fd = _open_source_file(source_root, relative_path)
     except OSError as exc:
-        raise WorkspaceError(f"cannot safely open source file: {source.name}") from exc
+        raise WorkspaceError(f"cannot safely open source file: {relative_path}") from exc
     destination_fd = -1
     try:
         before = os.fstat(source_fd)
         if not stat.S_ISREG(before.st_mode) or not _same_object(expected_stat, before):
-            raise WorkspaceError(f"source file changed before copy: {source.name}")
+            raise WorkspaceError(f"source file changed before copy: {relative_path}")
         create_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
         if hasattr(os, "O_BINARY"):
             create_flags |= os.O_BINARY
@@ -225,7 +267,7 @@ def _copy_regular_file(
                 break
             total += len(chunk)
             if total > expected_size:
-                raise WorkspaceError(f"source file grew during copy: {source.name}")
+                raise WorkspaceError(f"source file grew during copy: {relative_path}")
             hasher.update(chunk)
             view = memoryview(chunk)
             while view:
@@ -235,9 +277,9 @@ def _copy_regular_file(
                 view = view[written:]
         after = os.fstat(source_fd)
         if not _same_object(before, after) or total != expected_size:
-            raise WorkspaceError(f"source file changed during copy: {source.name}")
+            raise WorkspaceError(f"source file changed during copy: {relative_path}")
         if hasher.hexdigest() != expected_digest:
-            raise WorkspaceError(f"source file content digest changed: {source.name}")
+            raise WorkspaceError(f"source file content digest changed: {relative_path}")
         os.fsync(destination_fd)
     finally:
         if destination_fd >= 0:
@@ -324,7 +366,7 @@ def create_isolated_workspace(
             if not stat.S_ISREG(source_stat_for_file.st_mode) or stat.S_ISLNK(source_stat_for_file.st_mode):
                 raise WorkspaceError(f"source entry is no longer a regular file: {entry.path}")
             _copy_regular_file(
-                source_file, destination_file, entry.size, entry.content_digest,
+                source, entry.path, destination_file, entry.size, entry.content_digest,
                 source_stat_for_file, entry.mode,
             )
         for entry in sorted(directories, key=lambda item: (-item.path.count("/"), item.path)):
