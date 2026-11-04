@@ -459,7 +459,14 @@ class KnowledgeCatalog:
 
     @property
     def trust_digest(self) -> str:
-        return self.trust_digest_at()
+        payload = {
+            "schema": 1,
+            "catalog_digest": self.content_digest,
+            "catalog_origin": "IMPORTED" if self._imported else "LOCAL",
+            "trusted_allowlisted": self._trusted,
+            "trust_policy_digest": self.trust_policy_digest,
+        }
+        return hashlib.sha256(_canonical_bytes(payload)).hexdigest()
 
     def trust_digest_at(self, now: datetime | None = None) -> str:
         instant = datetime.now(timezone.utc) if now is None else now
