@@ -172,7 +172,7 @@ class TestMigrationAuthorization(unittest.TestCase):
             )
 
     def test_rejects_approval_after_worker_qualification_expires(self):
-        with self.assertRaisesRegex(ValueError, "not qualified at approval"):
+        with self.assertRaisesRegex(ValueError, "not current at plan evaluation"):
             authorize(approved_at=datetime(2026, 11, 5, 0, 0, tzinfo=timezone.utc))
 
     def test_rejects_permission_escalation_beyond_policy(self):
