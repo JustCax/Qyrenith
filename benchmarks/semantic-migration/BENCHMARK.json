@@ -27,5 +27,8 @@
     "path_safe",
     "fingerprint_stable",
     "no_cache_dirs"
-  ]
+  ],
+  "route_catalog": "ROUTES.json",
+  "route_scenario_count": 7,
+  "route_scenario_scope": "Typed identity and planner contract only; no real transformation is claimed."
 }

@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/migration-worker-qualification.schema.json",
+  "title": "Qyrenith Migration Worker Qualification Record",
+  "type": "object",
+  "required": [
+    "schema",
+    "qualification_id",
+    "worker_id",
+    "worker_version",
+    "manifest_digest",
+    "conformance_suite_id",
+    "conformance_suite_version",
+    "conformance_suite_digest",
+    "result_digest",
+    "result_status",
+    "test_count",
+    "qualified_by",
+    "qualified_at",
+    "valid_until"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "qualification_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "worker_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "worker_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "manifest_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "conformance_suite_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "conformance_suite_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "conformance_suite_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "result_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "test_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "qualified_by": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "qualified_at": {
+      "type": "string",
+      "format": "date-time",
+      "maxLength": 64
+    },
+    "valid_until": {
+      "type": "string",
+      "format": "date-time",
+      "maxLength": 64
+    },
+    "result_status": {
+      "const": "PASS"
+    }
+  },
+  "additionalProperties": false
+}
