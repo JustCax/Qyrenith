@@ -3,6 +3,7 @@ from .analysis import analyze_project, build_change_impact, compare_baselines
 from .boundary import inspect_project_boundary
 from .execution import run_bounded_process
 from .migration import (
+    MigrationAuthorization, MigrationAuthorizationPolicy, MigrationStepGrant, authorize_migration,
     AssuranceLedger, AssuranceLedgerError, LedgerLockedError, verify_assurance_chain,
     EvidenceReference, KnowledgeCatalog, KnowledgeStatus, MigrationIdentity,
     MigrationKnowledgeClaim, MigrationTransition, MultiTargetPlan, RoutePlan,
@@ -17,6 +18,7 @@ __all__ = [
     "analyze_project", "build_change_impact", "compare_baselines",
     "inspect_project_boundary", "run_bounded_process",
     "AssuranceLedger", "AssuranceLedgerError", "LedgerLockedError", "verify_assurance_chain",
+    "MigrationAuthorization", "MigrationAuthorizationPolicy", "MigrationStepGrant", "authorize_migration",
     "EvidenceReference", "KnowledgeCatalog", "KnowledgeStatus",
     "MigrationIdentity", "MigrationKnowledgeClaim", "MigrationTransition",
     "MultiTargetPlan", "RoutePlan", "TransitionKind", "plan_route", "plan_targets",
