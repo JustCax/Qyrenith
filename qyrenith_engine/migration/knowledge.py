@@ -434,9 +434,14 @@ class KnowledgeCatalog:
         return self._conflict_groups
 
     @property
-    def is_trusted(self) -> bool:
-        """Whether the exact catalog digest is locally allowlisted (time-independent)."""
+    def is_allowlisted(self) -> bool:
+        """Whether the exact catalog digest appears in the supplied local allowlist."""
         return self._trusted
+
+    @property
+    def is_trusted(self) -> bool:
+        """Whether the local trust decision is valid at the current time."""
+        return self.is_trusted_at()
 
     def is_trusted_at(self, now: datetime | None = None) -> bool:
         if not self.is_trusted_at(now):
@@ -454,14 +459,7 @@ class KnowledgeCatalog:
 
     @property
     def trust_digest(self) -> str:
-        payload = {
-            "schema": 1,
-            "catalog_digest": self.content_digest,
-            "catalog_origin": "IMPORTED" if self._imported else "LOCAL",
-            "trusted": self._trusted,
-            "trust_policy_digest": self.trust_policy_digest,
-        }
-        return hashlib.sha256(_canonical_bytes(payload)).hexdigest()
+        return self.trust_digest_at()
 
     def trust_digest_at(self, now: datetime | None = None) -> str:
         instant = datetime.now(timezone.utc) if now is None else now
