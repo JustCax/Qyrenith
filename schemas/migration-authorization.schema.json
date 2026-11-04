@@ -12,7 +12,8 @@
     "approved_by",
     "approved_at",
     "expires_at",
-    "grants"
+    "grants",
+    "authorization_digest"
   ],
   "properties": {
     "schema": {
@@ -49,6 +50,10 @@
       "items": {
         "$ref": "#/$defs/grant"
       }
+    },
+    "authorization_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
     }
   },
   "allOf": [
