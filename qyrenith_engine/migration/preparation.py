@@ -363,6 +363,8 @@ def prepare_multi_target_workspaces(
         for descriptor in descriptors:
             try:
                 _remove_failed_workspace(Path(descriptor.workspace_path))
+            except FileNotFoundError:
+                continue
             except OSError as cleanup_error:
                 cleanup_errors.append(str(cleanup_error))
         if cleanup_errors:
