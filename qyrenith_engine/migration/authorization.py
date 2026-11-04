@@ -333,6 +333,13 @@ def authorize_migration(
         raise ValueError("worker assessment belongs to a different route plan")
     if assessment.evaluated_at != plan.evaluated_at:
         raise ValueError("worker assessment timestamp does not match the route plan")
+    assessed_transitions = tuple(item[0] for item in assessment.evaluations)
+    if assessed_transitions != plan.transitions:
+        raise ValueError("worker assessment must cover the exact ordered transitions in the route plan")
+    if plan.transitions and assessment.status != "QUALIFIED":
+        raise ValueError("a route with work required must have a QUALIFIED worker assessment")
+    if not plan.transitions and assessment.status != "NO_WORK_REQUIRED":
+        raise ValueError("a no-op route must use the NO_WORK_REQUIRED worker assessment")
     approved_text = _utc(approved_at, "approved_at")
     expiry_text = _utc(expires_at, "expires_at")
     approved = _instant(approved_text, "approved_at")
