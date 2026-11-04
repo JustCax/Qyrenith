@@ -24,6 +24,8 @@ from qyrenith_engine.migration import (
     authorize_migration,
     deserialize_migration_authorization,
     serialize_migration_authorization,
+    deserialize_migration_authorization_policy,
+    serialize_migration_authorization_policy,
     plan_route,
 )
 
@@ -136,6 +138,40 @@ class TestMigrationAuthorization(unittest.TestCase):
         ))
         self.assertEqual(grant.limits, limits)
         self.assertEqual(len(authorization.authorization_digest), 64)
+
+    def test_policy_round_trip_preserves_canonical_digest(self):
+        _, _, _, policy, _ = fixture()
+        encoded = serialize_migration_authorization_policy(policy)
+        restored = deserialize_migration_authorization_policy(encoded)
+        self.assertEqual(restored.to_document(), policy.to_document())
+        self.assertEqual(restored.policy_digest, policy.policy_digest)
+
+    def test_policy_import_rejects_digest_tampering(self):
+        _, _, _, policy, _ = fixture()
+        encoded = serialize_migration_authorization_policy(policy)
+        tampered = encoded.replace(b"fixture-worker", b"other-worker!")
+        with self.assertRaisesRegex(ValueError, "digest mismatch"):
+            deserialize_migration_authorization_policy(tampered)
+
+    def test_policy_import_rejects_duplicate_json_keys(self):
+        with self.assertRaisesRegex(ValueError, "invalid migration authorization policy JSON"):
+            deserialize_migration_authorization_policy(b'{"schema":1,"schema":1}')
+
+    def test_policy_import_rejects_noncanonical_whitespace(self):
+        _, _, _, policy, _ = fixture()
+        with self.assertRaisesRegex(ValueError, "not canonical"):
+            deserialize_migration_authorization_policy(serialize_migration_authorization_policy(policy) + b" ")
+
+    def test_policy_collection_order_does_not_change_digest(self):
+        first = MigrationAuthorizationPolicy(
+            allowed_permissions=(WorkerPermission.WRITE_PROJECT, WorkerPermission.READ_PROJECT),
+            allowed_worker_ids=("z-worker", "a-worker"),
+        )
+        second = MigrationAuthorizationPolicy(
+            allowed_permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
+            allowed_worker_ids=("a-worker", "z-worker"),
+        )
+        self.assertEqual(first.policy_digest, second.policy_digest)
 
     def test_authorization_round_trip_is_canonical_and_digest_preserving(self):
         original = authorize()
