@@ -15,11 +15,14 @@
     "evidence",
     "verified_by",
     "verified_at",
-    "valid_until"
+    "valid_until",
+    "verified_with",
+    "verifier_version",
+    "verifier_digest"
   ],
   "properties": {
     "schema": {
-      "const": 1
+      "const": 2
     },
     "claim_id": {
       "type": "string",
@@ -89,6 +92,29 @@
       ],
       "minLength": 1,
       "maxLength": 2048
+    },
+    "verified_with": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "verifier_version": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "verifier_digest": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^sha256:[0-9a-f]{64}$"
     }
   },
   "$defs": {
@@ -251,7 +277,11 @@
           "assertion",
           "verified_by",
           "verified_at",
-          "evidence"
+          "evidence",
+          "verified_with",
+          "verifier_version",
+          "verifier_digest",
+          "valid_until"
         ],
         "properties": {
           "assertion": {
@@ -270,7 +300,34 @@
           },
           "evidence": {
             "type": "array",
-            "minItems": 1
+            "minItems": 1,
+            "items": {
+              "properties": {
+                "digest": {
+                  "type": "string",
+                  "pattern": "^sha256:[0-9a-f]{64}$"
+                }
+              }
+            }
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date-time",
+            "maxLength": 64
+          },
+          "verified_with": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "verifier_version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "verifier_digest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
           }
         }
       }
