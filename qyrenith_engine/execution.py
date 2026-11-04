@@ -9,7 +9,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Mapping, Sequence, Union
 
-_ALLOWED_ENV = {"PATH", "SYSTEMROOT", "SystemRoot", "WINDIR", "TEMP", "TMP", "TMPDIR", "HOME", "USERPROFILE", "LANG", "LC_ALL"}
+_ALLOWED_ENV = {"PATH", "SYSTEMROOT", "SystemRoot", "WINDIR", "TEMP", "TMP", "TMPDIR", "HOME", "USERPROFILE", "LANG", "LC_ALL", "PYTHONUNBUFFERED"}
 _MAX_OUTPUT_BYTES = 8 * 1024 * 1024
 _MAX_WORKER_INPUT_BYTES = 1024 * 1024
 
