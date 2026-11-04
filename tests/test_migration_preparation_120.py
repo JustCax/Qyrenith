@@ -104,14 +104,14 @@ def project_snapshot(root):
 
 class MultiTargetWorkspacePreparationTests(unittest.TestCase):
     def test_prepares_plan_bound_independent_workspaces_and_round_trips(self):
-        source, target_a, target_b, _, plan = multi_target_plan()
+        source, target_a, target_b, catalog, plan = multi_target_plan()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             source_root = root / "source"
             snapshot = project_snapshot(source_root)
             workspace_parent = root / "prepared"
             batch = prepare_multi_target_workspaces(
-                source_root, snapshot, workspace_parent, plan
+                source_root, snapshot, workspace_parent, plan, catalog
             )
 
             self.assertEqual(batch.plan_digest, plan.plan_digest)
@@ -126,14 +126,14 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
             for descriptor, target in zip(batch.workspaces, (target_a, target_b)):
                 self.assertEqual(descriptor.target, target)
                 self.assertTrue(verify_workspace_baseline(descriptor, snapshot).matches)
-            batch.validate_for_plan(plan, snapshot)
+            batch.validate_for_plan(plan, snapshot, catalog)
 
             restored = MultiTargetWorkspaceBatch.from_json_bytes(batch.to_json_bytes())
             self.assertEqual(restored, batch)
             self.assertEqual(restored.batch_digest, batch.batch_digest)
 
     def test_rejects_partial_multi_target_plan_before_creating_workspaces(self):
-        _, _, _, _, plan = multi_target_plan(include_second_claim=False)
+        _, _, _, catalog, plan = multi_target_plan(include_second_claim=False)
         self.assertEqual(plan.status, "PARTIAL")
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -147,7 +147,7 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
             self.assertFalse(workspace_parent.exists())
 
     def test_rejects_changed_source_before_creating_workspaces(self):
-        _, _, _, _, plan = multi_target_plan()
+        _, _, _, catalog, plan = multi_target_plan()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             source_root = root / "source"
@@ -168,14 +168,14 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
             source_root = root / "source"
             snapshot = project_snapshot(source_root)
             batch = prepare_multi_target_workspaces(
-                source_root, snapshot, root / "prepared", plan
+                source_root, snapshot, root / "prepared", plan, catalog
             )
             with self.assertRaisesRegex(WorkspaceError, "does not match"):
-                batch.validate_for_plan(other_plan, snapshot)
+                batch.validate_for_plan(other_plan, snapshot, catalog)
             (source_root / "README.md").write_text("new baseline\n", encoding="utf-8")
             changed_snapshot = capture_project_snapshot(source_root)
             with self.assertRaisesRegex(WorkspaceError, "does not match"):
-                batch.validate_for_plan(plan, changed_snapshot)
+                batch.validate_for_plan(plan, changed_snapshot, catalog)
 
     def test_failed_post_creation_verification_rolls_back_all_workspaces(self):
         _, _, _, _, plan = multi_target_plan()
