@@ -37,6 +37,19 @@ class TestVersionConsistency(unittest.TestCase):
         changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
         self.assertIn("## 1.1.0", changelog)
 
+
+    def test_all_github_actions_are_pinned_to_immutable_shas(self):
+        workflows = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
+        self.assertTrue(workflows, "GitHub Actions workflows must exist")
+        for workflow in workflows:
+            for line_number, line in enumerate(workflow.read_text(encoding="utf-8").splitlines(), 1):
+                if re.match(r"^\\s*uses\\s*:", line):
+                    self.assertRegex(
+                        line,
+                        r"^\\s*uses\\s*:\\s*[^@\\s]+@[0-9a-f]{40}(?:\\s+#.*)?\\s*$",
+                        f"{workflow.relative_to(ROOT)}:{line_number} must pin its action to a full commit SHA",
+                    )
+
     def test_all_surfaces_agree(self):
         version_txt = (ROOT / "VERSION.txt").read_text(encoding="utf-8").strip()
         self.assertEqual(version_txt, qyrenith.VERSION)
