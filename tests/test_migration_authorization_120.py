@@ -298,9 +298,10 @@ class TestMigrationAuthorization(unittest.TestCase):
             capabilities=original.manifest.capabilities,
             permissions=original.manifest.permissions, limits=original.manifest.limits,
         )
-        replacement_registry = MigrationWorkerRegistry((WorkerRegistration(
-            replacement, original.qualification,
-        ),))
+        replacement_registry = MigrationWorkerRegistry(
+            (WorkerRegistration(replacement, original.qualification),),
+            trust_policy=registry._trust_policy,
+        )
         with self.assertRaisesRegex(ValueError, "not currently qualified"):
             validate_migration_authorization(
                 authorization, plan, assessment, replacement_registry, policy, knowledge=knowledge_catalog(), now=NOW,
