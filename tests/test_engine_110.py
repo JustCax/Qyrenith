@@ -207,7 +207,7 @@ class TestBoundaryAndExecution(unittest.TestCase):
 
     def test_bounded_worker_normalizes_crlf_output(self):
         with tempfile.TemporaryDirectory() as directory:
-            script = "import sys; sys.stdout.buffer.write(b'protocol\\r\\n'); sys.stderr.buffer.write(b'diagnostic\\r\\n')"
+            script = "import sys; sys.stdin.buffer.read(); sys.stdout.buffer.write(b'protocol\\r\\n'); sys.stderr.buffer.write(b'diagnostic\\r\\n')"
             report = run_bounded_worker(
                 [sys.executable, "-c", script], directory, b"request\n", timeout=5
             )
