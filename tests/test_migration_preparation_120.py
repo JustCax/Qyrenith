@@ -166,7 +166,14 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
 
     def test_batch_cannot_be_reused_with_another_plan_or_snapshot(self):
         _, _, _, catalog, plan = multi_target_plan()
-        _, _, _, _, other_plan = multi_target_plan(include_second_claim=False)
+        other_plan = plan_targets(
+            plan.source,
+            tuple(item.target for item in plan.targets),
+            tuple(transition for route in plan.targets for transition in route.transitions),
+            catalog,
+            max_hops=31,
+            evaluated_at=PLAN_TIME,
+        )
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             source_root = root / "source"
