@@ -37,6 +37,10 @@ EXPECTED = {
     "migration-worker-assessment.schema.json": [
         "schema", "route_plan_digest", "evaluated_at", "status", "evaluations", "reason",
     ],
+    "migration-authorization.schema.json": [
+        "schema", "route_plan_digest", "worker_assessment_digest", "policy_digest",
+        "approved_by", "approved_at", "expires_at", "grants",
+    ],
 }
 EXPECTED_TRANSITION_KINDS = {
     "VERSION_UPGRADE", "LOADER_CONVERSION", "FRAMEWORK_CHANGE", "PLATFORM_MIGRATION",
@@ -187,6 +191,24 @@ require(blocked_evaluations.get("minItems") == 1 and "contains" in blocked_evalu
         "BLOCKED assessment must contain a disabled or incompatible worker result")
 require(assessment_rules.get("QUALIFIED", {}).get("properties", {}).get("evaluations", {}).get("items", {}).get("properties", {}).get("resolution", {}).get("properties", {}).get("status", {}).get("const") == "QUALIFIED",
         "QUALIFIED aggregate must contain only qualified worker resolutions")
+
+authorization = schemas["migration-authorization.schema.json"]
+require(authorization["properties"]["route_plan_digest"].get("pattern") == "^[0-9a-f]{64}$",
+        "authorization must bind an exact route plan digest")
+require(authorization["properties"]["worker_assessment_digest"].get("pattern") == "^[0-9a-f]{64}$",
+        "authorization must bind an exact worker assessment digest")
+require(authorization["properties"]["policy_digest"].get("pattern") == "^[0-9a-f]{64}$",
+        "authorization must bind the policy digest")
+require(authorization["properties"]["grants"].get("maxItems") == 10000,
+        "authorization grants must be bounded")
+require(authorization["$defs"]["grant"]["additionalProperties"] is False,
+        "authorization grants must reject undeclared fields")
+require(authorization["$defs"]["grant"]["properties"]["permissions"]["uniqueItems"] is True,
+        "authorization permissions must be unique")
+require(authorization["$defs"]["grant"]["properties"]["manifest_digest"].get("pattern") == "^[0-9a-f]{64}$",
+        "authorization grants must pin worker manifest digests")
+require(authorization["$defs"]["grant"]["properties"]["qualification_digest"].get("pattern") == "^[0-9a-f]{64}$",
+        "authorization grants must pin worker qualification digests")
 
 worker_qualification = schemas["migration-worker-qualification.schema.json"]
 require(worker_qualification["properties"]["manifest_digest"].get("pattern") == "^[0-9a-f]{64}$",
