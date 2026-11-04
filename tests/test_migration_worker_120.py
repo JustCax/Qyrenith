@@ -20,6 +20,7 @@ from qyrenith_engine.migration import (
     WorkerPermission,
     WorkerQualification,
     WorkerRegistration,
+    WorkerTrustPolicy,
     WorkerResourceLimits,
     WorkerScope,
     assess_route_workers,
@@ -107,6 +108,22 @@ def qualification(worker_manifest, *, valid_until="2026-12-01T00:00:00Z", digest
         qualified_at="2026-11-01T12:00:00Z",
         valid_until=valid_until,
     )
+
+
+def trusted_registry(*registrations, policy_id="test-worker-trust"):
+    items = tuple(registrations)
+    digests = tuple(
+        item.qualification.qualification_digest
+        for item in items
+        if item.qualification is not None
+    )
+    policy = WorkerTrustPolicy(
+        policy_id=policy_id,
+        reviewed_by="local-test-review",
+        reviewed_at="2026-11-04T00:00:00Z",
+        trusted_qualification_digests=digests,
+    )
+    return MigrationWorkerRegistry(items, trust_policy=policy)
 
 
 def transition(source=None, target=None, *, capabilities=("rewrite",)):
@@ -228,7 +245,7 @@ class TestWorkerQualificationAndRegistry(unittest.TestCase):
     def test_exact_pinned_worker_with_current_qualification_resolves_as_qualified(self):
         current = manifest()
         record = qualification(current)
-        registry = MigrationWorkerRegistry((WorkerRegistration(current, record),))
+        registry = trusted_registry(WorkerRegistration(current, record))
         result = registry.resolve(
             transition(),
             datetime(2026, 11, 4, tzinfo=timezone.utc),
@@ -279,6 +296,46 @@ class TestWorkerQualificationAndRegistry(unittest.TestCase):
         current = manifest()
         result = MigrationWorkerRegistry((WorkerRegistration(current),)).resolve(transition())
         self.assertEqual(result.status, "UNQUALIFIED")
+
+    def test_current_qualification_without_trust_policy_is_untrusted(self):
+        current = manifest()
+        record = qualification(current)
+        registry = MigrationWorkerRegistry((WorkerRegistration(current, record),))
+        result = registry.resolve(transition(), datetime(2026, 11, 4, tzinfo=timezone.utc))
+        self.assertEqual(result.status, "UNTRUSTED")
+        self.assertFalse(result.qualified)
+
+    def test_worker_trust_policy_round_trip_and_assessment_binding(self):
+        current = manifest()
+        record = qualification(current)
+        registration = WorkerRegistration(current, record)
+        registry = trusted_registry(registration)
+        policy = registry._trust_policy
+        restored = WorkerTrustPolicy.from_json_bytes(policy.to_json_bytes())
+        self.assertEqual(restored, policy)
+        self.assertEqual(registry.trust_policy_digest, policy.policy_digest)
+
+        source, target = identity("1.21"), identity("1.21.1")
+        edge = MigrationTransition(
+            "trusted-assessment", source, target, TransitionKind.VERSION_UPGRADE,
+            ("knowledge-001",), worker_id=current.worker_id,
+            worker_version=current.worker_version, required_capabilities=("rewrite",),
+        )
+        catalog = KnowledgeCatalog((verified_claim("knowledge-001", source, target),))
+        plan = plan_route(source, target, (edge,), catalog)
+        assessment = assess_route_workers(plan, registry)
+        self.assertEqual(assessment.status, "QUALIFIED")
+        self.assertEqual(assessment.trust_policy_digest, policy.policy_digest)
+
+    def test_registry_is_immutable(self):
+        current = manifest()
+        registry = trusted_registry(WorkerRegistration(current, qualification(current)))
+        with self.assertRaises(TypeError):
+            registry._registrations[("other", "1.0.0")] = WorkerRegistration(current)
+        with self.assertRaises(AttributeError):
+            registry._trust_policy = None
+        with self.assertRaises(AttributeError):
+            del registry._trust_policy
 
     def test_unregistered_worker_is_not_available(self):
         result = MigrationWorkerRegistry().resolve(transition())
@@ -397,9 +454,7 @@ class TestWorkerQualificationAndRegistry(unittest.TestCase):
             permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
             limits=WorkerResourceLimits(120, 1024 * 1024, 256 * 1024, 250),
         )
-        registry = MigrationWorkerRegistry((
-            WorkerRegistration(current, qualification(current)),
-        ))
+        registry = trusted_registry(WorkerRegistration(current, qualification(current)))
         assessment = assess_route_workers(plan, registry)
         self.assertEqual(assessment.status, "QUALIFIED")
         self.assertTrue(assessment.qualified)
