@@ -39,7 +39,7 @@ EXPECTED = {
     ],
     "migration-authorization.schema.json": [
         "schema", "route_plan_digest", "worker_assessment_digest", "policy_digest",
-        "approved_by", "approved_at", "expires_at", "grants",
+        "approved_by", "approved_at", "expires_at", "grants", "authorization_digest",
     ],
 }
 EXPECTED_TRANSITION_KINDS = {
@@ -199,6 +199,8 @@ require(authorization["properties"]["worker_assessment_digest"].get("pattern") =
         "authorization must bind an exact worker assessment digest")
 require(authorization["properties"]["policy_digest"].get("pattern") == "^[0-9a-f]{64}$",
         "authorization must bind the policy digest")
+require(authorization["properties"]["authorization_digest"].get("pattern") == "^[0-9a-f]{64}$",
+        "authorization document must carry an integrity digest")
 require(authorization["properties"]["grants"].get("maxItems") == 10000,
         "authorization grants must be bounded")
 require(authorization["$defs"]["grant"]["additionalProperties"] is False,
