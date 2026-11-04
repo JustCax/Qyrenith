@@ -22,7 +22,7 @@ A copied directory is L1 at most. Do not claim L3+ without verifying the OS-enfo
 
 ## 4. Execution controls
 
-All commands use argument arrays, no implicit shell, bounded stdin/stdout/stderr, timeout, process-tree termination where supported, controlled environment, working-directory validation, and explicit network/install policy. The timeout budget begins before any potentially blocking input transfer. Output-limit breach is a distinct terminal outcome and must terminate promptly.
+All commands use argument arrays, no implicit shell, bounded stdin/stdout/stderr, timeout, process-tree termination where supported, controlled environment, working-directory validation, and explicit network/install policy. The timeout budget begins before any potentially blocking input transfer. Output-limit breach is a distinct terminal outcome and must terminate promptly. Text output fields decode UTF-8 with replacement and normalize CRLF/CR to LF for cross-platform protocol stability; reported byte counts continue to describe the original captured bytes.
 
 ## 5. Repeatability
 
