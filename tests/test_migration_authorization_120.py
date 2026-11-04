@@ -22,6 +22,7 @@ from qyrenith_engine.migration import (
     WorkerRegistration,
     WorkerResourceLimits,
     WorkerScope,
+    WorkerTrustPolicy,
     assess_route_workers,
     authorize_migration,
     deserialize_migration_authorization,
@@ -103,7 +104,16 @@ def fixture():
         qualified_at="2026-11-01T00:00:00Z",
         valid_until="2026-11-05T00:00:00Z",
     )
-    registry = MigrationWorkerRegistry((WorkerRegistration(manifest, qualification),))
+    worker_trust = WorkerTrustPolicy(
+        policy_id="authorization-fixture-worker-trust",
+        reviewed_by="test-owner",
+        reviewed_at="2026-11-04T00:00:00Z",
+        trusted_qualification_digests=(qualification.qualification_digest,),
+    )
+    registry = MigrationWorkerRegistry(
+        (WorkerRegistration(manifest, qualification),),
+        trust_policy=worker_trust,
+    )
     plan = plan_route(SOURCE, TARGET, (edge,), KnowledgeCatalog((claim,)), evaluated_at=NOW)
     assessment = assess_route_workers(plan, registry)
     policy = MigrationAuthorizationPolicy(
