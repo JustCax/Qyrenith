@@ -305,6 +305,21 @@ class TestWorkerQualificationAndRegistry(unittest.TestCase):
         self.assertEqual(result.status, "UNTRUSTED")
         self.assertFalse(result.qualified)
 
+    def test_untrusted_worker_qualification_blocks_route_assessment(self):
+        source, target = identity("1.21"), identity("1.21.1")
+        edge = MigrationTransition(
+            "untrusted-worker", source, target, TransitionKind.VERSION_UPGRADE,
+            ("knowledge-001",), worker_id="example-porter", worker_version="1.0.0",
+            required_capabilities=("rewrite",),
+        )
+        catalog = KnowledgeCatalog((verified_claim("knowledge-001", source, target),))
+        plan = plan_route(source, target, (edge,), catalog)
+        current = manifest(source, target)
+        registry = MigrationWorkerRegistry((WorkerRegistration(current, qualification(current)),))
+        assessment = assess_route_workers(plan, registry)
+        self.assertEqual(assessment.status, "UNKNOWN")
+        self.assertEqual(assessment.evaluations[0][1].status, "UNTRUSTED")
+
     def test_worker_trust_policy_round_trip_and_assessment_binding(self):
         current = manifest()
         record = qualification(current)
@@ -314,6 +329,9 @@ class TestWorkerQualificationAndRegistry(unittest.TestCase):
         restored = WorkerTrustPolicy.from_json_bytes(policy.to_json_bytes())
         self.assertEqual(restored, policy)
         self.assertEqual(registry.trust_policy_digest, policy.policy_digest)
+        tampered = policy.to_json_bytes().replace(b"test-worker-trust", b"tampered-worker-trust")
+        with self.assertRaises(ValueError):
+            WorkerTrustPolicy.from_json_bytes(tampered)
 
         source, target = identity("1.21"), identity("1.21.1")
         edge = MigrationTransition(
