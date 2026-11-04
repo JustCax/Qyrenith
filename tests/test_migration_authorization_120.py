@@ -208,6 +208,34 @@ class TestMigrationAuthorization(unittest.TestCase):
                 authorization, plan, assessment, replacement_registry, policy, now=NOW,
             )
 
+    def test_execution_gate_rejects_worker_trust_policy_substitution(self):
+        authorization = authorize()
+        plan, assessment, registry, policy, _ = fixture()
+        registration = registry.registrations()
+        changed_trust = WorkerTrustPolicy(
+            policy_id="different-worker-trust-policy",
+            reviewed_by="test-owner",
+            reviewed_at="2026-11-04T00:00:00Z",
+            trusted_qualification_digests=(
+                registration[0].qualification.qualification_digest,
+            ),
+        )
+        substituted_registry = MigrationWorkerRegistry(
+            registration, trust_policy=changed_trust
+        )
+        with self.assertRaisesRegex(ValueError, "trust policy changed"):
+            validate_migration_authorization(
+                authorization, plan, assessment, substituted_registry, policy, now=NOW,
+            )
+        with self.assertRaisesRegex(ValueError, "trust policy changed"):
+            authorize_migration(
+                plan, assessment, substituted_registry, policy,
+                approved_by="test-reviewer", approved_at=NOW,
+                expires_at=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
+                permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
+                limits=WorkerResourceLimits(120, 1024 * 1024, 512 * 1024, 100),
+            )
+
     def test_policy_round_trip_preserves_canonical_digest(self):
         _, _, _, policy, _ = fixture()
         encoded = serialize_migration_authorization_policy(policy)
