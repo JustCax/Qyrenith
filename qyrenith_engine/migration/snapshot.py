@@ -295,7 +295,7 @@ class ProjectSnapshot:
             canonical = _canonical(document)
         except (TypeError, ValueError) as exc:
             raise SnapshotError("project snapshot contains non-canonical JSON values") from exc
-        if source.encode("utf-8") not in {canonical, canonical + b"\n"}:
+        if source.encode("utf-8") not in {canonical, canonical + b"\n", canonical + b"\r\n"}:
             raise SnapshotError("project snapshot JSON is not canonical")
         return cls.from_document(document)
 
