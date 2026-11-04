@@ -118,7 +118,10 @@ class WorkspaceDescriptor:
         return {**self.to_dict(), "descriptor_digest": self.descriptor_digest}
 
     def to_json_bytes(self) -> bytes:
-        return _canonical(self.to_document()) + b"\n"
+        encoded = _canonical(self.to_document()) + b"\n"
+        if len(encoded) > 1024 * 1024:
+            raise WorkspaceError("workspace descriptor export exceeds the 1 MiB limit")
+        return encoded
 
     @classmethod
     def from_document(cls, document: object) -> "WorkspaceDescriptor":
