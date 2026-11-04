@@ -10,6 +10,8 @@ import argparse, datetime as dt, hashlib, json, os, re, shutil, signal, stat, su
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
+from qyrenith_engine.execution import run_bounded_process, run_bounded_worker
+
 # Keep diagnostics deterministic across Windows console code pages.
 for _stream in (sys.stdout, sys.stderr):
     try:
@@ -172,73 +174,25 @@ def require_qyrenith(root: Path) -> Path:
         if not p.resolve().is_relative_to(root.resolve()): die("PREFLIGHT_FAILURE",f"Qyrenith orchestrator escapes project root: {p}")
     except OSError as e: die("PREFLIGHT_FAILURE",f"Qyrenith orchestrator cannot be resolved: {e}")
     return p
-def _terminate_process(proc: subprocess.Popen) -> None:
-    try:
-        if os.name == "nt":
-            proc.terminate()
-        else:
-            os.killpg(proc.pid, signal.SIGTERM)
-    except (OSError, ProcessLookupError):
-        try: proc.terminate()
-        except OSError: pass
-    try:
-        proc.wait(timeout=2)
-    except subprocess.TimeoutExpired:
-        try:
-            if os.name == "nt": proc.kill()
-            else: os.killpg(proc.pid, signal.SIGKILL)
-        except (OSError, ProcessLookupError):
-            try: proc.kill()
-            except OSError: pass
 def cmdrun(cmd: Sequence[str], cwd: Path, timeout: Optional[int] = None) -> Tuple[int, str]:
-    """Run a controller command with bounded captured output and hard timeout cleanup."""
-    kwargs: Dict[str, Any] = {"cwd": str(cwd), "stdin": subprocess.DEVNULL, "stdout": subprocess.PIPE, "stderr": subprocess.STDOUT, "text": False, "shell": False}
-    if os.name == "nt":
-        kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-    else:
-        kwargs["start_new_session"] = True
-    try:
-        proc = subprocess.Popen(list(cmd), **kwargs)
-    except OSError as e:
-        die("PREFLIGHT_FAILURE", f"Cannot execute {' '.join(cmd)}: {e}")
-    out: List[bytes] = []
-    state = {"overflow": False, "total": 0}
-    def reader() -> None:
-        try:
-            if proc.stdout is None: return
-            while True:
-                chunk = proc.stdout.read(65536)
-                if not chunk: break
-                state["total"] += len(chunk)
-                if state["total"] <= COMMAND_STREAM_LIMIT:
-                    out.append(chunk)
-                else:
-                    state["overflow"] = True
-                    _terminate_process(proc)
-                    break
-        except (OSError, ValueError):
-            pass
-    t = threading.Thread(target=reader, daemon=True); t.start()
-    timed_out = False
-    try:
-        try:
-            proc.wait(timeout=timeout)
-        except subprocess.TimeoutExpired:
-            timed_out = True
-            _terminate_process(proc)
-    finally:
-        t.join(timeout=2)
-        try:
-            if proc.stdout is not None: proc.stdout.close()
-        except OSError: pass
-    text = redact_text(b"".join(out).decode("utf-8", errors="replace"))
-    if timed_out:
-        text += "\nTIMEOUT"
-        return 124, text
-    if state["overflow"]:
-        text += "\nOUTPUT_LIMIT_EXCEEDED"
-        return 124, text
-    return proc.returncode if proc.returncode is not None else 124, text
+    """Run a controller command through the shared bounded process engine."""
+    report = run_bounded_process(
+        cmd,
+        cwd,
+        timeout=3600 if timeout is None else timeout,
+        output_limit=COMMAND_STREAM_LIMIT,
+        inherit_environment=True,
+    )
+    output = redact_text(report.get("output", ""))
+    if report.get("status") == "ERROR":
+        die("PREFLIGHT_FAILURE", f"Cannot execute {' '.join(cmd)}: {report.get('error', 'unknown error')}")
+    if report.get("timed_out"):
+        return 124, output + "\nTIMEOUT"
+    if report.get("output_truncated"):
+        return 124, output + "\nOUTPUT_LIMIT_EXCEEDED"
+    if report.get("output_incomplete"):
+        return 124, output + "\nOUTPUT_INCOMPLETE"
+    return report.get("exit_code") if report.get("exit_code") is not None else 124, output
 def git(root: Path, *args: str): return cmdrun(["git", *args], root)
 def git_repo(root: Path) -> bool: return (root / ".git").exists()
 
@@ -648,75 +602,6 @@ def build_version_graph(root: Path, s: Dict[str,Any]) -> Dict[str,Any]:
 # ---------------------------------------------------------------------------
 # Workers
 # ---------------------------------------------------------------------------
-def _terminate_worker(proc: subprocess.Popen) -> None:
-    """Terminate the worker and its process group where the platform supports it."""
-    try:
-        if os.name == "nt":
-            proc.terminate()
-        else:
-            os.killpg(proc.pid, signal.SIGTERM)
-    except (OSError, ProcessLookupError):
-        try: proc.terminate()
-        except OSError: pass
-    try:
-        proc.wait(timeout=2)
-    except subprocess.TimeoutExpired:
-        try:
-            if os.name == "nt": proc.kill()
-            else: os.killpg(proc.pid, signal.SIGKILL)
-        except (OSError, ProcessLookupError):
-            try: proc.kill()
-            except OSError: pass
-def _bounded_worker_process(command: Sequence[str], cwd: Path, wire: str, timeout: int, env: Dict[str, str]) -> Tuple[str, str, int, bool, bool, float]:
-    """Run a worker with bounded stdout/stderr, timeout and process-group cleanup."""
-    kwargs: Dict[str, Any] = {"cwd": str(cwd), "stdin": subprocess.PIPE, "stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "text": False, "shell": False}
-    if os.name == "nt":
-        kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-    else:
-        kwargs["start_new_session"] = True
-    proc = subprocess.Popen(list(command), env=env, **kwargs)
-    started = time.monotonic()
-    out: List[bytes] = []; err: List[bytes] = []
-    overflow = {"stdout": False, "stderr": False}
-    def reader(stream, bucket, key):
-        total = 0
-        try:
-            while True:
-                chunk = stream.read(65536)
-                if not chunk: break
-                total += len(chunk)
-                if total <= WORKER_STREAM_LIMIT:
-                    bucket.append(chunk)
-                else:
-                    overflow[key] = True
-                    break
-        except (OSError, ValueError):
-            pass
-    threads=[threading.Thread(target=reader,args=(proc.stdout,out,"stdout"),daemon=True), threading.Thread(target=reader,args=(proc.stderr,err,"stderr"),daemon=True)]
-    for t in threads: t.start()
-    try:
-        if proc.stdin is not None:
-            proc.stdin.write(wire.encode("utf-8")); proc.stdin.close()
-        proc.wait(timeout=timeout)
-    except BrokenPipeError:
-        try: proc.wait(timeout=2)
-        except subprocess.TimeoutExpired: _terminate_worker(proc)
-    except subprocess.TimeoutExpired:
-        _terminate_worker(proc)
-        for t in threads: t.join(timeout=1)
-        for stream in (proc.stdout, proc.stderr):
-            try:
-                if stream is not None: stream.close()
-            except OSError: pass
-        return b"".join(out).decode("utf-8",errors="replace"), b"".join(err).decode("utf-8",errors="replace"), proc.returncode or 124, True, False, round(time.monotonic()-started,3)
-    if overflow["stdout"] or overflow["stderr"]:
-        _terminate_worker(proc)
-    for t in threads: t.join(timeout=1)
-    for stream in (proc.stdout, proc.stderr):
-        try:
-            if stream is not None: stream.close()
-        except OSError: pass
-    return b"".join(out).decode("utf-8",errors="replace"), b"".join(err).decode("utf-8",errors="replace"), proc.returncode or 0, False, overflow["stdout"] or overflow["stderr"], round(time.monotonic()-started,3)
 def validate_adapter_manifest(entry: Dict[str,Any], request: Dict[str,Any]) -> None:
     operation=request.get("operation") if isinstance(request,dict) else None
     if operation in {"discover","inspect","plan","result"}: return
@@ -825,16 +710,34 @@ def run_external_worker(root: Path, adapter_name: str, request: Dict[str, Any], 
     safe_env={"PATH":os.environ.get("PATH","")}
     for key in ("SystemRoot","WINDIR","HOME","TMPDIR","TEMP","TMP","LANG","LC_ALL"):
         if key in os.environ: safe_env[key]=os.environ[key]
-    try:
-        stdout, stderr, returncode, timed_out, output_limited, duration = _bounded_worker_process(command, root, wire, timeout, safe_env)
-    except OSError as e:
-        die("STOPPED", f"Worker could not start: {e}")
+    execution = run_bounded_worker(
+        command,
+        root,
+        wire.encode("utf-8"),
+        timeout=timeout,
+        output_limit=WORKER_STREAM_LIMIT,
+        env=safe_env,
+    )
+    if execution.get("status") == "ERROR":
+        die("STOPPED", f"Worker could not start: {execution.get('error', 'unknown error')}")
+    timed_out = execution["timed_out"]
+    output_limited = execution["output_limited"]
     if timed_out:
         result={"schema":1,"worker":adapter_name,"status":"TIMEOUT","verified_by_doctor":False,"unresolved":[f"Worker exceeded {timeout}s timeout"]}
         save_json(root/STATE_DIR/WORKER_RESULT,result); return result
     if output_limited:
         result={"schema":1,"worker":adapter_name,"status":"OUTPUT_LIMIT","verified_by_doctor":False,"unresolved":[f"Worker stdout/stderr exceeded {WORKER_STREAM_LIMIT} bytes"]}
         save_json(root/STATE_DIR/WORKER_RESULT,result); return result
+    if execution["input_incomplete"]:
+        result={"schema":1,"worker":adapter_name,"status":"INPUT_INCOMPLETE","verified_by_doctor":False,"unresolved":["Worker did not receive the complete request"]}
+        save_json(root/STATE_DIR/WORKER_RESULT,result); return result
+    if execution["output_incomplete"]:
+        result={"schema":1,"worker":adapter_name,"status":"OUTPUT_INCOMPLETE","verified_by_doctor":False,"unresolved":["Worker output could not be collected completely"]}
+        save_json(root/STATE_DIR/WORKER_RESULT,result); return result
+    stdout = execution["stdout"]
+    stderr = execution["stderr"]
+    returncode = execution["exit_code"]
+    duration = execution["duration_seconds"]
     try:
         result=json.loads(stdout.strip() or "{}")
     except json.JSONDecodeError:
