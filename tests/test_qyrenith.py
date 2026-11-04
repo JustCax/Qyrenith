@@ -1103,7 +1103,7 @@ class TestSharedRuntimeExecution(unittest.TestCase):
     def test_runtime_lab_runner_stops_output_flood_at_the_cap(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            script = "import sys\\nwhile True:\\n sys.stdout.write('x' * 65536)\\n sys.stdout.flush()\\n"
+            script = "import sys\nwhile True:\n sys.stdout.write('x' * 65536)\n sys.stdout.flush()\n"
             started = time.monotonic()
             report = qyrenith._run_isolated_command(
                 root, [sys.executable, "-c", script], timeout=30
