@@ -57,6 +57,16 @@ class TestProjectSnapshot(unittest.TestCase):
             self.assertEqual([item.path for item in snapshot.entries], ["src", "src/main.py"])
             self.assertEqual(snapshot.excluded_paths, (".backups", ".git", ".qyrenith", "__pycache__"))
 
+
+    def test_default_exclusions_are_case_insensitive_for_portable_snapshots(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            mixed_case = root / ".GiT"
+            mixed_case.mkdir()
+            (mixed_case / "config").write_text("not part of portable snapshot", encoding="utf-8")
+            snapshot = capture_project_snapshot(root)
+            self.assertEqual(snapshot.entries, ())
+
     def test_custom_exclusions_are_bound_into_snapshot_identity(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
