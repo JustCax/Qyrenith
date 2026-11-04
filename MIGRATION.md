@@ -313,7 +313,6 @@ Assuming `plan`, `assessment`, and `registry` were produced by the preceding API
 from datetime import datetime, timedelta, timezone
 
 from qyrenith_engine.migration import (
-    KnowledgeCatalog,
     MigrationAuthorizationPolicy,
     WorkerPermission,
     WorkerResourceLimits,
@@ -323,6 +322,7 @@ from qyrenith_engine.migration import (
     serialize_migration_authorization_policy,
 )
 
+# `knowledge` is the exact current catalog reloaded from the owner-controlled trust store.
 now = datetime.now(timezone.utc)
 policy = MigrationAuthorizationPolicy(
     allowed_permissions=(
