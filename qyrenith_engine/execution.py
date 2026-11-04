@@ -82,6 +82,7 @@ def run_bounded_process(argv: Sequence[str], project: Union[str, Path], *, timeo
     captured = bytearray()
     total = [0]
     overflow = threading.Event()
+    read_error = threading.Event()
 
     def drain_output() -> None:
         assert process.stdout is not None
@@ -99,7 +100,7 @@ def run_bounded_process(argv: Sequence[str], project: Union[str, Path], *, timeo
                     _terminate_process_group(process)
                     break
         except (OSError, ValueError):
-            overflow.set()
+            read_error.set()
         finally:
             try:
                 process.stdout.close()
@@ -123,7 +124,7 @@ def run_bounded_process(argv: Sequence[str], project: Union[str, Path], *, timeo
             except (OSError, ProcessLookupError):
                 pass
         reader.join(timeout=1)
-    output_incomplete = reader.is_alive()
+    output_incomplete = reader.is_alive() or read_error.is_set()
 
     output = bytes(captured).decode("utf-8", "replace")
     truncated = overflow.is_set() or total[0] > output_limit
