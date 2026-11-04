@@ -224,6 +224,24 @@ class TestProjectSnapshot(unittest.TestCase):
             with self.assertRaisesRegex(SnapshotError, "missing or unexpected"):
                 ProjectSnapshot.from_document(document)
 
+    def test_snapshot_rejects_missing_directory_parent(self):
+        child = SnapshotEntry("missing/file.py", "file", 0o644, 0, "a" * 64)
+        with self.assertRaisesRegex(SnapshotError, "every directory parent"):
+            ProjectSnapshot((child,), (), SnapshotLimits(), "2026-11-04T00:00:00Z")
+
+    def test_snapshot_rejects_file_used_as_directory_parent(self):
+        parent = SnapshotEntry("parent", "file", 0o644, 0, "a" * 64)
+        child = SnapshotEntry("parent/file.py", "file", 0o644, 0, "b" * 64)
+        with self.assertRaisesRegex(SnapshotError, "every directory parent"):
+            ProjectSnapshot((parent, child), (), SnapshotLimits(), "2026-11-04T00:00:00Z")
+
+    def test_snapshot_rejects_redundant_nested_exclusions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            snapshot = capture_project_snapshot(directory)
+            with self.assertRaisesRegex(SnapshotError, "nested exclusions"):
+                ProjectSnapshot(snapshot.entries, ("generated", "generated/cache"),
+                                snapshot.limits, snapshot.captured_at)
+
     def test_snapshot_rejects_unsorted_or_duplicate_paths(self):
         first = SnapshotEntry("b.txt", "file", 0o644, 0, "a" * 64)
         second = SnapshotEntry("a.txt", "file", 0o644, 0, "b" * 64)
