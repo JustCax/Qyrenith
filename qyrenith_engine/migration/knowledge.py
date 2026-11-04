@@ -295,8 +295,14 @@ class KnowledgeTrustPolicy:
     def to_json_bytes(self) -> bytes:
         return _canonical_bytes(self.to_document()) + b"\n"
 
-    def trusts(self, catalog_digest: str) -> bool:
-        return catalog_digest in self.trusted_catalog_digests
+    def is_current(self, now: datetime | None = None) -> bool:
+        instant = datetime.now(timezone.utc) if now is None else now
+        if not isinstance(instant, datetime) or instant.tzinfo is None or instant.utcoffset() is None:
+            raise ValueError("now must be a timezone-aware datetime")
+        return parse_timestamp(self.reviewed_at) <= instant.astimezone(timezone.utc)
+
+    def trusts(self, catalog_digest: str, now: datetime | None = None) -> bool:
+        return catalog_digest in self.trusted_catalog_digests and self.is_current(now)
 
     @classmethod
     def from_document(cls, document: object) -> "KnowledgeTrustPolicy":
@@ -390,7 +396,7 @@ class KnowledgeCatalog:
         payload = {"schema": 2, "claims": [immutable_claims[key].to_dict() for key in sorted(immutable_claims)]}
         catalog_digest = hashlib.sha256(_canonical_bytes(payload)).hexdigest()
         trusted = (
-            trust_policy.trusts(catalog_digest)
+            catalog_digest in trust_policy.trusted_catalog_digests
             if trust_policy is not None
             else not _imported
         )
@@ -429,7 +435,13 @@ class KnowledgeCatalog:
 
     @property
     def is_trusted(self) -> bool:
+        """Whether the exact catalog digest is locally allowlisted (time-independent)."""
         return self._trusted
+
+    def is_trusted_at(self, now: datetime | None = None) -> bool:
+        if not self.is_trusted_at(now):
+            return False
+        return self._trust_policy is None or self._trust_policy.is_current(now)
 
     @property
     def trust_policy_digest(self) -> str | None:
@@ -448,6 +460,20 @@ class KnowledgeCatalog:
             "catalog_origin": "IMPORTED" if self._imported else "LOCAL",
             "trusted": self._trusted,
             "trust_policy_digest": self.trust_policy_digest,
+        }
+        return hashlib.sha256(_canonical_bytes(payload)).hexdigest()
+
+    def trust_digest_at(self, now: datetime | None = None) -> str:
+        instant = datetime.now(timezone.utc) if now is None else now
+        if not isinstance(instant, datetime) or instant.tzinfo is None or instant.utcoffset() is None:
+            raise ValueError("now must be a timezone-aware datetime")
+        payload = {
+            "schema": 1,
+            "catalog_digest": self.content_digest,
+            "catalog_origin": "IMPORTED" if self._imported else "LOCAL",
+            "trusted": self.is_trusted_at(instant),
+            "trust_policy_digest": self.trust_policy_digest,
+            "evaluated_at": instant.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
         }
         return hashlib.sha256(_canonical_bytes(payload)).hexdigest()
 
@@ -486,7 +512,7 @@ class KnowledgeCatalog:
         for claim in self.claims():
             counts[claim.status.value] += 1
             if claim.status is KnowledgeStatus.VERIFIED:
-                if not self._trusted or claim.claim_id in self._conflicted_ids or not claim.is_usable(instant):
+                if not self.is_trusted_at(instant) or claim.claim_id in self._conflicted_ids or not claim.is_usable(instant):
                     unusable_verified += 1
                 else:
                     usable_verified += 1
@@ -499,15 +525,15 @@ class KnowledgeCatalog:
             "conflict_group_count": len(self._conflict_groups),
             "conflict_groups": [list(group) for group in self._conflict_groups],
             "content_digest": self.content_digest,
-            "trusted": self._trusted,
+            "trusted": self.is_trusted_at(instant),
             "trust_policy_digest": self.trust_policy_digest,
-            "trust_digest": self.trust_digest,
+            "trust_digest": self.trust_digest_at(instant),
         }
 
     def claim_is_usable(self, claim_id: str, now: datetime | None = None) -> bool:
         claim = self.get(claim_id)
         return bool(
-            self._trusted and claim is not None
+            self.is_trusted_at(now) and claim is not None
             and claim_id not in self._conflicted_ids and claim.is_usable(now)
         )
 
