@@ -426,6 +426,8 @@ def authorize_migration(
         raise ValueError("knowledge trust policy is not current at approval time")
     if knowledge.trust_digest_at(approved) != plan.knowledge_trust_digest:
         raise ValueError("knowledge trust decision changed after route planning")
+    if any(not knowledge.validates_transition(transition, approved) for transition in plan.transitions):
+        raise ValueError("knowledge claims are not usable at approval time")
     if approved < planned:
         raise ValueError("approval cannot predate the route plan evaluation")
     if expiry <= approved:
@@ -543,6 +545,8 @@ def validate_migration_authorization(
         raise ValueError("knowledge trust policy is not current at validation time")
     if knowledge.trust_digest_at(instant) != plan.knowledge_trust_digest:
         raise ValueError("knowledge trust decision changed after route planning")
+    if any(not knowledge.validates_transition(transition, instant) for transition in plan.transitions):
+        raise ValueError("knowledge claims are not usable at validation time")
     if not authorization.is_current(instant):
         raise ValueError("migration authorization is not currently valid")
     if plan.status != "PLANNED" or authorization.route_plan_digest != plan.plan_digest:
