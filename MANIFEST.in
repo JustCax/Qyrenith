@@ -100,12 +100,14 @@ include qyrenith_engine/migration/authorization.py
 include qyrenith_engine/migration/knowledge.py
 include qyrenith_engine/migration/model.py
 include qyrenith_engine/migration/planner.py
+include qyrenith_engine/migration/snapshot.py
 include qyrenith_engine/migration/worker.py
 include qyrenith_launcher.py
 include schemas/adapter-manifest.schema.json
 include schemas/evidence.schema.json
 include schemas/migration-assurance-record.schema.json
 include schemas/migration-knowledge.schema.json
+include schemas/migration-project-snapshot.schema.json
 include schemas/migration-transition.schema.json
 include schemas/migration-worker-manifest.schema.json
 include schemas/migration-worker-qualification.schema.json
@@ -128,6 +130,7 @@ include tests/test_migration_assurance_120.py
 include tests/test_migration_authorization_120.py
 include tests/test_migration_benchmarks_120.py
 include tests/test_migration_core_120.py
+include tests/test_migration_snapshot_120.py
 include tests/test_migration_worker_120.py
 include tests/test_engine_cli_110.py
 include tests/test_external_check.py
