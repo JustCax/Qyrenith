@@ -13,6 +13,7 @@ from qyrenith_engine.migration import (
     MigrationWorkerManifest,
     MigrationWorkerRegistry,
     MigrationStepGrant,
+    RouteWorkerAssessment,
     TransitionKind,
     WorkerPermission,
     WorkerQualification,
@@ -203,6 +204,23 @@ class TestMigrationAuthorization(unittest.TestCase):
     def test_rejects_authorization_lifetime_above_policy(self):
         with self.assertRaisesRegex(ValueError, "lifetime"):
             authorize(expires_at=datetime(2026, 11, 4, 18, 16, tzinfo=timezone.utc))
+
+    def test_rejects_no_work_assessment_for_a_route_that_has_transitions(self):
+        plan, assessment, registry, policy, limits = fixture()
+        forged_noop = RouteWorkerAssessment(
+            route_plan_digest=plan.plan_digest,
+            evaluated_at=plan.evaluated_at,
+            status="NO_WORK_REQUIRED",
+            evaluations=(),
+            reason="Forged no-op assessment",
+        )
+        with self.assertRaisesRegex(ValueError, "exact ordered transitions"):
+            authorize_migration(
+                plan, forged_noop, registry, policy,
+                approved_by="reviewer", approved_at=NOW,
+                expires_at=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
+                permissions=(WorkerPermission.READ_PROJECT,), limits=limits,
+            )
 
     def test_rejects_worker_assessment_from_another_plan(self):
         plan, assessment, registry, policy, limits = fixture()
