@@ -56,46 +56,6 @@
       "pattern": "^[0-9a-f]{64}$"
     }
   },
-  "allOf": [
-    {
-      "if": {
-        "properties": {
-          "grants": {
-            "maxItems": 0
-          }
-        }
-      },
-      "then": {}
-    },
-    {
-      "if": {
-        "properties": {
-          "grants": {
-            "minItems": 1
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "grants": {
-            "items": {
-              "required": [
-                "transition_id",
-                "worker_id",
-                "worker_version",
-                "manifest_digest",
-                "qualification_id",
-                "qualification_digest",
-                "qualification_valid_until",
-                "permissions",
-                "limits"
-              ]
-            }
-          }
-        }
-      }
-    }
-  ],
   "$defs": {
     "limits": {
       "type": "object",
