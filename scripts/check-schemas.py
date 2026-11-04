@@ -46,6 +46,9 @@ EXPECTED = {
         "max_output_bytes", "max_changed_files", "max_lifetime_seconds",
         "allowed_worker_ids", "policy_digest",
     ],
+    "migration-project-snapshot.schema.json": [
+        "schema", "entries", "excluded_paths", "limits", "captured_at", "snapshot_digest",
+    ],
 }
 EXPECTED_TRANSITION_KINDS = {
     "VERSION_UPGRADE", "LOADER_CONVERSION", "FRAMEWORK_CHANGE", "PLATFORM_MIGRATION",
@@ -211,6 +214,23 @@ require(policy_schema["properties"]["allowed_worker_ids"].get("maxItems") == 100
         "authorization policy worker allowlist must be bounded")
 require(policy_schema["properties"]["max_lifetime_seconds"].get("maximum") == 86400,
         "authorization policy lifetime ceiling mismatch")
+
+snapshot = schemas["migration-project-snapshot.schema.json"]
+require(snapshot["properties"]["snapshot_digest"].get("pattern") == "^[0-9a-f]{64}$",
+        "project snapshot must carry a SHA-256 content digest")
+require(snapshot["properties"]["entries"].get("maxItems") == 1000000,
+        "project snapshot entry count must be bounded")
+require(snapshot["properties"]["excluded_paths"].get("maxItems") == 10000,
+        "project snapshot exclusions must be bounded")
+entry_schema = snapshot["$defs"]["entry"]
+require(entry_schema.get("additionalProperties") is False,
+        "project snapshot entries must reject unknown fields")
+require(entry_schema["properties"]["mode"].get("maximum") == 511,
+        "project snapshot modes must contain only portable permission bits")
+require(len(entry_schema.get("allOf", [])) == 3,
+        "project snapshot must define distinct file, directory, and symlink contracts")
+require(snapshot["$defs"]["limits"].get("additionalProperties") is False,
+        "project snapshot limits must reject unknown fields")
 
 authorization = schemas["migration-authorization.schema.json"]
 require(authorization["properties"]["route_plan_digest"].get("pattern") == "^[0-9a-f]{64}$",
