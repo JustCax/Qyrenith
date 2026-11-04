@@ -1,15 +1,16 @@
 # Qyrenith without AI
 
 You do not need an AI agent to use Qyrenith. Everything below is plain CLI use:
-copy one file, run commands, read the output. No account, no plugin, no agent.
+copy the CLI module and its built-in engine package, run commands, and read the output. No account, no plugin, no agent.
 
 ## Install
 
-Requirements: Python 3.8 or newer. Git is recommended but optional.
+Requirements: Python 3.11 or newer. Git is recommended but optional.
 
 ```bash
-# 1. Copy the control file into your project
+# 1. Copy the CLI module and built-in engine package into your project
 cp /path/to/qyrenith.py /path/to/your-project/
+cp -R /path/to/qyrenith_engine /path/to/your-project/
 cd /path/to/your-project
 
 # 2. Check the project is healthy

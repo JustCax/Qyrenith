@@ -17,7 +17,7 @@ for _stream in (sys.stdout, sys.stderr):
     except (AttributeError, OSError):
         pass
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 PRODUCT_NAME = "Qyrenith"
 SCHEMA = 8
 MAX_FIX = 5
@@ -3577,10 +3577,59 @@ def cmd_external_verify(args):
     return 0 if report["overall_status"] == "PASS" else (1 if report["overall_status"] == "FAIL" else 2)
 
 # ---------------------------------------------------------------------------
+# Additive engineering analysis commands
+# ---------------------------------------------------------------------------
+def cmd_source_analysis(args):
+    from qyrenith_engine import analyze_project
+    try:
+        result = analyze_project(root_path(args.project), max_files=args.max_files, max_entries=args.max_entries)
+    except (OSError, ValueError) as exc:
+        die("PREFLIGHT_FAILURE", f"source-analysis could not complete: {exc}")
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0 if result["status"] == "PASS" else (2 if result["status"] in {"BLOCKED", "UNKNOWN"} else 1)
+
+def cmd_change_impact(args):
+    from qyrenith_engine import build_change_impact
+    if not args.extra:
+        die("PREFLIGHT_FAILURE", "impact requires one or more project-relative changed Python paths.")
+    try:
+        result = build_change_impact(root_path(args.project), args.extra)
+    except (OSError, ValueError) as exc:
+        die("PREFLIGHT_FAILURE", f"impact analysis could not complete: {exc}")
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0 if result["status"] == "PASS" else (2 if result["status"] in {"BLOCKED", "UNKNOWN"} else 1)
+
+def cmd_boundary_check(args):
+    from qyrenith_engine import inspect_project_boundary
+    try:
+        result = inspect_project_boundary(root_path(args.project), max_entries=args.max_entries)
+    except (OSError, ValueError) as exc:
+        die("PREFLIGHT_FAILURE", f"boundary inspection could not complete: {exc}")
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0 if result["status"] == "PASS" else 2
+
+def cmd_bounded_check(args):
+    from qyrenith_engine import run_bounded_process
+    if not args.check_command_one:
+        die("PREFLIGHT_FAILURE", "bounded-check requires an explicit --check-command-one.")
+    try:
+        argv = shlex.split(args.check_command_one, posix=(os.name != "nt"))
+    except ValueError as exc:
+        die("PREFLIGHT_FAILURE", f"Invalid command quoting: {exc}")
+    if os.name == "nt":
+        argv = [token[1:-1] if len(token) >= 2 and token[0] == token[-1] and token[0] in "\\\"'" else token for token in argv]
+    try:
+        result = run_bounded_process(argv, root_path(args.project), timeout=args.timeout, output_limit=args.output_limit)
+    except (OSError, ValueError) as exc:
+        die("PREFLIGHT_FAILURE", f"bounded execution could not start: {exc}")
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0 if result["status"] == "PASS" else (2 if result["status"] == "BLOCKED" else 1)
+
+# ---------------------------------------------------------------------------
 # Parser / main
 # ---------------------------------------------------------------------------
 def parser():
-    p=argparse.ArgumentParser(description=f"Qyrenith {VERSION} Project Verification & Control Plane"); p.add_argument("command",choices=["audit","plan","port","continue","build","verify","policy","skills","reality","inspect","explain","dry-run","rollback","doctor","status","report","self-test","benchmark","failure-quality","security-test","security-review","recovery-test","graph","compatibility","replay","adapters","worker-run","artifact-inspect","evidence","git-test","fuzz-test","public-audit","domains","intelligence","external-check","external-verify"]); p.add_argument("-p","--project",default="."); p.add_argument("--check-command",action="append",default=[],help="Explicit command for external-verify; repeat for multiple checks"); p.add_argument("--target-mc",default=""); p.add_argument("--target-loader",default=""); p.add_argument("--target-loader-version",default=""); p.add_argument("--resume",action="store_true"); p.add_argument("--yes",action="store_true"); p.add_argument("--noninteractive",action="store_true"); p.add_argument("--managed",action="store_true"); p.add_argument("--allow-unknown-dependencies",action="store_true"); p.add_argument("--allow-missing-adapters",action="store_true",help="For verify --ci: downgrade detected-but-unavailable adapters to informational instead of blocking; never turns zero available adapters into PASS."); p.add_argument("--task",default=""); p.add_argument("--execute",action="store_true"); p.add_argument("--ci",action="store_true"); p.add_argument("--limit",type=int,default=12); p.add_argument("--worker",default=""); p.add_argument("--operation",default="result",choices=["discover","inspect","plan","execute","result","port"]); p.add_argument("--timeout",type=int,default=120); p.add_argument("--baseline",default="",help="Baseline external-check JSON for diffing (external-check only)"); p.add_argument("--run-runtime",action="store_true"); p.add_argument("--run-failure-lab",action="store_true"); p.add_argument("--run-mutations",action="store_true"); p.add_argument("--run-counterfactual",action="store_true"); p.add_argument("--verdict",action="store_true"); p.add_argument("--finding-id",default=""); p.add_argument("--reason",default=""); p.add_argument("extra",nargs="*"); return p
+    p=argparse.ArgumentParser(description=f"Qyrenith {VERSION} Project Verification & Control Plane"); p.add_argument("command",choices=["audit","plan","port","continue","build","verify","policy","skills","reality","inspect","explain","dry-run","rollback","doctor","status","report","self-test","benchmark","failure-quality","security-test","security-review","recovery-test","graph","compatibility","replay","adapters","worker-run","artifact-inspect","evidence","git-test","fuzz-test","public-audit","domains","intelligence","external-check","external-verify","source-analysis","impact","boundary-check","bounded-check"]); p.add_argument("-p","--project",default="."); p.add_argument("--check-command",action="append",default=[],help="Explicit command for external-verify; repeat for multiple checks"); p.add_argument("--target-mc",default=""); p.add_argument("--target-loader",default=""); p.add_argument("--target-loader-version",default=""); p.add_argument("--resume",action="store_true"); p.add_argument("--yes",action="store_true"); p.add_argument("--noninteractive",action="store_true"); p.add_argument("--managed",action="store_true"); p.add_argument("--allow-unknown-dependencies",action="store_true"); p.add_argument("--allow-missing-adapters",action="store_true",help="For verify --ci: downgrade detected-but-unavailable adapters to informational instead of blocking; never turns zero available adapters into PASS."); p.add_argument("--task",default=""); p.add_argument("--execute",action="store_true"); p.add_argument("--ci",action="store_true"); p.add_argument("--limit",type=int,default=12); p.add_argument("--worker",default=""); p.add_argument("--operation",default="result",choices=["discover","inspect","plan","execute","result","port"]); p.add_argument("--timeout",type=int,default=120); p.add_argument("--baseline",default="",help="Baseline external-check JSON for diffing (external-check only)"); p.add_argument("--run-runtime",action="store_true"); p.add_argument("--run-failure-lab",action="store_true"); p.add_argument("--run-mutations",action="store_true"); p.add_argument("--run-counterfactual",action="store_true"); p.add_argument("--verdict",action="store_true"); p.add_argument("--finding-id",default=""); p.add_argument("--reason",default=""); p.add_argument("--max-files",type=int,default=10000); p.add_argument("--max-entries",type=int,default=50000); p.add_argument("--check-command-one",default=""); p.add_argument("--output-limit",type=int,default=16000,help="Maximum captured subprocess output bytes (256–1000000)"); p.add_argument("extra",nargs="*"); return p
 def main():
     args=parser().parse_intermixed_args()
     try:
@@ -3600,7 +3649,7 @@ def main():
             if args.verdict:
                 return 0 if result.get("verdict")=="PASS" else (2 if result.get("verdict")=="BLOCKED" else 1)
             return 0
-        return {"audit":cmd_audit,"plan":cmd_plan,"port":cmd_port,"continue":cmd_continue,"build":cmd_build,"verify":cmd_verify,"policy":cmd_policy,"skills":cmd_skills,"reality":cmd_reality,"inspect":cmd_inspect,"explain":cmd_explain,"dry-run":cmd_dry_run,"rollback":cmd_rollback,"doctor":cmd_doctor,"status":cmd_status,"report":cmd_report,"benchmark":cmd_benchmark,"failure-quality":cmd_failure_quality,"security-test":cmd_security_test,"security-review":cmd_security_review,"recovery-test":cmd_recovery_test,"graph":cmd_graph,"compatibility":cmd_compatibility,"replay":cmd_replay,"adapters":cmd_adapters,"worker-run":cmd_worker_run,"artifact-inspect":cmd_artifact_inspect,"evidence":cmd_evidence,"git-test":cmd_git_test,"fuzz-test":cmd_fuzz_test,"public-audit":cmd_public_audit,"domains":cmd_domains}[args.command](args)
+        return {"audit":cmd_audit,"plan":cmd_plan,"port":cmd_port,"continue":cmd_continue,"build":cmd_build,"verify":cmd_verify,"policy":cmd_policy,"skills":cmd_skills,"reality":cmd_reality,"inspect":cmd_inspect,"explain":cmd_explain,"dry-run":cmd_dry_run,"rollback":cmd_rollback,"doctor":cmd_doctor,"status":cmd_status,"report":cmd_report,"benchmark":cmd_benchmark,"failure-quality":cmd_failure_quality,"security-test":cmd_security_test,"security-review":cmd_security_review,"recovery-test":cmd_recovery_test,"graph":cmd_graph,"compatibility":cmd_compatibility,"replay":cmd_replay,"adapters":cmd_adapters,"worker-run":cmd_worker_run,"artifact-inspect":cmd_artifact_inspect,"evidence":cmd_evidence,"git-test":cmd_git_test,"fuzz-test":cmd_fuzz_test,"public-audit":cmd_public_audit,"domains":cmd_domains,"source-analysis":cmd_source_analysis,"impact":cmd_change_impact,"boundary-check":cmd_boundary_check,"bounded-check":cmd_bounded_check}[args.command](args)
     except QyrenithError as e: print(f"{e.code}: {e.message}",file=sys.stderr); return EXIT.get(e.code,EXIT["INTERNAL_ERROR"])
     except KeyboardInterrupt: print("STOPPED: interrupted by user",file=sys.stderr); return EXIT["STOPPED"]
     except Exception as e: print(f"INTERNAL_ERROR: {type(e).__name__}: {e}",file=sys.stderr); return EXIT["INTERNAL_ERROR"]

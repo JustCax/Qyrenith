@@ -184,20 +184,23 @@ From PyPI:
 pip install qyrenith
 ```
 
-Or copy the single control file into the project root:
-
-```bash
-cp /path/to/qyrenith.py /path/to/your-project/
-```
-
-Or install the repository as a Python project:
+Or install the source repository as a Python project:
 
 ```bash
 pip install /path/to/qyrenith
 ```
 
-All three give you the same `qyrenith` console command. No runtime dependencies are required;
-Python 3.8 or newer is the only prerequisite.
+For a manual source copy, preserve the package layout:
+
+```bash
+cp /path/to/qyrenith.py /path/to/your-project/
+cp -R /path/to/qyrenith_engine /path/to/your-project/
+```
+
+A core-only copy of `qyrenith.py` can still run the original control-plane commands, but the
+1.1.0 engineering-analysis commands require the adjacent `qyrenith_engine/` package.
+The full install paths above provide the complete command surface. No third-party runtime
+dependencies are required; the supported Python baseline is 3.11 or newer.
 
 ## Quick start
 
@@ -269,6 +272,10 @@ The main command surface, grouped by purpose. Run `python qyrenith.py --help` fo
 | `verify` | Generic project verification; reports NOT_AVAILABLE when no adapter exists |
 | `external-check` | Inspect a separate project read-only; no Qyrenith files or state required in target |
 | `external-verify` | Run explicitly supplied checks in an external project; execution requires --execute |
+| `source-analysis` | Static Python syntax, import-reference, and symbol inventory without importing project code |
+| `impact` | Static direct/transitive Python import impact hints for changed files |
+| `boundary-check` | Read-only filesystem boundary inspection |
+| `bounded-check` | Explicit shell-free, bounded process invocation; not an OS sandbox |
 
 ### Planning and managed migration
 
@@ -320,6 +327,7 @@ See:
 - `ADAPTERS.md` — worker adapter protocol
 - `EVIDENCE.md` — evidence and claim model
 - `BENCHMARKS.md` — benchmark fixtures and philosophy
+- `ENGINEERING_ANALYSIS.md` — static analysis, change impact, boundary checks, and bounded execution
 - `LICENSE` — MIT license
 
 ## Verification surface

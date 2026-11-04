@@ -2,17 +2,17 @@
 
 ## 1. Requirements
 
-- Python 3.8+
+- Python 3.11+
 - Git recommended for transactional commits and rollback
 - Any software project (Minecraft mod, Python application, Node service, etc.)
-- `.agents/skills/qyrenith/` for the Qyrenith skill (agent integration)
+- Optional specialist skills under `.agents/skills/` for agent-assisted workflows
 - Optional specialist skills such as debugging and validation
 
 No Python packages are required.
 
 ## 2. Install into a project
 
-Place `qyrenith.py` at the project root and copy the `qyrenith` skill into `.agents/skills/qyrenith/`.
+Place `qyrenith.py` and the complete `qyrenith_engine/` package at the project root. Qyrenith does not require an AI agent or any skill to run. For agent-assisted workflows, optionally copy the relevant reusable skills from `skills-source/` into `.agents/skills/`.
 
 Keep every existing skill. Qyrenith discovers and routes to relevant skills; it does not require deleting unrelated ones.
 
@@ -33,8 +33,9 @@ On Windows, Qyrenith configures stdout/stderr for UTF-8 with replacement for uns
 Qyrenith is project-neutral. For a Python, Node, Rust, or any other project:
 
 ```bash
-# 1. Copy Qyrenith into the project root
+# 1. Copy the complete Qyrenith source layout into the project root
 cp /path/to/qyrenith.py .
+cp -R /path/to/qyrenith_engine .
 
 # 2. Run the health check
 python qyrenith.py doctor --project .
