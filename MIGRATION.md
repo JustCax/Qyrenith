@@ -191,13 +191,23 @@ The ledger is not yet integrated into the managed migration workflow. A caller-s
 
 A local hash chain can detect accidental or partial tampering when its trusted tail is preserved. An actor able to replace the entire ledger can recompute the chain. The ledger is not a digital signature, remote transparency service, database transaction coordinator, or OS security boundary.
 
-## 10. Current limitations
+## 10. Plan-bound authorization
+
+`MigrationAuthorizationPolicy` defines a local permission allowlist, worker allowlist, resource ceilings, and maximum authorization lifetime. `authorize_migration(plan, assessment, registry, policy, ...)` creates an immutable authorization bound to the exact route-plan digest, worker-assessment digest, and policy digest.
+
+Before issuing grants, the function re-resolves every worker against the registry at the approval timestamp. It rejects a changed manifest or qualification, a qualification that is not current at approval, permissions not allowed by both policy and worker manifest, resource limits above either declared ceiling, and an authorization expiry later than any worker qualification expiry. Every grant is pinned to one transition, worker ID/version, manifest digest, qualification ID/digest, and qualification expiry. Authorization validity uses a half-open time interval: approved_at <= now < expires_at.
+
+Approval attribution (`approved_by`) is caller-supplied provenance, not authenticated identity or a cryptographic signature. The policy is a local decision input, not a secure account/role system. The authorization object does not persist itself, launch a worker, enforce operating-system permissions, isolate a process, or guarantee that a future executor will enforce the grant. It is a necessary policy artifact, not an execution capability. A future executor must re-check the exact grant, current time, measured worker bytes, workspace boundary, and runtime-enforced resource controls immediately before each side effect.
+
+A no-op route may receive an authorization record with zero worker grants; it authorizes no worker operation.
+
+## 11. Current limitations
 
 The current migration package is a planning and record-keeping foundation. It does not yet provide:
 
 - Project discovery or source-state fingerprint generation for migration plans.
 - Automated conformance-suite execution or cryptographic worker qualification signatures.
-- Permission and authorization records bound to a plan.
+- Authenticated human approvals, signed authorization records, persistent policy administration, and an execution-time enforcement point.
 - Migration source transformations or API mapping discovery.
 - Isolated per-target worktrees and cross-target contamination tests.
 - Managed workflow integration and recovery orchestration.
