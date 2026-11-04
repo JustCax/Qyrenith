@@ -4,7 +4,7 @@ Execution, filesystem mutation, worker dispatch, and assurance persistence are
 intentionally not implied by route planning.
 """
 from .assurance import AssuranceLedger, AssuranceLedgerError, LedgerLockedError, verify_assurance_chain
-from .authorization import MigrationAuthorization, MigrationAuthorizationPolicy, MigrationStepGrant, authorize_migration
+from .authorization import (MigrationAuthorization, MigrationAuthorizationPolicy, MigrationStepGrant, authorize_migration, deserialize_migration_authorization, serialize_migration_authorization)
 from .knowledge import (
     EvidenceReference,
     KnowledgeCatalog,
@@ -26,6 +26,7 @@ from .worker import (
 __all__ = [
     "AssuranceLedger", "AssuranceLedgerError", "LedgerLockedError", "verify_assurance_chain",
     "MigrationAuthorization", "MigrationAuthorizationPolicy", "MigrationStepGrant", "authorize_migration",
+    "deserialize_migration_authorization", "serialize_migration_authorization",
     "EvidenceReference",
     "KnowledgeCatalog",
     "KnowledgeStatus",
