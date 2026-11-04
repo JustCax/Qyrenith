@@ -1,5 +1,6 @@
 """Regression tests for deterministic, bounded project snapshots."""
 import json
+from dataclasses import replace
 import os
 from pathlib import Path
 import tempfile
@@ -23,9 +24,9 @@ class TestProjectSnapshot(unittest.TestCase):
             root = Path(directory)
             (root / "source.py").write_text("print('hello')\n", encoding="utf-8")
             first = capture_project_snapshot(root)
-            second = capture_project_snapshot(root)
-            self.assertEqual(first.snapshot_digest, second.snapshot_digest)
-            self.assertNotEqual(first.captured_at, second.captured_at)
+            later = replace(first, captured_at="2026-11-05T00:00:00Z")
+            self.assertEqual(first.snapshot_digest, later.snapshot_digest)
+            self.assertNotEqual(first.captured_at, later.captured_at)
 
     def test_snapshot_tracks_content_paths_modes_and_empty_directories(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -213,6 +214,12 @@ class TestProjectSnapshot(unittest.TestCase):
     def test_snapshot_import_rejects_duplicate_keys(self):
         with self.assertRaisesRegex(SnapshotError, "invalid project snapshot JSON"):
             deserialize_project_snapshot(b'{"schema":1,"schema":1}')
+
+    def test_snapshot_import_accepts_windows_terminal_crlf(self):
+        with tempfile.TemporaryDirectory() as directory:
+            encoded = serialize_project_snapshot(capture_project_snapshot(directory))
+            restored = deserialize_project_snapshot(encoded.rstrip(b"\n") + b"\r\n")
+            self.assertEqual(restored.snapshot_digest, capture_project_snapshot(directory).snapshot_digest)
 
     def test_snapshot_import_rejects_noncanonical_whitespace(self):
         with tempfile.TemporaryDirectory() as directory:
