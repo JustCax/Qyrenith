@@ -172,7 +172,7 @@ jobs:
   attach-github-assets:
     name: Attach deterministic archives to the GitHub Release
     needs: build
-    if: github.event_name == 'release' && github.event.release.prerelease == false
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'release' && github.event.release.prerelease == false)
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -181,11 +181,11 @@ jobs:
       - name: Download verified release archives
         uses: actions/download-artifact@v8
         with:
-          name: qyrenith-release-${{ github.event.release.tag_name }}
+          name: qyrenith-release-${{ github.event.release.tag_name || inputs.release_tag }}
           path: release-bundle
 
       - name: Attach ZIP, TAR, and SHA-256 files
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
         run: gh release upload "$RELEASE_TAG" release-bundle/github/* --clobber
