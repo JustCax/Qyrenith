@@ -585,6 +585,8 @@ def capture_project_snapshot(
         and hasattr(os, "O_DIRECTORY")
         and hasattr(os, "O_NOFOLLOW")
         and os.open in os.supports_dir_fd
+        and os.stat in os.supports_dir_fd
+        and os.readlink in os.supports_dir_fd
         and os.scandir in os.supports_fd
     )
     if supports_descriptor_traversal:
