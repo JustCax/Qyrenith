@@ -208,7 +208,7 @@ Capture writes canonical JSON to standard output; redirect it to a file outside 
 
 Snapshots containing symbolic links are rejected for materialization. This avoids reproducing potentially external link targets in a target workspace. Empty directories and portable permission bits are preserved where the host filesystem supports them. A canonical `workspace.json` descriptor binds the unique workspace ID, exact target identity, source snapshot digest, project path, file count, byte count, and creation time. `verify_workspace_baseline(descriptor, snapshot)` checks that a workspace still matches its original baseline.
 
-Call the function once per target with the same source snapshot to obtain independent directories. A failed creation removes its partial workspace. The caller owns successful workspace retention and cleanup.
+Call `create_isolated_workspaces(source_root, snapshot, workspace_parent, targets)` to create up to 64 unique target workspaces as one rollback unit. Each target is revalidated against the same source snapshot before its copy. If any target fails, all workspaces created by that batch are removed. Successful workspaces remain caller-owned; persistent retention and successful-workspace cleanup policy are not managed by this API.
 
 This is a filesystem copy, not a Git worktree: Git metadata excluded by the source snapshot is not copied, no branch or commit is created, and no worker or build process is launched. Workspace separation is not an OS sandbox; processes later launched inside a workspace still require explicit runtime isolation and permission enforcement.
 
@@ -220,7 +220,7 @@ from pathlib import Path
 from qyrenith_engine.migration import (
     MigrationIdentity,
     capture_project_snapshot,
-    create_isolated_workspace,
+    create_isolated_workspaces,
     verify_workspace_baseline,
 )
 
@@ -237,11 +237,8 @@ forge_target = MigrationIdentity(
     platform="java", loader="forge", loader_version="21.1.0",
 )
 
-fabric_workspace = create_isolated_workspace(
-    source, snapshot, workspace_parent, fabric_target
-)
-forge_workspace = create_isolated_workspace(
-    source, snapshot, workspace_parent, forge_target
+fabric_workspace, forge_workspace = create_isolated_workspaces(
+    source, snapshot, workspace_parent, (fabric_target, forge_target)
 )
 
 assert verify_workspace_baseline(fabric_workspace, snapshot).matches
@@ -334,7 +331,7 @@ The current migration package is a planning and record-keeping foundation. It do
 - Automated conformance-suite execution or cryptographic worker qualification signatures.
 - Authenticated human approvals, signed authorization records, persistent policy administration, and an execution-time enforcement point.
 - Migration source transformations or API mapping discovery.
-- Git-aware per-target worktrees, batch workspace lifecycle management, and process-level isolation tests. The current workspace API creates independent filesystem copies only.
+- Git-aware per-target worktrees, persistent successful-workspace lifecycle/cleanup management, and process-level isolation tests. The current API creates independent filesystem copies and rolls back a failed batch only.
 - Managed workflow integration and recovery orchestration.
 - Build, test, runtime, or behavioral verification of target projects.
 - A verified cross-loader Minecraft conversion or a newly qualified non-Minecraft domain.
