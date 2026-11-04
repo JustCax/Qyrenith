@@ -218,7 +218,7 @@ def plan_route(
     at = _timestamp(evaluated_at)
     now = datetime.fromisoformat(at.replace("Z", "+00:00"))
     knowledge_digest = knowledge.content_digest
-    knowledge_trust_digest = knowledge.trust_digest_at(at)
+    knowledge_trust_digest = knowledge.trust_digest_at(now)
 
     def result(status, route, reason):
         return RoutePlan(
@@ -251,7 +251,7 @@ def plan_route(
     if enabled_route is not None and len(enabled_route) <= max_hops:
         reason = (
             "A declared enabled route exists, but the knowledge catalog is not trusted by a local trust policy"
-            if not knowledge.is_trusted_at(at)
+            if not knowledge.is_trusted_at(now)
             else "A declared enabled route exists, but one or more transitions lack usable verified knowledge"
         )
         return result("UNKNOWN", (), reason)
