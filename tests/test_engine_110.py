@@ -205,6 +205,16 @@ class TestBoundaryAndExecution(unittest.TestCase):
             self.assertFalse(report["timed_out"])
             self.assertLess(report["duration_seconds"], 10)
 
+    def test_bounded_worker_normalizes_crlf_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            script = "import sys; sys.stdout.buffer.write(b'protocol\r\n'); sys.stderr.buffer.write(b'diagnostic\r\n')"
+            report = run_bounded_worker(
+                [sys.executable, "-c", script], directory, b"request\n", timeout=5
+            )
+            self.assertEqual(report["status"], "PASS")
+            self.assertEqual(report["stdout"], "protocol\n")
+            self.assertEqual(report["stderr"], "diagnostic\n")
+
     def test_bounded_worker_keeps_stdout_and_stderr_separate(self):
         with tempfile.TemporaryDirectory() as directory:
             script = "import sys; sys.stdin.read(); print('protocol'); print('diagnostic', file=sys.stderr)"
