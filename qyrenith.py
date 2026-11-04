@@ -659,7 +659,7 @@ def validate_worker_command_paths(root: Path, command: Sequence[str]) -> None:
         )
         if not path_like:
             continue
-        if local_candidate.is_symlink():
+        if index > 0 and local_candidate.is_symlink():
             die("STOPPED", f"Worker command path must not be a symbolic link: {argument}")
         try:
             resolved = local_candidate.resolve(strict=False)
