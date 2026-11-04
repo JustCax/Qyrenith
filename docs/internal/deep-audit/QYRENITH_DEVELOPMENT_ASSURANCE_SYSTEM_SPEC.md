@@ -81,6 +81,9 @@ If evidence is insufficient, no safe repair exists, the failure recurs, budgets 
 ### QDAS-21 — Approval authenticity and replay protection
 Approval must originate from a trusted host interaction or a configured authenticated approval service. Agent text, worker output, repository files, and caller-supplied reviewer strings are not approval. Approval is bound to the exact action scope, command/manifest digest, baseline, and a single-use nonce or equivalent replay-resistant token. If trusted approval cannot be established, QDAS remains propose-only.
 
+### QDAS-22 — Enforced execution isolation and least privilege
+Declared worker permissions are policy metadata, not operating-system enforcement. Any repair or worker execution that can modify files, spawn processes, access secrets, install dependencies, or use the network must run inside an enforceable OS sandbox or equivalent host-controlled isolation boundary with explicit read/write roots, process limits, environment controls, and network policy. If the host cannot enforce the requested boundary, QDAS must remain propose-only and report the missing capability; it must never claim that a manifest or command allowlist provides sandboxing.
+
 ## 4. State model
 
 `CAPTURED, CLASSIFIED, INVESTIGATING, PLANNED, AWAITING_APPROVAL, REPAIRING, REVERIFYING, RESOLVED, REGRESSION, INCONCLUSIVE, BLOCKED, ABORTED`.
