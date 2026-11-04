@@ -53,7 +53,7 @@ The first implementation slice does not attempt to make hostile worker code safe
 | Local ledger tampering or interrupted writes | Strict canonical JSONL, duplicate-key rejection, sequence/hash chain, fail-closed lock, bounded records, atomic replacement, file and directory synchronization where supported | An actor able to replace the whole ledger can recompute the chain. A protected trust anchor or remote append-only witness is deferred. |
 | Permission escalation or confused deputy | Plan-bound authorization intersects requested permissions with a local policy allowlist and the exact worker manifest; it binds plan, assessment, policy, worker, qualification, expiry, and stricter resource limits | Approver identity is not authenticated; policy persistence/signing and a runtime enforcement point remain future work |
 | Excessive worker resource use | The manifest requires bounded timeout/input/output/change declarations | These are currently declarations only. A future executor must enforce them at runtime and add operating-system isolation. |
-| Cross-target file leakage | Multi-target planning is independent; a snapshot-pinned filesystem-copy workspace API exists for isolated per-target copies | The workspace API is not yet integrated into multi-target execution and is not a Git worktree or OS/process sandbox. Multi-target execution remains prohibited until integration and isolation tests pass. |
+| Cross-target file leakage | A plan-bound preparation API now connects fully PLANNED multi-target routes to independent snapshot-pinned workspace batches, validates exact target-plan bindings, rechecks source/workspaces, and rolls back failed preparation | Preparation is not execution, a Git worktree, or an OS/process sandbox. Multi-target worker execution remains prohibited until authenticated approval, independent conformance, OS-enforced isolation, and ledger integration pass. |
 | AI or provider hallucination | AI/provider output is not a trusted knowledge status; OBSERVED/INFERRED/UNKNOWN cannot qualify a transition | A human review or a separately governed evidence provider must establish VERIFIED claims. |
 | Silent fallback to unsupported migration | Planner returns UNKNOWN, BLOCKED, or UNSUPPORTED instead of fabricating edges | Domain support must be published only after real transformation and end-to-end evidence exist. |
 
@@ -169,6 +169,7 @@ These are planning primitives only. They do not discover a project, modify files
 - [x] Add bounded batch creation with duplicate-target rejection, source revalidation between copies, and rollback of prior copies on failure.
 - [x] Test target-to-target filesystem independence and rollback when the source changes mid-batch.
 - [x] Bind every target copy to the same source snapshot fingerprint.
+- [x] Add plan-bound multi-target workspace preparation with exact route-plan digests, ordered target identities, canonical batch evidence, revalidation, and rollback on post-creation failure.
 - [ ] Add persistent successful-workspace lifecycle/cleanup management.
 - [ ] Select and verify a Git-aware isolation strategy (worktree or equivalent) when commit metadata is required.
 - [ ] Bind every target to the same Git commit when commit metadata is available.
