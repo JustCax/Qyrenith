@@ -193,6 +193,15 @@ The default exclusions are `.git`, `.qyrenith`, `.backups`, and `__pycache__`. C
 
 This is a read-only fingerprint, not an atomic filesystem transaction, Git commit attestation, backup, or sandbox. Filesystem changes during capture are detected where the platform exposes stable metadata, but callers must still revalidate immediately before any side effect. A snapshot digest establishes content identity, not trust or authorship.
 
+The CLI exposes the same read-only operation:
+
+```powershell
+python qyrenith.py snapshot capture --project . > source.snapshot.json
+python qyrenith.py snapshot verify --project . --snapshot-file source.snapshot.json
+```
+
+Capture writes canonical JSON to standard output; redirect it to a file outside the project when you want to retain it. Verification exits with code 0 for `MATCH`, 1 for `CHANGED`, and a preflight error code when the snapshot cannot be read or checked. Neither command creates Qyrenith state inside the inspected project.
+
 ## 10. Assurance ledger boundary
 
 `AssuranceLedger` is a separate append-only JSONL record store. It validates record shape, scoped relative paths, digests, commit identifiers, sequence numbers, and a SHA-256 hash chain. Writes use a single-writer lock, bounded input/output, temporary-file replacement, and directory synchronization where supported.
