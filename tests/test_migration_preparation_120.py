@@ -156,7 +156,7 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
             workspace_parent = root / "prepared"
             with self.assertRaisesRegex(WorkspaceError, "changed after"):
                 prepare_multi_target_workspaces(
-                    source_root, snapshot, workspace_parent, plan
+                    source_root, snapshot, workspace_parent, plan, catalog
                 )
             self.assertFalse(workspace_parent.exists())
 
@@ -197,13 +197,13 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
             ):
                 with self.assertRaisesRegex(WorkspaceError, "baseline changed"):
                     prepare_multi_target_workspaces(
-                        source_root, snapshot, workspace_parent, plan
+                        source_root, snapshot, workspace_parent, plan, catalog
                     )
             self.assertTrue(workspace_parent.exists())
             self.assertEqual(list(workspace_parent.iterdir()), [])
 
     def test_batch_document_rejects_tampering(self):
-        _, _, _, _, plan = multi_target_plan()
+        _, _, _, catalog, plan = multi_target_plan()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             source_root = root / "source"
