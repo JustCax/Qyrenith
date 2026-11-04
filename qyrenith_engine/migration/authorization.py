@@ -87,9 +87,8 @@ class MigrationAuthorizationPolicy:
             raise ValueError("allowed worker IDs must be unique")
         object.__setattr__(self, "allowed_worker_ids", tuple(sorted(workers)))
 
-    @property
-    def policy_digest(self) -> str:
-        return hashlib.sha256(_canonical({
+    def to_dict(self) -> dict[str, Any]:
+        return {
             "schema": 1,
             "allowed_permissions": [item.value for item in self.allowed_permissions],
             "max_timeout_seconds": self.max_timeout_seconds,
@@ -98,7 +97,77 @@ class MigrationAuthorizationPolicy:
             "max_changed_files": self.max_changed_files,
             "max_lifetime_seconds": self.max_lifetime_seconds,
             "allowed_worker_ids": list(self.allowed_worker_ids),
-        })).hexdigest()
+        }
+
+    @property
+    def policy_digest(self) -> str:
+        return hashlib.sha256(_canonical(self.to_dict())).hexdigest()
+
+    def to_document(self) -> dict[str, Any]:
+        return {**self.to_dict(), "policy_digest": self.policy_digest}
+
+    def to_json_bytes(self) -> bytes:
+        return _canonical(self.to_document()) + b"\\n"
+
+    @classmethod
+    def from_document(cls, document: object) -> "MigrationAuthorizationPolicy":
+        expected = {
+            "schema", "allowed_permissions", "max_timeout_seconds", "max_input_bytes",
+            "max_output_bytes", "max_changed_files", "max_lifetime_seconds",
+            "allowed_worker_ids", "policy_digest",
+        }
+        if not isinstance(document, dict) or set(document) != expected:
+            raise ValueError("migration authorization policy has missing or unexpected fields")
+        if type(document["schema"]) is not int or document["schema"] != 1:
+            raise ValueError("unsupported migration authorization policy schema")
+        payload = {key: value for key, value in document.items() if key != "policy_digest"}
+        if not isinstance(document["policy_digest"], str) or hashlib.sha256(_canonical(payload)).hexdigest() != document["policy_digest"]:
+            raise ValueError("migration authorization policy digest mismatch")
+        if not isinstance(document["allowed_permissions"], list) or not isinstance(document["allowed_worker_ids"], list):
+            raise ValueError("policy permissions and worker IDs must be arrays")
+        try:
+            permissions = tuple(WorkerPermission(value) for value in document["allowed_permissions"])
+        except (ValueError, TypeError) as exc:
+            raise ValueError("policy contains an unknown worker permission") from exc
+        policy = cls(
+            allowed_permissions=permissions,
+            max_timeout_seconds=document["max_timeout_seconds"],
+            max_input_bytes=document["max_input_bytes"],
+            max_output_bytes=document["max_output_bytes"],
+            max_changed_files=document["max_changed_files"],
+            max_lifetime_seconds=document["max_lifetime_seconds"],
+            allowed_worker_ids=tuple(document["allowed_worker_ids"]),
+        )
+        if policy.to_document() != document:
+            raise ValueError("migration authorization policy is not canonical")
+        return policy
+
+    @classmethod
+    def from_json_bytes(cls, data: bytes | str) -> "MigrationAuthorizationPolicy":
+        if isinstance(data, bytes):
+            if len(data) > 1024 * 1024:
+                raise ValueError("migration authorization policy exceeds the 1 MiB import limit")
+            try:
+                source = data.decode("utf-8")
+            except UnicodeDecodeError as exc:
+                raise ValueError("migration authorization policy must be UTF-8") from exc
+        elif isinstance(data, str):
+            if len(data.encode("utf-8")) > 1024 * 1024:
+                raise ValueError("migration authorization policy exceeds the 1 MiB import limit")
+            source = data
+        else:
+            raise TypeError("data must be bytes or str")
+        try:
+            document = json.loads(
+                source, object_pairs_hook=strict_object_pairs,
+                parse_constant=lambda value: (_ for _ in ()).throw(ValueError(f"invalid JSON constant: {value}")),
+            )
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise ValueError("invalid migration authorization policy JSON") from exc
+        canonical = _canonical(document)
+        if source.encode("utf-8") not in {canonical, canonical + b"\\n"}:
+            raise ValueError("migration authorization policy JSON is not canonical")
+        return cls.from_document(document)
 
     def limits(self) -> WorkerResourceLimits:
         return WorkerResourceLimits(
@@ -426,6 +495,16 @@ def authorize_migration(
     )
 
 
+def serialize_migration_authorization_policy(policy: MigrationAuthorizationPolicy) -> bytes:
+    if not isinstance(policy, MigrationAuthorizationPolicy):
+        raise TypeError("policy must be a MigrationAuthorizationPolicy")
+    return policy.to_json_bytes()
+
+
+def deserialize_migration_authorization_policy(data: bytes | str) -> MigrationAuthorizationPolicy:
+    return MigrationAuthorizationPolicy.from_json_bytes(data)
+
+
 def serialize_migration_authorization(authorization: MigrationAuthorization) -> bytes:
     if not isinstance(authorization, MigrationAuthorization):
         raise TypeError("authorization must be a MigrationAuthorization")
@@ -440,4 +519,5 @@ __all__ = [
     "MigrationAuthorizationPolicy", "MigrationStepGrant",
     "MigrationAuthorization", "authorize_migration",
     "serialize_migration_authorization", "deserialize_migration_authorization",
+    "serialize_migration_authorization_policy", "deserialize_migration_authorization_policy",
 ]
