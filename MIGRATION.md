@@ -289,7 +289,7 @@ Each call allocates a separate workspace. The example deliberately stops before 
 
 ### 10.1 Plan-bound multi-target workspace preparation
 
-`prepare_multi_target_workspaces(source_root, snapshot, workspace_parent, multi_target_plan)` connects a fully `PLANNED` `MultiTargetPlan` to the isolated-workspace batch API. It refuses `PARTIAL`, `UNKNOWN`, `BLOCKED`, and `UNSUPPORTED` plans before creating any target directories. It sorts target routes deterministically, verifies the source snapshot before and after preparation, creates one independent workspace per target, verifies each workspace baseline, and rolls back the whole batch if a post-creation check fails.
+`prepare_multi_target_workspaces(source_root, snapshot, workspace_parent, multi_target_plan)` connects a fully `PLANNED` `MultiTargetPlan` to the isolated-workspace batch API. It refuses `PARTIAL`, `UNKNOWN`, `BLOCKED`, and `UNSUPPORTED` plans before creating any target directories. It sorts target routes deterministically, revalidates the current knowledge catalog, trust decision, and every referenced claim at preparation time, verifies the source snapshot before and after preparation, creates one independent workspace per target, verifies each workspace baseline, and rolls back the whole batch if a post-creation check fails.
 
 The returned `MultiTargetWorkspaceBatch` binds the exact multi-target plan digest, source identity, snapshot digest, ordered target identities, each target route-plan digest, workspace descriptors, and creation time. Its canonical JSON document has a batch digest. `batch.validate_for_plan(plan, snapshot)` prevents reuse with a different plan or source snapshot. Revalidate the individual workspace baselines before any later operation.
 
@@ -306,9 +306,9 @@ from qyrenith_engine.migration import (
 snapshot = capture_project_snapshot(source_root)
 multi_target_plan = plan_targets(source_identity, targets, transitions, knowledge)
 batch = prepare_multi_target_workspaces(
-    source_root, snapshot, workspace_parent, multi_target_plan
+    source_root, snapshot, workspace_parent, multi_target_plan, knowledge
 )
-batch.validate_for_plan(multi_target_plan, snapshot)
+batch.validate_for_plan(multi_target_plan, snapshot, knowledge)
 
 for descriptor in batch.workspaces:
     assert verify_workspace_baseline(descriptor, snapshot).matches
