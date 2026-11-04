@@ -158,7 +158,7 @@ def main(argv=None) -> int:
                 drift.append(rel)
             continue
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(expected, encoding="utf-8", newline="\\n")
+        path.write_text(expected, encoding="utf-8", newline="\n")
         print(f"wrote {rel}")
 
     if check_only and drift:
