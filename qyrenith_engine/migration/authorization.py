@@ -10,6 +10,7 @@ import hashlib
 import json
 from typing import Any
 
+from .knowledge import strict_object_pairs
 from .worker import (
     MigrationWorkerRegistry,
     RouteWorkerAssessment,
@@ -200,6 +201,99 @@ class MigrationAuthorization:
     def authorization_digest(self) -> str:
         return hashlib.sha256(_canonical(self.to_dict())).hexdigest()
 
+    def to_document(self) -> dict[str, Any]:
+        return {**self.to_dict(), "authorization_digest": self.authorization_digest}
+
+    def to_json_bytes(self) -> bytes:
+        return _canonical(self.to_document()) + b"\\n"
+
+    @classmethod
+    def from_document(cls, document: object) -> "MigrationAuthorization":
+        expected = {
+            "schema", "route_plan_digest", "worker_assessment_digest", "policy_digest",
+            "approved_by", "approved_at", "expires_at", "grants", "authorization_digest",
+        }
+        if not isinstance(document, dict) or set(document) != expected:
+            raise ValueError("migration authorization has missing or unexpected fields")
+        if type(document["schema"]) is not int or document["schema"] != 1:
+            raise ValueError("unsupported migration authorization schema")
+        payload = {key: value for key, value in document.items() if key != "authorization_digest"}
+        digest = hashlib.sha256(_canonical(payload)).hexdigest()
+        if document["authorization_digest"] != digest:
+            raise ValueError("migration authorization digest mismatch")
+        grant_data = document["grants"]
+        if not isinstance(grant_data, list) or len(grant_data) > 10_000:
+            raise ValueError("migration authorization grants must be a bounded array")
+        grants = []
+        for item in grant_data:
+            expected_grant = {
+                "transition_id", "worker_id", "worker_version", "manifest_digest",
+                "qualification_id", "qualification_digest", "qualification_valid_until",
+                "permissions", "limits",
+            }
+            if not isinstance(item, dict) or set(item) != expected_grant:
+                raise ValueError("migration authorization grant has missing or unexpected fields")
+            if not isinstance(item["permissions"], list) or not isinstance(item["limits"], dict):
+                raise ValueError("migration authorization grant permissions and limits must be objects/arrays")
+            if set(item["limits"]) != {
+                "timeout_seconds", "max_input_bytes", "max_output_bytes", "max_changed_files"
+            }:
+                raise ValueError("migration authorization grant limits have unexpected fields")
+            try:
+                permissions = tuple(WorkerPermission(value) for value in item["permissions"])
+            except (ValueError, TypeError) as exc:
+                raise ValueError("migration authorization grant contains an unknown permission") from exc
+            grants.append(MigrationStepGrant(
+                transition_id=item["transition_id"],
+                worker_id=item["worker_id"],
+                worker_version=item["worker_version"],
+                manifest_digest=item["manifest_digest"],
+                qualification_id=item["qualification_id"],
+                qualification_digest=item["qualification_digest"],
+                qualification_valid_until=item["qualification_valid_until"],
+                permissions=permissions,
+                limits=WorkerResourceLimits(**item["limits"]),
+            ))
+        authorization = cls(
+            route_plan_digest=document["route_plan_digest"],
+            worker_assessment_digest=document["worker_assessment_digest"],
+            policy_digest=document["policy_digest"],
+            approved_by=document["approved_by"],
+            approved_at=document["approved_at"],
+            expires_at=document["expires_at"],
+            grants=tuple(grants),
+        )
+        if authorization.to_document() != document:
+            raise ValueError("migration authorization is not in canonical form")
+        return authorization
+
+    @classmethod
+    def from_json_bytes(cls, data: bytes | str) -> "MigrationAuthorization":
+        if isinstance(data, bytes):
+            if len(data) > 4 * 1024 * 1024:
+                raise ValueError("migration authorization exceeds the 4 MiB import limit")
+            try:
+                source = data.decode("utf-8")
+            except UnicodeDecodeError as exc:
+                raise ValueError("migration authorization must be UTF-8") from exc
+        elif isinstance(data, str):
+            if len(data.encode("utf-8")) > 4 * 1024 * 1024:
+                raise ValueError("migration authorization exceeds the 4 MiB import limit")
+            source = data
+        else:
+            raise TypeError("data must be bytes or str")
+        try:
+            document = json.loads(
+                source, object_pairs_hook=strict_object_pairs,
+                parse_constant=lambda value: (_ for _ in ()).throw(ValueError(f"invalid JSON constant: {value}")),
+            )
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise ValueError("invalid migration authorization JSON") from exc
+        canonical = _canonical(document)
+        if source.encode("utf-8") not in {canonical, canonical + b"\\n"}:
+            raise ValueError("migration authorization JSON is not canonical")
+        return cls.from_document(document)
+
     def is_current(self, now: datetime) -> bool:
         instant = _utc(now, "now")
         return _instant(self.approved_at, "approved_at") <= _instant(instant, "now") < _instant(self.expires_at, "expires_at")
@@ -321,7 +415,18 @@ def authorize_migration(
     )
 
 
+def serialize_migration_authorization(authorization: MigrationAuthorization) -> bytes:
+    if not isinstance(authorization, MigrationAuthorization):
+        raise TypeError("authorization must be a MigrationAuthorization")
+    return authorization.to_json_bytes()
+
+
+def deserialize_migration_authorization(data: bytes | str) -> MigrationAuthorization:
+    return MigrationAuthorization.from_json_bytes(data)
+
+
 __all__ = [
     "MigrationAuthorizationPolicy", "MigrationStepGrant",
     "MigrationAuthorization", "authorize_migration",
+    "serialize_migration_authorization", "deserialize_migration_authorization",
 ]
