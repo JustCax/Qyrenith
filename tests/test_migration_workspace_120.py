@@ -1,5 +1,6 @@
 """Regression tests for snapshot-pinned isolated workspaces."""
 import os
+from dataclasses import replace
 from pathlib import Path
 import tempfile
 import unittest
@@ -208,6 +209,36 @@ class TestIsolatedWorkspace(unittest.TestCase):
             encoded = serialize_workspace_descriptor(descriptor)
             restored = deserialize_workspace_descriptor(encoded)
             self.assertEqual(restored.to_document(), descriptor.to_document())
+            self.assertEqual(restored.descriptor_digest, descriptor.descriptor_digest)
+
+    def test_workspace_descriptor_path_is_bound_to_workspace_id(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            source = base / "source"
+            parent = base / "workspaces"
+            source.mkdir()
+            parent.mkdir()
+            (source / "main.py").write_text("pass\\n", encoding="utf-8")
+            descriptor = create_isolated_workspace(
+                source, capture_project_snapshot(source), parent, target_identity()
+            )
+            altered = replace(descriptor, workspace_id="0" * 32)
+            with self.assertRaisesRegex(WorkspaceError, "bound to workspace_id"):
+                altered.to_document()
+
+    def test_workspace_descriptor_import_accepts_windows_terminal_crlf(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            source = base / "source"
+            parent = base / "workspaces"
+            source.mkdir()
+            parent.mkdir()
+            (source / "main.py").write_text("pass\\n", encoding="utf-8")
+            descriptor = create_isolated_workspace(
+                source, capture_project_snapshot(source), parent, target_identity()
+            )
+            encoded = serialize_workspace_descriptor(descriptor)
+            restored = deserialize_workspace_descriptor(encoded.rstrip(b"\\n") + b"\\r\\n")
             self.assertEqual(restored.descriptor_digest, descriptor.descriptor_digest)
 
     def test_workspace_descriptor_rejects_digest_tampering(self):
