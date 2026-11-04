@@ -11,6 +11,7 @@ import json
 from typing import Any
 
 from .knowledge import strict_object_pairs
+from .planner import RoutePlan
 from .worker import (
     MigrationWorkerRegistry,
     RouteWorkerAssessment,
@@ -371,7 +372,7 @@ class MigrationAuthorization:
 
 
 def authorize_migration(
-    plan,
+    plan: RoutePlan,
     assessment: RouteWorkerAssessment,
     registry: MigrationWorkerRegistry,
     policy: MigrationAuthorizationPolicy,
@@ -388,8 +389,6 @@ def authorize_migration(
     authenticate the human, persist an approval, launch a worker, or enforce OS
     permissions/resource limits. An executor must independently enforce every grant.
     """
-    from .planner import RoutePlan
-
     if not isinstance(plan, RoutePlan):
         raise TypeError("plan must be a RoutePlan")
     if not isinstance(assessment, RouteWorkerAssessment):
