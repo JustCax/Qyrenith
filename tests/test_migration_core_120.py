@@ -10,6 +10,7 @@ from qyrenith_engine.migration import (
     EvidenceReference,
     KnowledgeCatalog,
     KnowledgeStatus,
+    KnowledgeTrustPolicy,
     MigrationIdentity,
     MigrationKnowledgeClaim,
     MigrationTransition,
@@ -315,6 +316,48 @@ class TestUniversalPlanner(unittest.TestCase):
         self.assertEqual(len(result.plan_digest), 64)
         self.assertEqual(result.transitions[0].to_dict()["kind"], "VERSION_UPGRADE")
 
+    def test_imported_verified_catalog_requires_explicit_trust_policy(self):
+        source, target = identity("1.20.1"), identity("1.21")
+        claim = verified_claim("imported", source, target)
+        local_catalog = KnowledgeCatalog((claim,))
+        encoded = local_catalog.to_json_bytes()
+        imported = KnowledgeCatalog.from_json_bytes(encoded)
+        edge = MigrationTransition(
+            "imported-edge", source, target, TransitionKind.VERSION_UPGRADE, (claim.claim_id,)
+        )
+
+        self.assertFalse(imported.is_trusted)
+        untrusted_plan = plan_route(source, target, (edge,), imported)
+        self.assertEqual(untrusted_plan.status, "UNKNOWN")
+
+        policy = KnowledgeTrustPolicy(
+            policy_id="owner-reviewed-catalogs",
+            reviewed_by="local-owner",
+            reviewed_at="2026-11-04T00:00:00Z",
+            trusted_catalog_digests=(imported.content_digest,),
+        )
+        trusted = KnowledgeCatalog.from_json_bytes(encoded, trust_policy=policy)
+        trusted_plan = plan_route(source, target, (edge,), trusted)
+        self.assertTrue(trusted.is_trusted)
+        self.assertEqual(trusted_plan.status, "PLANNED")
+        self.assertNotEqual(untrusted_plan.plan_digest, trusted_plan.plan_digest)
+        self.assertEqual(trusted_plan.knowledge_trust_digest, trusted.trust_digest)
+
+    def test_untrusted_catalog_merge_does_not_inherit_trust(self):
+        source, target = identity("1.20.1"), identity("1.21")
+        local = KnowledgeCatalog((verified_claim("local", source, target),))
+        imported = KnowledgeCatalog.from_json_bytes(local.to_json_bytes())
+        merged = local.merge(imported)
+        self.assertFalse(merged.is_trusted)
+
+    def test_knowledge_catalog_is_immutable(self):
+        source, target = identity("1.20.1"), identity("1.21")
+        catalog = KnowledgeCatalog((verified_claim("immutable", source, target),))
+        with self.assertRaises(TypeError):
+            catalog._claims["injected"] = verified_claim("injected", source, target)
+        with self.assertRaises(AttributeError):
+            catalog._trusted = False
+
     def test_route_plan_rejects_discontinuous_manual_routes(self):
         from datetime import datetime, timezone
         from qyrenith_engine.migration.planner import RoutePlan
@@ -324,7 +367,7 @@ class TestUniversalPlanner(unittest.TestCase):
         with self.assertRaises(ValueError):
             RoutePlan(
                 "PLANNED", source, target, (edge_a, edge_b), "invalid",
-                "2026-11-04T00:00:00Z", "a" * 64, 5,
+                "2026-11-04T00:00:00Z", "a" * 64, "b" * 64, 5,
             )
 
     def test_multi_target_plan_rejects_different_evaluation_times(self):
