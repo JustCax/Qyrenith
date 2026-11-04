@@ -54,7 +54,7 @@ def verified_claim(claim_id, source, target, valid_until=VALID_UNTIL):
         origin="local-test-fixture",
         locator=f"fixtures/{claim_id}.json",
         observed_at=OBSERVED_AT,
-        digest="a" * 64,
+        digest="sha256:" + "a" * 64,
     )
     return MigrationKnowledgeClaim(
         claim_id=claim_id,
