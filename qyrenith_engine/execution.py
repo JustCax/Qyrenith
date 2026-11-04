@@ -145,9 +145,10 @@ def _run_process(
         _terminate_process_group(process)
 
     def drain(stream, name: str) -> None:
+        read_chunk = getattr(stream, "read1", stream.read)
         try:
             while True:
-                chunk = stream.read(65536)
+                chunk = read_chunk(65536)
                 if not chunk:
                     break
                 totals[name] += len(chunk)
