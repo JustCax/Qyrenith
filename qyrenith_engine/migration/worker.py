@@ -750,7 +750,7 @@ class MigrationWorkerRegistry:
             )
         if (
             self._trust_policy is None
-            or not self._trust_policy.trusts(qualification.qualification_digest, instant)
+            or not self._trust_policy.trusts(qualification.qualification_digest, now)
         ):
             return WorkerResolution(
                 "UNTRUSTED", manifest.worker_id, manifest.worker_version,
