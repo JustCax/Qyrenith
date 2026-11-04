@@ -1,6 +1,8 @@
 """Security-boundary tests for plan-bound migration authorization."""
+import hashlib
 import unittest
 from datetime import datetime, timezone
+from pathlib import Path
 
 from qyrenith_engine.migration import (
     MigrationAuthorizationPolicy,
@@ -31,6 +33,8 @@ from qyrenith_engine.migration import (
 )
 
 
+ROOT = Path(__file__).resolve().parents[1]
+VERIFIER_DIGEST = "sha256:" + hashlib.sha256((ROOT / "qyrenith_engine/migration/knowledge.py").read_bytes()).hexdigest()
 NOW = datetime(2026, 11, 4, 18, 0, tzinfo=timezone.utc)
 SOURCE = MigrationIdentity(
     domain="minecraft", product="minecraft", product_version="1.21",
@@ -54,10 +58,14 @@ def fixture():
         evidence=(EvidenceReference(
             evidence_id="authorization-evidence", origin="test",
             locator="fixture:authorization", observed_at="2026-11-01T00:00:00Z",
+            digest="sha256:" + "c" * 64,
         ),),
         verified_by="test-reviewer",
         verified_at="2026-11-01T00:00:00Z",
         valid_until="2026-12-01T00:00:00Z",
+        verified_with="qyrenith-migration-knowledge-validator",
+        verifier_version="2",
+        verifier_digest=VERIFIER_DIGEST,
     )
     edge = MigrationTransition(
         transition_id="authorization-transition",
