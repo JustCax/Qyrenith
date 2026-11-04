@@ -101,6 +101,7 @@ qyrenith_engine/migration/knowledge.py
 qyrenith_engine/migration/model.py
 qyrenith_engine/migration/planner.py
 qyrenith_engine/migration/snapshot.py
+qyrenith_engine/migration/workspace.py
 qyrenith_engine/migration/worker.py
 qyrenith_launcher.py
 schemas/adapter-manifest.schema.json
@@ -108,6 +109,7 @@ schemas/evidence.schema.json
 schemas/migration-assurance-record.schema.json
 schemas/migration-knowledge.schema.json
 schemas/migration-project-snapshot.schema.json
+schemas/migration-workspace-descriptor.schema.json
 schemas/migration-transition.schema.json
 schemas/migration-worker-manifest.schema.json
 schemas/migration-worker-qualification.schema.json
@@ -131,6 +133,7 @@ tests/test_migration_authorization_120.py
 tests/test_migration_benchmarks_120.py
 tests/test_migration_core_120.py
 tests/test_migration_snapshot_120.py
+tests/test_migration_workspace_120.py
 tests/test_migration_worker_120.py
 tests/test_engine_cli_110.py
 tests/test_external_check.py
