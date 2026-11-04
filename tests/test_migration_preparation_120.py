@@ -1,6 +1,6 @@
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import tempfile
 import unittest
@@ -25,7 +25,11 @@ from qyrenith_engine.migration import (
 )
 
 
-NOW = datetime(2026, 11, 4, 18, 0, tzinfo=timezone.utc)
+NOW = datetime.now(timezone.utc).replace(microsecond=0)
+PLAN_TIME = NOW - timedelta(seconds=30)
+VERIFIED_AT = (PLAN_TIME - timedelta(minutes=1)).isoformat().replace("+00:00", "Z")
+OBSERVED_AT = (PLAN_TIME - timedelta(minutes=2)).isoformat().replace("+00:00", "Z")
+VALID_UNTIL = (NOW + timedelta(days=30)).isoformat().replace("+00:00", "Z")
 VERIFIER_DIGEST = hashlib.sha256(
     Path("qyrenith_engine/migration/knowledge.py").read_bytes()
 ).hexdigest()
@@ -49,7 +53,7 @@ def verified_claim(claim_id, source, target):
         evidence_id=f"evidence-{claim_id}",
         origin="local-test-fixture",
         locator=f"fixtures/{claim_id}.json",
-        observed_at="2026-11-04T00:00:00Z",
+        observed_at=OBSERVED_AT,
         digest="a" * 64,
     )
     return MigrationKnowledgeClaim(
@@ -62,8 +66,8 @@ def verified_claim(claim_id, source, target):
         assertion="compatible",
         evidence=(evidence,),
         verified_by="test-reviewer",
-        verified_at="2026-11-04T00:00:00Z",
-        valid_until="2026-12-01T00:00:00Z",
+        verified_at=VERIFIED_AT,
+        valid_until=VALID_UNTIL,
         verified_with="qyrenith-native-verifier",
         verifier_version="1.2.0-test",
         verifier_digest=VERIFIER_DIGEST,
@@ -89,7 +93,7 @@ def multi_target_plan(*, include_second_claim=True):
         )
     catalog = KnowledgeCatalog(tuple(claims))
     plan = plan_targets(
-        source, (target_b, target_a), tuple(transitions), catalog, evaluated_at=NOW
+        source, (target_b, target_a), tuple(transitions), catalog, evaluated_at=PLAN_TIME
     )
     return source, target_a, target_b, catalog, plan
 
@@ -189,7 +193,7 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
                 actual_digest="f" * 64,
                 status="CHANGED",
                 changed_paths=("README.md",),
-                checked_at="2026-11-04T18:05:00Z",
+                checked_at=NOW.isoformat().replace("+00:00", "Z"),
             )
             with mock.patch(
                 "qyrenith_engine.migration.preparation.verify_workspace_baseline",
