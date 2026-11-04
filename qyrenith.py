@@ -3033,39 +3033,50 @@ def _declared_commands(root: Path, names: Sequence[str]) -> Dict[str, Any]:
     commands = cfg.get("commands", {}) if isinstance(cfg, dict) else {}
     return {name: commands.get(name) for name in names if commands.get(name)}
 def _run_isolated_command(root: Path, command: Sequence[str], timeout: int = 120, env: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+    """Run one declared runtime check through the shared bounded process engine."""
     if not command or not all(isinstance(x, str) and x for x in command):
         return {"status": "BLOCKED", "reason": "empty-or-invalid-command"}
     if any("|" in x or ";" in x or "&&" in x or "||" in x or "$(" in x or "`" in x for x in command):
         return {"status": "BLOCKED", "reason": "shell-metacharacters-not-allowed"}
+    if not isinstance(timeout, int) or not 1 <= timeout <= 900:
+        return {"status": "BLOCKED", "reason": "invalid-timeout"}
+    overrides = {"PYTHONUNBUFFERED": "1"}
+    if env is not None:
+        if not isinstance(env, dict) or any(not isinstance(k, str) or not isinstance(v, str) for k, v in env.items()):
+            return {"status": "BLOCKED", "reason": "invalid-environment"}
+        overrides.update(env)
     started = time.monotonic()
-    safe_env = {"PATH": os.environ.get("PATH", ""), "HOME": os.environ.get("HOME", ""), "PYTHONUNBUFFERED": "1"}
-    if env:
-        for k, v in env.items():
-            if re.fullmatch(r"[A-Z_][A-Z0-9_]*", k): safe_env[k] = str(v)
-    kwargs={"cwd":str(root),"env":safe_env,"stdin":subprocess.DEVNULL,"stdout":subprocess.PIPE,"stderr":subprocess.STDOUT,"text":True,"shell":False}
-    if os.name == "nt":
-        kwargs["creationflags"]=getattr(subprocess,"CREATE_NEW_PROCESS_GROUP",0)
-    else:
-        kwargs["start_new_session"]=True
-    proc=None
     try:
-        proc=subprocess.Popen(list(command),**kwargs)
-        try:
-            output=proc.communicate(timeout=max(1,min(timeout,900)))[0] or ""
-        except subprocess.TimeoutExpired as e:
-            output=(e.stdout or "") if isinstance(e.stdout,str) else ""
-            _terminate_process(proc)
-            output=output[-20000:]
-            return {"status":"BLOCKED","reason":"timeout","duration_seconds":round(time.monotonic()-started,6),
-                    "output":output,"output_sha256":hashlib.sha256(output.encode()).hexdigest()}
-        output=output[-20000:]
-        return {"status":"PASS" if proc.returncode==0 else "FAIL","exit_code":proc.returncode,
-                "duration_seconds":round(time.monotonic()-started,6),"output":output,
-                "output_sha256":hashlib.sha256(output.encode()).hexdigest()}
-    except (OSError,ValueError) as e:
-        if proc is not None:
-            _terminate_process(proc)
-        return {"status":"BLOCKED","reason":type(e).__name__,"message":str(e)}
+        report = run_bounded_process(
+            command,
+            root,
+            timeout=timeout,
+            output_limit=1024 * 1024,
+            env_overrides=overrides,
+        )
+    except (OSError, ValueError) as exc:
+        return {"status": "BLOCKED", "reason": type(exc).__name__, "message": str(exc)}
+    output = redact_text(report.get("output", ""))[-20000:]
+    if report.get("status") == "ERROR":
+        return {"status": "BLOCKED", "reason": report.get("error", "execution-error"),
+                "duration_seconds": round(time.monotonic() - started, 6),
+                "output": output, "output_sha256": hashlib.sha256(output.encode()).hexdigest()}
+    if report.get("timed_out"):
+        reason = "timeout"
+    elif report.get("output_truncated"):
+        reason = "output-limit"
+    elif report.get("output_incomplete"):
+        reason = "output-incomplete"
+    else:
+        reason = None
+    if reason:
+        return {"status": "BLOCKED", "reason": reason,
+                "duration_seconds": round(time.monotonic() - started, 6),
+                "output": output, "output_sha256": hashlib.sha256(output.encode()).hexdigest()}
+    return {"status": report["status"], "exit_code": report["exit_code"],
+            "duration_seconds": round(time.monotonic() - started, 6), "output": output,
+            "output_sha256": hashlib.sha256(output.encode()).hexdigest()}
+
 def execute_runtime_lab(root: Path, timeout: int = 120) -> Dict[str, Any]:
     commands = _declared_commands(root, ["runtime", "server", "client", "multiplayer"])
     if not commands:
