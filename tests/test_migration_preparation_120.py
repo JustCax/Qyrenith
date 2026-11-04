@@ -172,6 +172,7 @@ class MultiTargetWorkspacePreparationTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(WorkspaceError, "does not match"):
                 batch.validate_for_plan(other_plan, snapshot)
+            (source_root / "README.md").write_text("new baseline\n", encoding="utf-8")
             changed_snapshot = capture_project_snapshot(source_root)
             with self.assertRaisesRegex(WorkspaceError, "does not match"):
                 batch.validate_for_plan(plan, changed_snapshot)
