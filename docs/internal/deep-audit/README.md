@@ -32,6 +32,8 @@ This directory contains the normative engineering specifications for the 1.2.0 d
 | [Integrated reporting and orchestration](INTEGRATED_REPORTING_AND_ORCHESTRATION_SPEC.md) | Dependency scheduling, verdicts, coverage, report exports |
 | [Implementation and acceptance plan](QYRENITH_1_2_0_IMPLEMENTATION_AND_ACCEPTANCE_PLAN.md) | Phase gates, traceability, definition of done |
 
+[Requirement Traceability Matrix](REQUIREMENT_TRACEABILITY_MATRIX.md) maps every stable requirement ID to its planned implementation target, acceptance tests, evidence artifact, dependencies, and conservative current status. It is the working status ledger and must be updated alongside implementation.
+
 ## Requirement families
 
 - **DA-01:** master architecture and global trust/safety invariants.
