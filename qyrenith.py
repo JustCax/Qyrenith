@@ -3625,16 +3625,75 @@ def cmd_bounded_check(args):
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result["status"] == "PASS" else (2 if result["status"] == "BLOCKED" else 1)
 
+def cmd_snapshot(args):
+    """Capture or verify a read-only, deterministic project snapshot."""
+    from qyrenith_engine import (
+        SnapshotLimits,
+        capture_project_snapshot,
+        deserialize_project_snapshot,
+        verify_project_snapshot,
+    )
+
+    if len(args.extra) != 1 or args.extra[0] not in {"capture", "verify"}:
+        die("PREFLIGHT_FAILURE", "snapshot requires exactly one operation: capture or verify.")
+    operation = args.extra[0]
+    root = Path(args.project).expanduser().absolute()
+    if operation == "capture":
+        if args.snapshot_file:
+            die("PREFLIGHT_FAILURE", "--snapshot-file is only valid for snapshot verify.")
+        try:
+            limits = SnapshotLimits(
+                max_entries=args.snapshot_max_entries,
+                max_file_bytes=args.snapshot_max_file_bytes,
+                max_total_bytes=args.snapshot_max_total_bytes,
+                max_depth=args.snapshot_max_depth,
+            )
+            snapshot = capture_project_snapshot(
+                root,
+                excluded_paths=tuple(args.snapshot_exclude) if args.snapshot_exclude else (
+                    ".git", ".qyrenith", ".backups", "__pycache__"
+                ),
+                limits=limits,
+            )
+        except (OSError, TypeError, ValueError) as exc:
+            die("PREFLIGHT_FAILURE", f"snapshot capture could not complete: {exc}")
+        sys.stdout.buffer.write(snapshot.to_json_bytes())
+        return 0
+
+    if not args.snapshot_file:
+        die("PREFLIGHT_FAILURE", "snapshot verify requires --snapshot-file.")
+    try:
+        snapshot_path = Path(args.snapshot_file).expanduser()
+        data = snapshot_path.read_bytes()
+        expected = deserialize_project_snapshot(data)
+        result = verify_project_snapshot(root, expected)
+    except (OSError, TypeError, ValueError) as exc:
+        die("PREFLIGHT_FAILURE", f"snapshot verification could not complete: {exc}")
+    report = {
+        "schema": 1,
+        "status": result.status,
+        "matches": result.matches,
+        "expected_digest": result.expected_digest,
+        "actual_digest": result.actual_digest,
+        "changed_paths": list(result.changed_paths),
+        "checked_at": result.checked_at,
+        "project": str(root),
+    }
+    print(json.dumps(report, indent=2, ensure_ascii=False))
+    return 0 if result.matches else 1
+
+
 # ---------------------------------------------------------------------------
 # Parser / main
 # ---------------------------------------------------------------------------
 def parser():
-    p=argparse.ArgumentParser(description=f"Qyrenith {VERSION} Project Verification & Control Plane"); p.add_argument("command",choices=["audit","plan","port","continue","build","verify","policy","skills","reality","inspect","explain","dry-run","rollback","doctor","status","report","self-test","benchmark","failure-quality","security-test","security-review","recovery-test","graph","compatibility","replay","adapters","worker-run","artifact-inspect","evidence","git-test","fuzz-test","public-audit","domains","intelligence","external-check","external-verify","source-analysis","impact","boundary-check","bounded-check"]); p.add_argument("-p","--project",default="."); p.add_argument("--check-command",action="append",default=[],help="Explicit command for external-verify; repeat for multiple checks"); p.add_argument("--target-mc",default=""); p.add_argument("--target-loader",default=""); p.add_argument("--target-loader-version",default=""); p.add_argument("--resume",action="store_true"); p.add_argument("--yes",action="store_true"); p.add_argument("--noninteractive",action="store_true"); p.add_argument("--managed",action="store_true"); p.add_argument("--allow-unknown-dependencies",action="store_true"); p.add_argument("--allow-missing-adapters",action="store_true",help="For verify --ci: downgrade detected-but-unavailable adapters to informational instead of blocking; never turns zero available adapters into PASS."); p.add_argument("--task",default=""); p.add_argument("--execute",action="store_true"); p.add_argument("--ci",action="store_true"); p.add_argument("--limit",type=int,default=12); p.add_argument("--worker",default=""); p.add_argument("--operation",default="result",choices=["discover","inspect","plan","execute","result","port"]); p.add_argument("--timeout",type=int,default=120); p.add_argument("--baseline",default="",help="Baseline external-check JSON for diffing (external-check only)"); p.add_argument("--run-runtime",action="store_true"); p.add_argument("--run-failure-lab",action="store_true"); p.add_argument("--run-mutations",action="store_true"); p.add_argument("--run-counterfactual",action="store_true"); p.add_argument("--verdict",action="store_true"); p.add_argument("--finding-id",default=""); p.add_argument("--reason",default=""); p.add_argument("--max-files",type=int,default=10000); p.add_argument("--max-entries",type=int,default=50000); p.add_argument("--check-command-one",default=""); p.add_argument("--output-limit",type=int,default=16000,help="Maximum captured subprocess output bytes (256–1000000)"); p.add_argument("extra",nargs="*"); return p
+    p=argparse.ArgumentParser(description=f"Qyrenith {VERSION} Project Verification & Control Plane"); p.add_argument("command",choices=["audit","plan","port","continue","build","verify","policy","skills","reality","inspect","explain","dry-run","rollback","doctor","status","report","self-test","benchmark","failure-quality","security-test","security-review","recovery-test","graph","compatibility","replay","adapters","worker-run","artifact-inspect","evidence","git-test","fuzz-test","public-audit","domains","intelligence","external-check","external-verify","source-analysis","impact","boundary-check","bounded-check","snapshot"]); p.add_argument("-p","--project",default="."); p.add_argument("--check-command",action="append",default=[],help="Explicit command for external-verify; repeat for multiple checks"); p.add_argument("--target-mc",default=""); p.add_argument("--target-loader",default=""); p.add_argument("--target-loader-version",default=""); p.add_argument("--resume",action="store_true"); p.add_argument("--yes",action="store_true"); p.add_argument("--noninteractive",action="store_true"); p.add_argument("--managed",action="store_true"); p.add_argument("--allow-unknown-dependencies",action="store_true"); p.add_argument("--allow-missing-adapters",action="store_true",help="For verify --ci: downgrade detected-but-unavailable adapters to informational instead of blocking; never turns zero available adapters into PASS."); p.add_argument("--task",default=""); p.add_argument("--execute",action="store_true"); p.add_argument("--ci",action="store_true"); p.add_argument("--limit",type=int,default=12); p.add_argument("--worker",default=""); p.add_argument("--operation",default="result",choices=["discover","inspect","plan","execute","result","port"]); p.add_argument("--timeout",type=int,default=120); p.add_argument("--baseline",default="",help="Baseline external-check JSON for diffing (external-check only)"); p.add_argument("--run-runtime",action="store_true"); p.add_argument("--run-failure-lab",action="store_true"); p.add_argument("--run-mutations",action="store_true"); p.add_argument("--run-counterfactual",action="store_true"); p.add_argument("--verdict",action="store_true"); p.add_argument("--finding-id",default=""); p.add_argument("--reason",default=""); p.add_argument("--max-files",type=int,default=10000); p.add_argument("--max-entries",type=int,default=50000); p.add_argument("--check-command-one",default=""); p.add_argument("--output-limit",type=int,default=16000,help="Maximum captured subprocess output bytes (256–1000000)"); p.add_argument("--snapshot-file",default="",help="Existing canonical snapshot JSON file for snapshot verify"); p.add_argument("--snapshot-exclude",action="append",default=[],help="Additional project-relative path exclusion for snapshot capture"); p.add_argument("--snapshot-max-entries",type=int,default=200000); p.add_argument("--snapshot-max-file-bytes",type=int,default=256*1024*1024); p.add_argument("--snapshot-max-total-bytes",type=int,default=2*1024*1024*1024); p.add_argument("--snapshot-max-depth",type=int,default=64); p.add_argument("extra",nargs="*"); return p
 def main():
     args=parser().parse_intermixed_args()
     try:
         # This mode deliberately bypasses require_qyrenith(root): the target is an
         # unrelated external project and is inspected without writing Qyrenith state.
+        if args.command=="snapshot": return cmd_snapshot(args)
         if args.command=="external-check": return cmd_external_check(args)
         if args.command=="external-verify": return cmd_external_verify(args)
         if args.command=="self-test": return self_test()
@@ -3649,7 +3708,7 @@ def main():
             if args.verdict:
                 return 0 if result.get("verdict")=="PASS" else (2 if result.get("verdict")=="BLOCKED" else 1)
             return 0
-        return {"audit":cmd_audit,"plan":cmd_plan,"port":cmd_port,"continue":cmd_continue,"build":cmd_build,"verify":cmd_verify,"policy":cmd_policy,"skills":cmd_skills,"reality":cmd_reality,"inspect":cmd_inspect,"explain":cmd_explain,"dry-run":cmd_dry_run,"rollback":cmd_rollback,"doctor":cmd_doctor,"status":cmd_status,"report":cmd_report,"benchmark":cmd_benchmark,"failure-quality":cmd_failure_quality,"security-test":cmd_security_test,"security-review":cmd_security_review,"recovery-test":cmd_recovery_test,"graph":cmd_graph,"compatibility":cmd_compatibility,"replay":cmd_replay,"adapters":cmd_adapters,"worker-run":cmd_worker_run,"artifact-inspect":cmd_artifact_inspect,"evidence":cmd_evidence,"git-test":cmd_git_test,"fuzz-test":cmd_fuzz_test,"public-audit":cmd_public_audit,"domains":cmd_domains,"source-analysis":cmd_source_analysis,"impact":cmd_change_impact,"boundary-check":cmd_boundary_check,"bounded-check":cmd_bounded_check}[args.command](args)
+        return {"audit":cmd_audit,"plan":cmd_plan,"port":cmd_port,"continue":cmd_continue,"build":cmd_build,"verify":cmd_verify,"policy":cmd_policy,"skills":cmd_skills,"reality":cmd_reality,"inspect":cmd_inspect,"explain":cmd_explain,"dry-run":cmd_dry_run,"rollback":cmd_rollback,"doctor":cmd_doctor,"status":cmd_status,"report":cmd_report,"benchmark":cmd_benchmark,"failure-quality":cmd_failure_quality,"security-test":cmd_security_test,"security-review":cmd_security_review,"recovery-test":cmd_recovery_test,"graph":cmd_graph,"compatibility":cmd_compatibility,"replay":cmd_replay,"adapters":cmd_adapters,"worker-run":cmd_worker_run,"artifact-inspect":cmd_artifact_inspect,"evidence":cmd_evidence,"git-test":cmd_git_test,"fuzz-test":cmd_fuzz_test,"public-audit":cmd_public_audit,"domains":cmd_domains,"source-analysis":cmd_source_analysis,"impact":cmd_change_impact,"boundary-check":cmd_boundary_check,"bounded-check":cmd_bounded_check,"snapshot":cmd_snapshot}[args.command](args)
     except QyrenithError as e: print(f"{e.code}: {e.message}",file=sys.stderr); return EXIT.get(e.code,EXIT["INTERNAL_ERROR"])
     except KeyboardInterrupt: print("STOPPED: interrupted by user",file=sys.stderr); return EXIT["STOPPED"]
     except Exception as e: print(f"INTERNAL_ERROR: {type(e).__name__}: {e}",file=sys.stderr); return EXIT["INTERNAL_ERROR"]
