@@ -47,6 +47,7 @@ __all__ = [
     "TransitionKind",
     "plan_route",
     "plan_targets",
+    "MultiTargetWorkspaceBatch", "prepare_multi_target_workspaces",
     "MigrationWorkerManifest", "MigrationWorkerRegistry", "RouteWorkerAssessment",
     "assess_route_workers", "WorkerPermission",
     "WorkerQualification", "WorkerRegistration", "WorkerResolution",
