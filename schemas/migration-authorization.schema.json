@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qyrenith.dev/schemas/migration-authorization.schema.json",
+  "title": "Qyrenith Migration Authorization",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "route_plan_digest",
+    "worker_assessment_digest",
+    "policy_digest",
+    "approved_by",
+    "approved_at",
+    "expires_at",
+    "grants"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "route_plan_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "worker_assessment_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "policy_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "approved_by": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "approved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "grants": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/grant"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "grants": {
+            "maxItems": 0
+          }
+        }
+      },
+      "then": {}
+    },
+    {
+      "if": {
+        "properties": {
+          "grants": {
+            "minItems": 1
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "grants": {
+            "items": {
+              "required": [
+                "transition_id",
+                "worker_id",
+                "worker_version",
+                "manifest_digest",
+                "qualification_id",
+                "qualification_digest",
+                "qualification_valid_until",
+                "permissions",
+                "limits"
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timeout_seconds",
+        "max_input_bytes",
+        "max_output_bytes",
+        "max_changed_files"
+      ],
+      "properties": {
+        "timeout_seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600
+        },
+        "max_input_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 67108864
+        },
+        "max_output_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16777216
+        },
+        "max_changed_files": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        }
+      }
+    },
+    "grant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transition_id",
+        "worker_id",
+        "worker_version",
+        "manifest_digest",
+        "qualification_id",
+        "qualification_digest",
+        "qualification_valid_until",
+        "permissions",
+        "limits"
+      ],
+      "properties": {
+        "transition_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "worker_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "worker_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "manifest_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "qualification_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "qualification_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "qualification_valid_until": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "permissions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "READ_PROJECT",
+              "WRITE_PROJECT",
+              "EXECUTE_PROCESS",
+              "NETWORK",
+              "INSTALL_DEPENDENCIES",
+              "GIT_WRITE",
+              "PUBLISH_ARTIFACT"
+            ]
+          }
+        },
+        "limits": {
+          "$ref": "#/$defs/limits"
+        }
+      }
+    }
+  }
+}
