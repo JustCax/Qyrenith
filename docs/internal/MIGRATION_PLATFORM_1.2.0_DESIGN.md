@@ -170,6 +170,7 @@ These are planning primitives only. They do not discover a project, modify files
 - [x] Test target-to-target filesystem independence and rollback when the source changes mid-batch.
 - [x] Bind every target copy to the same source snapshot fingerprint.
 - [x] Add plan-bound multi-target workspace preparation with exact route-plan digests, ordered target identities, canonical batch evidence, revalidation, and rollback on post-creation failure.
+- [x] Revalidate the current knowledge catalog, trust decision, and every referenced claim's scope/expiry before preparing or revalidating a batch.
 - [ ] Add persistent successful-workspace lifecycle/cleanup management.
 - [ ] Select and verify a Git-aware isolation strategy (worktree or equivalent) when commit metadata is required.
 - [ ] Bind every target to the same Git commit when commit metadata is available.
