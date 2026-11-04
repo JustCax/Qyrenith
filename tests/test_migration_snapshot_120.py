@@ -172,6 +172,24 @@ class TestProjectSnapshot(unittest.TestCase):
             with self.assertRaisesRegex(SnapshotError, "max_depth"):
                 capture_project_snapshot(directory, limits=SnapshotLimits(max_depth=1))
 
+    def test_depth_limit_is_enforced_for_deep_files_not_only_directories(self):
+        with tempfile.TemporaryDirectory() as directory:
+            nested = Path(directory) / "a"
+            nested.mkdir()
+            (nested / "deep.txt").write_text("data", encoding="utf-8")
+            with self.assertRaisesRegex(SnapshotError, "max_depth"):
+                capture_project_snapshot(directory, limits=SnapshotLimits(max_depth=1))
+
+    def test_excluded_subtrees_do_not_consume_snapshot_depth(self):
+        with tempfile.TemporaryDirectory() as directory:
+            nested = Path(directory) / "generated" / "deep" / "tree"
+            nested.mkdir(parents=True)
+            (nested / "output.bin").write_bytes(b"ignored")
+            snapshot = capture_project_snapshot(
+                directory, excluded_paths=("generated",), limits=SnapshotLimits(max_depth=1)
+            )
+            self.assertEqual(snapshot.entries, ())
+
     def test_case_insensitive_path_collisions_are_rejected(self):
         first = SnapshotEntry("Source/A.py", "file", 0o644, 0, "a" * 64)
         second = SnapshotEntry("source/b.py", "file", 0o644, 0, "b" * 64)
