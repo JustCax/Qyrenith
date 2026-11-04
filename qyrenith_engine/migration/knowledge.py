@@ -478,7 +478,6 @@ class KnowledgeCatalog:
             "catalog_origin": "IMPORTED" if self._imported else "LOCAL",
             "trusted": self.is_trusted_at(instant),
             "trust_policy_digest": self.trust_policy_digest,
-            "evaluated_at": instant.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
         }
         return hashlib.sha256(_canonical_bytes(payload)).hexdigest()
 
