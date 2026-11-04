@@ -8,7 +8,7 @@
 
 ### Phase 0 — Documentation baseline
 - Create and cross-link all seventeen normative specifications and the specification index.
-- Map every requirement to implementation modules, tests, evidence, and acceptance owner.
+- Maintain `REQUIREMENT_TRACEABILITY_MATRIX.md` as the authoritative requirement-to-implementation/test/evidence/dependency/status map.
 - Resolve contradictions with existing public/internal docs.
 - Review all security, trust, permission, isolation, and non-claim language.
 - Keep internal specifications out of public package contents unless separately approved.
