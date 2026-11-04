@@ -97,6 +97,9 @@ class MigrationKnowledgeClaim:
     verified_by: str | None = None
     verified_at: str | None = None
     valid_until: str | None = None
+    verified_with: str | None = None
+    verifier_version: str | None = None
+    verifier_digest: str | None = None
 
     def __post_init__(self) -> None:
         limits = {"claim_id": 256, "subject": 256, "statement": 8192}
@@ -136,12 +139,28 @@ class MigrationKnowledgeClaim:
             not isinstance(self.valid_until, str) or len(self.valid_until) > 64
         ):
             raise ValueError("valid_until must be a string of at most 64 characters")
+        for name, limit in (("verified_with", 256), ("verifier_version", 128)):
+            value = getattr(self, name)
+            if value is not None and (
+                not isinstance(value, str) or not value.strip() or len(value) > limit
+            ):
+                raise ValueError(f"{name} must be None or a non-empty string of at most {limit} characters")
+        if self.verifier_digest is not None and (
+            not isinstance(self.verifier_digest, str) or not _SHA256.fullmatch(self.verifier_digest)
+        ):
+            raise ValueError("verifier_digest must be None or sha256 followed by 64 lowercase hex characters")
         verified_time = parse_timestamp(self.verified_at) if self.verified_at is not None else None
         expiry_time = parse_timestamp(self.valid_until) if self.valid_until is not None else None
         if self.status is KnowledgeStatus.VERIFIED and (
-            not self.assertion or not self.verified_by or verified_time is None or not self.evidence
+            not self.assertion or not self.verified_by or verified_time is None
+            or not self.evidence or any(item.digest is None for item in self.evidence)
+            or not self.verified_with or not self.verifier_version
+            or not self.verifier_digest or expiry_time is None
         ):
-            raise ValueError("VERIFIED claims require an assertion, reviewer, timestamp, and evidence")
+            raise ValueError(
+                "VERIFIED claims require assertion, reviewer, time-bounded evidence digests, "
+                "verifier identity/version/digest, and expiry"
+            )
         if self.valid_until is not None and verified_time is None:
             raise ValueError("valid_until requires verified_at")
         if verified_time is not None and any(
@@ -157,7 +176,11 @@ class MigrationKnowledgeClaim:
     def is_usable(self, now: datetime | None = None) -> bool:
         if self.status is not KnowledgeStatus.VERIFIED or not self.evidence:
             return False
-        if not self.verified_by or not self.verified_at or not self.assertion:
+        if (
+            not self.verified_by or not self.verified_at or not self.assertion
+            or not self.valid_until or not self.verified_with or not self.verifier_version
+            or not self.verifier_digest or any(item.digest is None for item in self.evidence)
+        ):
             return False
         current = now or datetime.now(timezone.utc)
         if not isinstance(current, datetime):
@@ -174,14 +197,15 @@ class MigrationKnowledgeClaim:
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "schema": 1,
+            "schema": 2,
             "claim_id": self.claim_id, "subject": self.subject,
             "statement": self.statement, "assertion": self.assertion,
             "source": self.source.to_dict(), "target": self.target.to_dict(),
             "status": self.status.value,
             "evidence": [item.to_dict() for item in self.evidence],
             "verified_by": self.verified_by, "verified_at": self.verified_at,
-            "valid_until": self.valid_until,
+            "valid_until": self.valid_until, "verified_with": self.verified_with,
+            "verifier_version": self.verifier_version, "verifier_digest": self.verifier_digest,
         }
 
 
@@ -189,8 +213,9 @@ def _claim_from_dict(value: object) -> MigrationKnowledgeClaim:
     required = {
         "schema", "claim_id", "subject", "statement", "assertion", "source", "target",
         "status", "evidence", "verified_by", "verified_at", "valid_until",
+        "verified_with", "verifier_version", "verifier_digest",
     }
-    if not isinstance(value, dict) or set(value) != required or type(value.get("schema")) is not int or value["schema"] != 1:
+    if not isinstance(value, dict) or set(value) != required or type(value.get("schema")) is not int or value["schema"] != 2:
         raise ValueError("knowledge claim has missing, unexpected, or unsupported fields")
     evidence_data = value["evidence"]
     if not isinstance(evidence_data, list) or len(evidence_data) > 10000:
@@ -212,6 +237,8 @@ def _claim_from_dict(value: object) -> MigrationKnowledgeClaim:
         source=identity_from_dict(value["source"]), target=identity_from_dict(value["target"]),
         status=status, evidence=tuple(evidence), verified_by=value["verified_by"],
         verified_at=value["verified_at"], valid_until=value["valid_until"],
+        verified_with=value["verified_with"], verifier_version=value["verifier_version"],
+        verifier_digest=value["verifier_digest"],
     )
 
 
@@ -260,7 +287,7 @@ class KnowledgeCatalog:
 
     @property
     def content_digest(self) -> str:
-        payload = {"schema": 1, "claims": [claim.to_dict() for claim in self.claims()]}
+        payload = {"schema": 2, "claims": [claim.to_dict() for claim in self.claims()]}
         return hashlib.sha256(_canonical_bytes(payload)).hexdigest()
 
     def merge(self, *others: "KnowledgeCatalog") -> "KnowledgeCatalog":
@@ -327,7 +354,7 @@ class KnowledgeCatalog:
         return True
 
     def to_document(self) -> dict[str, Any]:
-        payload = {"schema": 1, "claims": [claim.to_dict() for claim in self.claims()]}
+        payload = {"schema": 2, "claims": [claim.to_dict() for claim in self.claims()]}
         return {**payload, "content_digest": hashlib.sha256(_canonical_bytes(payload)).hexdigest()}
 
     def to_json_bytes(self) -> bytes:
@@ -337,12 +364,12 @@ class KnowledgeCatalog:
     def from_document(cls, document: object) -> "KnowledgeCatalog":
         if not isinstance(document, dict) or set(document) != {"schema", "claims", "content_digest"}:
             raise ValueError("knowledge catalog document has missing or unexpected fields")
-        if type(document["schema"]) is not int or document["schema"] != 1:
+        if type(document["schema"]) is not int or document["schema"] != 2:
             raise ValueError("unsupported knowledge catalog schema")
         claims_data = document["claims"]
         if not isinstance(claims_data, list) or len(claims_data) > 50000:
             raise ValueError("knowledge catalog claims must be a bounded array")
-        payload = {"schema": 1, "claims": claims_data}
+        payload = {"schema": 2, "claims": claims_data}
         digest = hashlib.sha256(_canonical_bytes(payload)).hexdigest()
         if document["content_digest"] != digest:
             raise ValueError("knowledge catalog content digest mismatch")
