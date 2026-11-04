@@ -60,6 +60,8 @@ class WorkspaceDescriptor:
             raise WorkspaceError("unsupported workspace descriptor schema")
         if not isinstance(self.workspace_id, str) or len(self.workspace_id) != 32:
             raise WorkspaceError("workspace_id must be a 32-character UUID hex value")
+        if any(char not in "0123456789abcdef" for char in self.workspace_id):
+            raise WorkspaceError("workspace_id must be lowercase hexadecimal")
         try:
             uuid.UUID(hex=self.workspace_id)
         except ValueError as exc:
@@ -80,8 +82,9 @@ class WorkspaceDescriptor:
             raise WorkspaceError("source_snapshot_digest must be a lowercase SHA-256 digest")
         for field in ("file_count", "total_bytes"):
             value = getattr(self, field)
-            if type(value) is not int or value < 0:
-                raise WorkspaceError(f"{field} must be a non-negative integer")
+            maximum = 1_000_000 if field == "file_count" else 16 * 1024 * 1024 * 1024
+            if type(value) is not int or not 0 <= value <= maximum:
+                raise WorkspaceError(f"{field} must be a bounded non-negative integer")
         object.__setattr__(self, "created_at", _validate_timestamp(self.created_at))
         try:
             workspace = Path(self.workspace_path)
@@ -123,6 +126,8 @@ class WorkspaceDescriptor:
         }
         if not isinstance(document, dict) or set(document) != expected:
             raise WorkspaceError("workspace descriptor has missing or unexpected fields")
+        if type(document["schema"]) is not int or document["schema"] != 1:
+            raise WorkspaceError("unsupported workspace descriptor schema")
         payload = {key: value for key, value in document.items() if key != "descriptor_digest"}
         try:
             actual_digest = _digest(payload)
@@ -315,7 +320,7 @@ def create_isolated_workspace(
         file_count = sum(item.kind == "file" for item in snapshot.entries)
         total_bytes = sum(item.size for item in snapshot.entries if item.kind == "file")
         descriptor = WorkspaceDescriptor(
-            workspace_id=workspace_dir.name.removeprefix(".qyrenith-workspace-"),
+            workspace_id=uuid.uuid4().hex,
             workspace_path=str(workspace_dir.resolve()),
             project_path=str(project_dir.resolve()),
             target=target,
