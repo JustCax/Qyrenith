@@ -21,6 +21,8 @@ from qyrenith_engine.migration import (
     WorkerScope,
     assess_route_workers,
     authorize_migration,
+    deserialize_migration_authorization,
+    serialize_migration_authorization,
     plan_route,
 )
 
@@ -133,6 +135,27 @@ class TestMigrationAuthorization(unittest.TestCase):
         ))
         self.assertEqual(grant.limits, limits)
         self.assertEqual(len(authorization.authorization_digest), 64)
+
+    def test_authorization_round_trip_is_canonical_and_digest_preserving(self):
+        original = authorize()
+        encoded = serialize_migration_authorization(original)
+        restored = deserialize_migration_authorization(encoded)
+        self.assertEqual(restored.to_document(), original.to_document())
+        self.assertEqual(restored.authorization_digest, original.authorization_digest)
+
+    def test_authorization_import_rejects_digest_tampering(self):
+        encoded = serialize_migration_authorization(authorize())
+        tampered = encoded.replace(b"human-review-record", b"other-review-record")
+        with self.assertRaisesRegex(ValueError, "digest mismatch"):
+            deserialize_migration_authorization(tampered)
+
+    def test_authorization_import_rejects_duplicate_json_keys(self):
+        with self.assertRaisesRegex(ValueError, "invalid migration authorization JSON"):
+            deserialize_migration_authorization(b'{"schema":1,"schema":1}')
+
+    def test_authorization_import_rejects_noncanonical_whitespace(self):
+        with self.assertRaisesRegex(ValueError, "not canonical"):
+            deserialize_migration_authorization(serialize_migration_authorization(authorize()) + b" ")
 
     def test_authorization_is_current_only_inside_half_open_interval(self):
         authorization = authorize()
