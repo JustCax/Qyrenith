@@ -15,6 +15,7 @@ from .knowledge import (
 )
 from .model import MigrationIdentity, MigrationTransition, TransitionKind
 from .planner import MultiTargetPlan, RoutePlan, plan_route, plan_targets
+from .snapshot import (ProjectSnapshot, SnapshotEntry, SnapshotError, SnapshotLimits, SnapshotVerification, capture_project_snapshot, deserialize_project_snapshot, serialize_project_snapshot, verify_project_snapshot)
 from .worker import (
     MigrationWorkerManifest, MigrationWorkerRegistry, RouteWorkerAssessment,
     WorkerPermission, WorkerQualification, WorkerRegistration, WorkerResolution,
@@ -48,4 +49,7 @@ __all__ = [
     "WorkerResourceLimits", "WorkerScope", "deserialize_worker_manifest",
     "deserialize_worker_qualification", "serialize_worker_manifest",
     "serialize_worker_qualification",
+    "ProjectSnapshot", "SnapshotEntry", "SnapshotError", "SnapshotLimits",
+    "SnapshotVerification", "capture_project_snapshot", "verify_project_snapshot",
+    "serialize_project_snapshot", "deserialize_project_snapshot",
 ]
