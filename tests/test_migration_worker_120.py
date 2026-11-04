@@ -344,6 +344,9 @@ class TestWorkerQualificationAndRegistry(unittest.TestCase):
         assessment = assess_route_workers(plan, registry)
         self.assertEqual(assessment.status, "QUALIFIED")
         self.assertEqual(assessment.trust_policy_digest, policy.policy_digest)
+        other_registry = trusted_registry(registration, policy_id="different-policy")
+        other_assessment = assess_route_workers(plan, other_registry)
+        self.assertNotEqual(assessment.assessment_digest, other_assessment.assessment_digest)
 
     def test_registry_is_immutable(self):
         current = manifest()
