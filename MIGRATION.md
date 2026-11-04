@@ -214,4 +214,6 @@ The current migration package is a planning and record-keeping foundation. It do
 - Build, test, runtime, or behavioral verification of target projects.
 - A verified cross-loader Minecraft conversion or a newly qualified non-Minecraft domain.
 
+The plan-bound authorization record is available as a policy artifact, but it is not an execution authority. Authenticated approval, protected policy administration, runtime enforcement, isolated execution, and independent target validation remain separate gates.
+
 These limits are deliberate. A registered domain, a worker declaration, a PLANNED route, or an AI response must not be presented as a successful or supported migration.
