@@ -1131,7 +1131,7 @@ class TestWorkerCommandApproval(unittest.TestCase):
             qyrenith.ensure_state_dir(root)
             worker = root / "worker.py"
             worker.write_text(
-                "import json; from pathlib import Path; Path('worker-ran.txt').write_text('yes'); print(json.dumps({'status':'OBSERVED'}))\\n",
+                "import json; from pathlib import Path; Path('worker-ran.txt').write_text('yes'); print(json.dumps({'status':'OBSERVED'}))\n",
                 encoding="utf-8",
             )
             qyrenith.save_json(root / qyrenith.STATE_DIR / "adapters.json", {
@@ -1164,7 +1164,7 @@ class TestWorkerCommandApproval(unittest.TestCase):
             )
             self.assertEqual(repeated["status"], "OBSERVED")
 
-            worker.write_text(worker.read_text(encoding="utf-8") + "# changed\\n", encoding="utf-8")
+            worker.write_text(worker.read_text(encoding="utf-8") + "# changed\n", encoding="utf-8")
             changed = qyrenith.run_external_worker(
                 root, "approval-test", {"operation": "inspect"}, 10,
                 approval_store=approval_store,
