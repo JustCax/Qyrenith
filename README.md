@@ -229,7 +229,11 @@ python qyrenith.py doctor --project .
 python qyrenith.py verify --project . --execute
 python qyrenith.py inspect --project .
 python qyrenith.py explain UNKNOWN_API
+python qyrenith.py snapshot capture --project . > source.snapshot.json
+python qyrenith.py snapshot verify --project . --snapshot-file source.snapshot.json
 ```
+
+`snapshot capture` is read-only and emits a canonical content fingerprint. Store the redirected snapshot outside the project when retaining a baseline. `snapshot verify` reports `MATCH` or `CHANGED`; it does not execute workers or modify the inspected project.
 
 `verify` discovers the adapters that actually apply (Python, Node, Rust) and
 runs them with `--execute`. Migration commands (`audit`, `plan`, `port`,
@@ -276,6 +280,7 @@ The main command surface, grouped by purpose. Run `python qyrenith.py --help` fo
 | `impact` | Static direct/transitive Python import impact hints for changed files |
 | `boundary-check` | Read-only filesystem boundary inspection |
 | `bounded-check` | Explicit shell-free, bounded process invocation; not an OS sandbox |
+| `snapshot` | Capture or verify a bounded, content-addressed project snapshot without modifying the target |
 
 ### Planning and managed migration
 
