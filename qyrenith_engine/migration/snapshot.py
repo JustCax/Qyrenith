@@ -48,6 +48,7 @@ def _safe_relative_path(value: object, *, allow_empty: bool = False) -> str:
     parts = value.split("/")
     if any(
         part in {"", ".", ".."}
+        or len(part) > 255
         or part.endswith((".", " "))
         or ":" in part
         or unicodedata.normalize("NFC", part) != part
@@ -158,8 +159,17 @@ class ProjectSnapshot:
         if any(not isinstance(item, SnapshotEntry) for item in entries):
             raise SnapshotError("snapshot entries must be SnapshotEntry values")
         paths = [item.path for item in entries]
-        if paths != sorted(paths) or len(paths) != len(set(paths)) or len(paths) != len({path.casefold() for path in paths}):
-            raise SnapshotError("snapshot entries must have unique, portable canonical path order")
+        if paths != sorted(paths) or len(paths) != len(set(paths)):
+            raise SnapshotError("snapshot entries must have unique, canonical path order")
+        portable_prefixes: dict[str, str] = {}
+        for path in paths:
+            parts = path.split("/")
+            for index in range(1, len(parts) + 1):
+                prefix = "/".join(parts[:index])
+                folded = prefix.casefold()
+                previous = portable_prefixes.setdefault(folded, prefix)
+                if previous != prefix:
+                    raise SnapshotError("snapshot entries contain a case-insensitive path collision")
         entry_map = {item.path: item for item in entries}
         total_bytes = 0
         for item in entries:
@@ -179,13 +189,18 @@ class ProjectSnapshot:
         if not isinstance(self.excluded_paths, (tuple, list)):
             raise SnapshotError("excluded_paths must be a sequence")
         exclusions = tuple(_safe_relative_path(item) for item in self.excluded_paths)
-        if exclusions != tuple(sorted(set(exclusions))):
+        if exclusions != tuple(sorted(set(exclusions))) or len(exclusions) != len({item.casefold() for item in exclusions}):
             raise SnapshotError("excluded paths must be unique and canonically sorted")
         if any(
             any(other.startswith(path + "/") for other in exclusions if other != path)
             for path in exclusions
         ):
             raise SnapshotError("excluded paths must not redundantly contain nested exclusions")
+        if any(
+            any(item.path == excluded or item.path.startswith(excluded + "/") for excluded in exclusions)
+            for item in entries
+        ):
+            raise SnapshotError("snapshot entries cannot contain excluded paths")
         object.__setattr__(self, "entries", entries)
         object.__setattr__(self, "excluded_paths", exclusions)
         object.__setattr__(self, "captured_at", _validate_timestamp(self.captured_at))
@@ -376,7 +391,8 @@ def capture_project_snapshot(
                 _safe_relative_path(rel)
                 if len(rel) > policy.max_path_length:
                     raise SnapshotError("project path exceeds max_path_length")
-                if any(rel == excluded or rel.startswith(excluded + "/") for excluded in exclusion_set):
+                components = rel.split("/")
+                if any("/".join(components[:index]) in exclusion_set for index in range(1, len(components) + 1)):
                     continue
                 try:
                     item_stat = child.stat(follow_symlinks=False)
