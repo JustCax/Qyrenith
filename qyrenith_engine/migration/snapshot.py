@@ -291,7 +291,10 @@ class ProjectSnapshot:
             )
         except (json.JSONDecodeError, ValueError) as exc:
             raise SnapshotError("invalid project snapshot JSON") from exc
-        canonical = _canonical(document)
+        try:
+            canonical = _canonical(document)
+        except (TypeError, ValueError) as exc:
+            raise SnapshotError("project snapshot contains non-canonical JSON values") from exc
         if source.encode("utf-8") not in {canonical, canonical + b"\n"}:
             raise SnapshotError("project snapshot JSON is not canonical")
         return cls.from_document(document)
@@ -452,9 +455,9 @@ class SnapshotVerification:
     checked_at: str
 
     def __post_init__(self) -> None:
-        if not _SHA256.fullmatch(self.expected_digest):
+        if not isinstance(self.expected_digest, str) or not _SHA256.fullmatch(self.expected_digest):
             raise SnapshotError("expected_digest must be a SHA-256 digest")
-        if self.actual_digest is not None and not _SHA256.fullmatch(self.actual_digest):
+        if self.actual_digest is not None and (not isinstance(self.actual_digest, str) or not _SHA256.fullmatch(self.actual_digest)):
             raise SnapshotError("actual_digest must be a SHA-256 digest or None")
         if self.status not in {"MATCH", "CHANGED", "ERROR"}:
             raise SnapshotError("unsupported snapshot verification status")
