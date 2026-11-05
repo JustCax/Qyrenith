@@ -12,6 +12,7 @@ from typing import Any
 
 from .knowledge import KnowledgeCatalog, strict_object_pairs
 from .planner import RoutePlan
+from ..trust_store import OwnerTrustStore
 from .worker import (
     MigrationWorkerRegistry,
     RouteWorkerAssessment,
@@ -627,6 +628,99 @@ def validate_migration_authorization(
 
 
 
+def _require_owner_trust(
+    plan: RoutePlan,
+    registry: MigrationWorkerRegistry,
+    knowledge: KnowledgeCatalog,
+    trust_store: OwnerTrustStore,
+    now: datetime,
+) -> None:
+    """Require owner-store decisions for the exact catalog and every pinned worker."""
+    if not isinstance(trust_store, OwnerTrustStore):
+        raise TypeError("trust_store must be an OwnerTrustStore")
+    trust_store.require_trusted(
+        "KNOWLEDGE_CATALOG", "sha256:" + knowledge.content_digest, now=now
+    )
+    registrations = {
+        (item.manifest.worker_id, item.manifest.worker_version): item
+        for item in registry.registrations()
+    }
+    for transition in plan.transitions:
+        resolution = registry.resolve(transition, now)
+        if resolution.status != "QUALIFIED":
+            continue
+        if resolution.worker_id is None or resolution.worker_version is None:
+            raise ValueError("qualified worker resolution is missing its exact identity")
+        registration = registrations.get((resolution.worker_id, resolution.worker_version))
+        if registration is None or registration.qualification is None:
+            raise ValueError("qualified worker registration disappeared during trust validation")
+        if resolution.manifest_digest != registration.manifest.manifest_digest:
+            raise ValueError("worker manifest digest changed during owner trust validation")
+        if resolution.qualification_digest != registration.qualification.qualification_digest:
+            raise ValueError("worker qualification digest changed during owner trust validation")
+        trust_store.require_trusted(
+            "WORKER_MANIFEST", "sha256:" + resolution.manifest_digest, now=now
+        )
+        trust_store.require_trusted(
+            "WORKER_QUALIFICATION",
+            "sha256:" + resolution.qualification_digest,
+            now=now,
+        )
+
+
+def authorize_migration_with_owner_trust(
+    plan: RoutePlan,
+    assessment: RouteWorkerAssessment,
+    registry: MigrationWorkerRegistry,
+    policy: MigrationAuthorizationPolicy,
+    *,
+    trust_store: OwnerTrustStore,
+    approved_by: str,
+    approved_at: datetime,
+    expires_at: datetime,
+    permissions: tuple[WorkerPermission, ...],
+    limits: WorkerResourceLimits,
+    knowledge: KnowledgeCatalog,
+) -> MigrationAuthorization:
+    """Create a plan authorization only when exact digests are trusted by the owner store.
+
+    This adds an owner-controlled trust gate; it does not authenticate the approver,
+    launch a worker, or enforce operating-system permissions.
+    """
+    _require_owner_trust(plan, registry, knowledge, trust_store, approved_at)
+    return authorize_migration(
+        plan, assessment, registry, policy,
+        approved_by=approved_by, approved_at=approved_at, expires_at=expires_at,
+        permissions=permissions, limits=limits, knowledge=knowledge,
+    )
+
+
+def validate_migration_authorization_with_owner_trust(
+    authorization: MigrationAuthorization,
+    plan: RoutePlan,
+    assessment: RouteWorkerAssessment,
+    registry: MigrationWorkerRegistry,
+    policy: MigrationAuthorizationPolicy,
+    *,
+    trust_store: OwnerTrustStore,
+    knowledge: KnowledgeCatalog,
+    now: datetime,
+) -> None:
+    """Recheck exact owner trust and ordinary authorization freshness before a side effect."""
+    _require_owner_trust(plan, registry, knowledge, trust_store, now)
+    validate_migration_authorization(
+        authorization, plan, assessment, registry, policy,
+        knowledge=knowledge, now=now,
+    )
+    for grant in authorization.grants:
+        trust_store.require_trusted(
+            "WORKER_MANIFEST", "sha256:" + grant.manifest_digest, now=now
+        )
+        trust_store.require_trusted(
+            "WORKER_QUALIFICATION", "sha256:" + grant.qualification_digest, now=now
+        )
+
+
 def serialize_migration_authorization_policy(policy: MigrationAuthorizationPolicy) -> bytes:
     if not isinstance(policy, MigrationAuthorizationPolicy):
         raise TypeError("policy must be a MigrationAuthorizationPolicy")
@@ -653,4 +747,6 @@ __all__ = [
     "serialize_migration_authorization", "deserialize_migration_authorization",
     "serialize_migration_authorization_policy", "deserialize_migration_authorization_policy",
     "validate_migration_authorization",
+    "authorize_migration_with_owner_trust",
+    "validate_migration_authorization_with_owner_trust",
 ]
