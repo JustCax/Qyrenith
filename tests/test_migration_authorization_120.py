@@ -1,12 +1,16 @@
 """Security-boundary tests for plan-bound migration authorization."""
 import atexit
 import hashlib
+import io
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import tempfile
 
+from qyrenith_engine.approval import HostApprovalError, approve_host_request
 from qyrenith_engine.trust_store import OwnerTrustStore, TrustStoreError
+from qyrenith_engine.migration.snapshot import capture_project_snapshot
+from qyrenith_engine.migration.workspace import create_isolated_workspace
 
 from qyrenith_engine.migration import (
     MigrationAuthorizationPolicy,
@@ -31,12 +35,14 @@ from qyrenith_engine.migration import (
     assess_route_workers,
     authorize_migration,
     authorize_migration_with_owner_trust,
+    create_migration_step_approval_request,
     deserialize_migration_authorization,
     serialize_migration_authorization,
     deserialize_migration_authorization_policy,
     serialize_migration_authorization_policy,
     validate_migration_authorization,
     validate_migration_authorization_with_owner_trust,
+    validate_migration_step_approval,
     plan_route,
 )
 
@@ -194,6 +200,92 @@ def authorize(*, approved_at=NOW, expires_at=datetime(2026, 11, 4, 18, 10, tzinf
         knowledge=knowledge_catalog(),
     )
 
+
+class InteractiveTestTerminal(io.StringIO):
+    def isatty(self):
+        return True
+
+
+class TestMigrationStepApproval(unittest.TestCase):
+    def _approved_step(self, temporary):
+        plan, assessment, registry, policy, limits = fixture()
+        catalog = knowledge_catalog()
+        store = owner_trust_store(plan, registry, catalog)
+        authorization = authorize_migration_with_owner_trust(
+            plan, assessment, registry, policy,
+            trust_store=store, approved_by="test-reviewer", approved_at=NOW,
+            expires_at=NOW + timedelta(minutes=10),
+            permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
+            limits=limits, knowledge=catalog,
+        )
+        source = Path(temporary) / "source"
+        source.mkdir()
+        (source / "README.md").write_text("baseline\n", encoding="utf-8")
+        workspace_parent = Path(temporary) / "workspaces"
+        workspace_parent.mkdir()
+        snapshot = capture_project_snapshot(source)
+        workspace = create_isolated_workspace(source, snapshot, workspace_parent, TARGET)
+        grant = authorization.grants[0]
+        command_digest = "e" * 64
+        sandbox_profile_id = "test-linux-bwrap-profile-v1"
+        sandbox_profile_digest = "f" * 64
+        request = create_migration_step_approval_request(
+            authorization, plan, grant, workspace, snapshot,
+            command_digest=command_digest,
+            sandbox_profile_id=sandbox_profile_id,
+            sandbox_profile_digest=sandbox_profile_digest,
+            lifetime_seconds=300, now=NOW,
+        )
+        challenge = f"APPROVE {request.action_type} {request.request_id} {request.nonce}"
+        approval = approve_host_request(
+            request, store, input_stream=InteractiveTestTerminal(challenge + "\n"),
+            output_stream=InteractiveTestTerminal(), now=NOW,
+        )
+        return (
+            plan, assessment, registry, policy, catalog, store, authorization,
+            grant, workspace, snapshot, approval, command_digest,
+            sandbox_profile_id, sandbox_profile_digest,
+        )
+
+    def _validate(self, values, *, now=NOW + timedelta(seconds=1), command_digest=None):
+        (
+            plan, assessment, registry, policy, catalog, store, authorization,
+            grant, workspace, snapshot, approval, original_command,
+            sandbox_profile_id, sandbox_profile_digest,
+        ) = values
+        validate_migration_step_approval(
+            authorization, plan, assessment, registry, policy, grant,
+            workspace, snapshot, approval,
+            trust_store=store, knowledge=catalog,
+            command_digest=original_command if command_digest is None else command_digest,
+            sandbox_profile_id=sandbox_profile_id,
+            sandbox_profile_digest=sandbox_profile_digest,
+            now=now,
+        )
+
+    def test_step_approval_binds_plan_worker_baseline_command_and_sandbox(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            values = self._approved_step(temporary)
+            self._validate(values)
+            with self.assertRaisesRegex(HostApprovalError, "already been consumed"):
+                self._validate(values, now=NOW + timedelta(seconds=2))
+
+    def test_command_substitution_is_rejected_without_consuming_approval(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            values = self._approved_step(temporary)
+            with self.assertRaisesRegex(HostApprovalError, "exact action scope"):
+                self._validate(values, command_digest="9" * 64)
+            self._validate(values)
+
+    def test_modified_workspace_baseline_blocks_step_approval(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            values = self._approved_step(temporary)
+            workspace = values[8]
+            (Path(workspace.project_path) / "README.md").write_text(
+                "modified after approval\n", encoding="utf-8"
+            )
+            with self.assertRaisesRegex(ValueError, "no longer matches"):
+                self._validate(values)
 
 class TestOwnerTrustAuthorization(unittest.TestCase):
     def test_owner_store_allows_only_exact_catalog_manifest_and_qualification(self):
