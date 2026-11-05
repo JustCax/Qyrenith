@@ -6,7 +6,7 @@ from .execution import run_bounded_process, run_bounded_worker
 from .trust_store import OwnerTrustStore, TrustDecision, TrustStoreError, default_trust_store_path
 from .migration import (
     MigrationAuthorization, MigrationAuthorizationPolicy, MigrationStepGrant, authorize_migration,
-    authorize_migration_with_owner_trust, validate_migration_authorization_with_owner_trust,
+    authorize_migration_with_owner_trust, validate_migration_authorization_with_owner_trust, migration_step_approval_scope, create_migration_step_approval_request, validate_migration_step_approval,
     deserialize_migration_authorization, serialize_migration_authorization,
     deserialize_migration_authorization_policy, serialize_migration_authorization_policy,
     ProjectSnapshot, SnapshotEntry, SnapshotError, SnapshotLimits, SnapshotVerification,
@@ -37,6 +37,8 @@ __all__ = [
     "deserialize_migration_authorization_policy", "serialize_migration_authorization_policy",
     "validate_migration_authorization",
     "authorize_migration_with_owner_trust", "validate_migration_authorization_with_owner_trust",
+    "migration_step_approval_scope", "create_migration_step_approval_request",
+    "validate_migration_step_approval",
     "ProjectSnapshot", "SnapshotEntry", "SnapshotError", "SnapshotLimits",
     "SnapshotVerification", "capture_project_snapshot", "verify_project_snapshot",
     "serialize_project_snapshot", "deserialize_project_snapshot",
