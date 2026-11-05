@@ -6,6 +6,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from qyrenith_engine.qdas.events import _canonical
 from qyrenith_engine.qdas import (
     QdasEventLedger,
     QdasEvidenceLineage,
@@ -18,6 +19,16 @@ from qyrenith_engine.qdas import (
 
 
 START = datetime(2026, 11, 5, 8, 0, tzinfo=timezone.utc)
+
+
+def event_scope_digest(item):
+    document = item.to_dict()
+    fields = (
+        "event_id", "event_kind", "project_revision", "tool_name", "tool_version",
+        "argv", "working_directory", "environment_digest", "execution_status",
+        "exit_code", "stdout_digest", "stderr_digest",
+    )
+    return hashlib.sha256(_canonical({key: document[key] for key in fields})).hexdigest()
 
 
 def make_event(status, kind, stderr="", offset=0, revision=None):
@@ -104,7 +115,7 @@ class QdasEvidenceLineageTests(unittest.TestCase):
             "patch_record_digest": patch["record_digest"],
             "event_id": verification.event_id,
             "event_record_digest": verification_record["record_digest"],
-            "scope_digest": hashlib.sha256(b"build scope").hexdigest(),
+            "scope_digest": event_scope_digest(verification),
         })
         regression = make_event("PASS", "TEST", offset=2, revision="revision-after")
         regression_record = self.events.append(regression, None)
@@ -112,7 +123,7 @@ class QdasEvidenceLineageTests(unittest.TestCase):
             "patch_record_digest": patch["record_digest"],
             "event_id": regression.event_id,
             "event_record_digest": regression_record["record_digest"],
-            "scope_digest": hashlib.sha256(b"regression suite scope").hexdigest(),
+            "scope_digest": event_scope_digest(regression),
         })
         verdict = self.lineage.append("FINAL_VERDICT", {
             "plan_digest": self.plan.plan_digest,
