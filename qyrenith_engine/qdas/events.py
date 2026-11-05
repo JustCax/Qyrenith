@@ -215,7 +215,7 @@ class ExecutionEvent:
                 raise ValueError(f"{field} must be a boolean")
         if self.execution_status == "PASS" and (
             self.exit_code != 0 or self.timed_out or self.output_limited
-            or self.output_incomplete or self.input_incomplete
+            or self.output_incomplete or self.input_incomplete or self.unsupported_state
         ):
             raise ValueError("PASS event contradicts its exit code or execution flags")
         if self.exit_code == 0 and self.execution_status == "FAIL":
@@ -364,7 +364,7 @@ def create_execution_event(
     input_incomplete = bool(report.get("input_incomplete"))
     unsupported_state = bool(report.get("unsupported_state"))
     timed_out = bool(report.get("timed_out"))
-    if timed_out or output_limited or output_incomplete or input_incomplete:
+    if timed_out or output_limited or output_incomplete or input_incomplete or unsupported_state:
         status = "BLOCKED"
     elif status == "PASS" and exit_code != 0:
         raise ValueError("execution report PASS must have exit_code zero")
