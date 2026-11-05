@@ -100,16 +100,21 @@ def _reject_reparse_or_symlink(path: Path, *, directory: bool) -> os.stat_result
 
 
 def _ensure_private_directory(directory: Path, *, create: bool) -> None:
-    if create:
+    if directory.exists() or directory.is_symlink():
+        _reject_reparse_or_symlink(directory, directory=True)
+    elif create:
         directory.mkdir(parents=True, exist_ok=True, mode=0o700)
-        if os.name != "nt":
-            try:
-                directory.chmod(0o700)
-            except OSError as exc:
-                raise TrustStoreError("cannot secure trust-store directory permissions") from exc
-    _reject_reparse_or_symlink(directory, directory=True)
-    if os.name != "nt" and directory.stat().st_mode & 0o077:
-        raise TrustStoreError("trust-store directory must be owner-only")
+        _reject_reparse_or_symlink(directory, directory=True)
+    else:
+        raise TrustStoreError("trust-store directory does not exist")
+    if os.name != "nt":
+        try:
+            directory.chmod(0o700)
+        except OSError as exc:
+            raise TrustStoreError("cannot secure trust-store directory permissions") from exc
+        _reject_reparse_or_symlink(directory, directory=True)
+        if directory.stat().st_mode & 0o077:
+            raise TrustStoreError("trust-store directory must be owner-only")
 
 
 def _write_exclusive(path: Path, payload: bytes) -> None:
@@ -333,7 +338,9 @@ class OwnerTrustStore:
         return self._document["generation"]
 
     def decisions(self) -> tuple[TrustDecision, ...]:
-        return tuple(TrustDecision.from_dict(item) for item in self._document["events"])
+        with self._locked():
+            self._document = self._reload_locked()
+            return tuple(TrustDecision.from_dict(item) for item in self._document["events"])
 
     def _locked(self):
         class Lock:
@@ -342,10 +349,16 @@ class OwnerTrustStore:
                 self.stream = None
 
             def __enter__(self):
+                if self.path.exists() or self.path.is_symlink():
+                    _reject_reparse_or_symlink(self.path, directory=False)
                 flags = os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
                 descriptor = os.open(self.path, flags, 0o600)
                 if os.name != "nt":
                     os.fchmod(descriptor, 0o600)
+                    info = os.fstat(descriptor)
+                    if info.st_uid != os.getuid() or info.st_mode & 0o077:
+                        os.close(descriptor)
+                        raise TrustStoreError("trust-store lock permissions are unsafe")
                 self.stream = os.fdopen(descriptor, "r+b")
                 if os.name == "nt":
                     import msvcrt
