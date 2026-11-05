@@ -138,7 +138,7 @@ class HostApprovalTests(unittest.TestCase):
             self.approve(request, answer="APPROVE WRONG WRONG", now=now)
 
     def test_scope_rejects_non_string_keys_and_non_finite_numbers(self):
-        with self.assertRaisesRegex(ValueError, "keys must be strings"):
+        with self.assertRaisesRegex(ValueError, "string keys"):
             create_host_approval_request("MIGRATION_STEP", {1: "invalid"})
         with self.assertRaisesRegex(ValueError, "non-finite"):
             create_host_approval_request("MIGRATION_STEP", {"ratio": float("nan")})
