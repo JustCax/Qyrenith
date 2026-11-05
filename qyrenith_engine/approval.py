@@ -329,8 +329,12 @@ def approve_host_request(
     approved = _parse_utc(approved_at, "approved_at")
     if approved < issued or approved >= expiry:
         raise HostApprovalError("approval request is not currently valid")
+    trust_store.decisions()
+    approved_store_id = trust_store.store_id
+    approved_store_generation = trust_store.generation
     print("QYRENITH HOST ACTION APPROVAL", file=output)
     print(f"Action: {request.action_type}", file=output)
+    print(f"Owner trust store: {approved_store_id} generation {approved_store_generation}", file=output)
     print(f"Request ID: {request.request_id}", file=output)
     print(f"Scope digest: sha256:{request.scope_digest}", file=output)
     print(f"Expires: {request.expires_at}", file=output)
@@ -344,6 +348,11 @@ def approve_host_request(
     if not hmac.compare_digest(supplied, challenge):
         raise HostApprovalError("host approval challenge was not confirmed")
     trust_store.decisions()
+    if (
+        trust_store.store_id != approved_store_id
+        or trust_store.generation != approved_store_generation
+    ):
+        raise HostApprovalError("owner trust store changed during the approval prompt")
     principal = getpass.getuser() or "local-user"
     unsigned = {
         "schema": 1,
@@ -358,8 +367,8 @@ def approve_host_request(
         "nonce": request.nonce,
         "approved_by": principal,
         "host_principal": principal,
-        "trust_store_id": trust_store.store_id,
-        "trust_store_generation": trust_store.generation,
+        "trust_store_id": approved_store_id,
+        "trust_store_generation": approved_store_generation,
     }
     signature = trust_store.sign_host_payload(unsigned)
     return HostApproval(**{key: value for key, value in unsigned.items() if key != "schema"}, signature=signature)
