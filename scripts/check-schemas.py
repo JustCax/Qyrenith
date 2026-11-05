@@ -50,6 +50,11 @@ EXPECTED = {
     "owner-trust-store.schema.json": [
         "schema", "store_id", "generation", "events", "hmac_sha256",
     ],
+    "host-approval.schema.json": [
+        "schema", "approval_id", "request_id", "action_type", "request_digest",
+        "scope_digest", "issued_at", "approved_at", "expires_at", "nonce",
+        "approved_by", "host_principal", "signature",
+    ],
     "migration-project-snapshot.schema.json": [
         "schema", "entries", "excluded_paths", "limits", "captured_at", "snapshot_digest",
     ],
@@ -136,6 +141,20 @@ require(trust_event["allOf"][2].get("then", {}).get("properties", {}).get("decis
         "approval nonce events must only record CONSUME")
 require(set(trust_event["allOf"][3].get("then", {}).get("properties", {}).get("decision", {}).get("enum", [])) == {"TRUST", "REVOKE"},
         "non-nonce trust events must only record TRUST or REVOKE")
+
+host_approval = schemas["host-approval.schema.json"]
+require(host_approval.get("additionalProperties") is False,
+        "host approval must reject unknown fields")
+require(host_approval["properties"]["request_digest"].get("pattern") == "^[0-9a-f]{64}$",
+        "host approval must bind the request digest")
+require(host_approval["properties"]["scope_digest"].get("pattern") == "^[0-9a-f]{64}$",
+        "host approval must bind the exact scope digest")
+require(host_approval["properties"]["nonce"].get("pattern") == "^[0-9a-f]{48}$",
+        "host approval must carry a one-time nonce")
+require(host_approval["properties"]["signature"].get("pattern") == "^[0-9a-f]{64}$",
+        "host approval must carry a keyed integrity signature")
+require(host_approval["properties"]["action_type"].get("pattern") == "^[A-Z][A-Z0-9_]{1,63}$",
+        "host approval action type must be a canonical identifier")
 
 adapter = schemas["adapter-manifest.schema.json"]
 alternatives = adapter.get("anyOf", [])
