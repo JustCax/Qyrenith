@@ -337,6 +337,19 @@ Approval attribution (`approved_by`) is caller-supplied provenance, not authenti
 
 A no-op route may receive an authorization record with zero worker grants; it authorizes no worker operation.
 
+### Owner trust decisions
+
+The opt-in owner-trust authorization helpers require exact digest decisions in a per-user store. Initialize it once, then explicitly trust each reviewed catalog, worker manifest, and worker qualification digest. The command requires a local interactive challenge for every trust/revoke decision:
+
+```text
+python qyrenith.py trust-store --trust-action init
+python qyrenith.py trust-store --trust-action list
+python qyrenith.py trust-store --trust-action trust --trust-kind KNOWLEDGE_CATALOG --digest sha256:<catalog-digest> --reason "Reviewed compatibility evidence"
+python qyrenith.py trust-store --trust-action trust --trust-kind WORKER_MANIFEST --digest sha256:<manifest-digest> --reason "Reviewed exact worker build"
+python qyrenith.py trust-store --trust-action trust --trust-kind WORKER_QUALIFICATION --digest sha256:<qualification-digest> --reason "Reviewed conformance evidence"
+```
+
+Use the exact lowercase SHA-256 digests emitted by the corresponding APIs. There are no wildcard or prefix trust decisions. Revoke a digest with `--trust-action revoke`; revocation is checked again by the owner-trust authorization wrappers. Trust-store administration is not yet integrated into worker dispatch and does not replace authenticated action approval or OS sandbox enforcement.
 ### Minimal authorization flow
 
 Assuming `plan`, `assessment`, and `registry` were produced by the preceding APIs, the caller can create a narrow policy and a plan-bound authorization record:
