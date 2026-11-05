@@ -11,6 +11,7 @@ import tempfile
 import time
 from typing import Any
 
+from .diagnosis import FailureHypothesis, FailureObservation
 from .events import ExecutionEvent, FailureClassification, _canonical, _unique_pairs, classify_failure
 
 _GENESIS = "0" * 64
@@ -138,7 +139,8 @@ class QdasEventLedger:
             "schema", "sequence", "previous_digest", "event",
             "classification", "record_digest",
         }
-        if not isinstance(record, dict) or set(record) != fields:
+        allowed_fields = fields | {"hypotheses"}
+        if not isinstance(record, dict) or set(record) not in {frozenset(fields), frozenset(allowed_fields)}:
             raise QdasLedgerError("QDAS ledger record has missing or unexpected fields")
         if type(record["schema"]) is not int or record["schema"] != 1:
             raise QdasLedgerError("unsupported QDAS ledger schema")
@@ -146,7 +148,7 @@ class QdasEventLedger:
             raise QdasLedgerError("QDAS ledger sequence is not contiguous")
         if record["previous_digest"] != previous_digest:
             raise QdasLedgerError("QDAS ledger previous digest does not match")
-        payload = {key: record[key] for key in fields if key != "record_digest"}
+        payload = {key: value for key, value in record.items() if key != "record_digest"}
         digest = hashlib.sha256(_canonical(payload)).hexdigest()
         if not isinstance(record["record_digest"], str) or not _HEX.fullmatch(record["record_digest"]):
             raise QdasLedgerError("QDAS ledger record digest is invalid")
@@ -177,6 +179,57 @@ class QdasEventLedger:
                 raise QdasLedgerError("QDAS classification does not match the native classifier")
         if (event.execution_status == "PASS") != (classification is None):
             raise QdasLedgerError("QDAS classification presence contradicts event status")
+        if "hypotheses" in record:
+            raw_hypotheses = record["hypotheses"]
+            if not isinstance(raw_hypotheses, list) or len(raw_hypotheses) > 8:
+                raise QdasLedgerError("QDAS hypotheses must be a bounded array")
+            if event.execution_status == "PASS" and raw_hypotheses:
+                raise QdasLedgerError("passing events cannot carry failure hypotheses")
+            for raw in raw_hypotheses:
+                try:
+                    if not isinstance(raw, dict):
+                        raise ValueError("hypothesis must be an object")
+                    supporting = tuple(FailureObservation(**item) for item in raw["supporting_evidence"])
+                    contradicting = tuple(FailureObservation(**item) for item in raw["contradicting_evidence"])
+                    hypothesis = FailureHypothesis(
+                        hypothesis_id=raw["hypothesis_id"],
+                        event_id=raw["event_id"],
+                        failure_category=raw["failure_category"],
+                        rule_id=raw["rule_id"],
+                        statement=raw["statement"],
+                        supporting_evidence=supporting,
+                        contradicting_evidence=contradicting,
+                        confidence=raw["confidence"],
+                        confidence_rationale=raw["confidence_rationale"],
+                        missing_evidence=tuple(raw["missing_evidence"]),
+                        state=raw["state"],
+                    )
+                    expected_fields = {
+                        "hypothesis_id", "event_id", "failure_category", "rule_id",
+                        "statement", "supporting_evidence", "contradicting_evidence",
+                        "confidence", "confidence_rationale", "missing_evidence", "state",
+                    }
+                    if set(raw) != expected_fields or hypothesis.to_dict() != raw:
+                        raise ValueError("hypothesis fields are not canonical")
+                    if hypothesis.event_id != event.event_id:
+                        raise ValueError("hypothesis belongs to another event")
+                    if classification is None or hypothesis.failure_category != classification.category:
+                        raise ValueError("hypothesis category contradicts native classification")
+                    observation_ids = sorted(item.observation_id for item in hypothesis.supporting_evidence)
+                    if hypothesis.rule_id == "QDAS-ROOT-UNKNOWN-001":
+                        expected_id = hashlib.sha256(
+                            (event.event_id + event.stdout_digest + event.stderr_digest).encode("ascii")
+                        ).hexdigest()[:32]
+                    else:
+                        expected_id = hashlib.sha256(_canonical({
+                            "event_id": event.event_id,
+                            "rule_id": hypothesis.rule_id,
+                            "evidence_ids": observation_ids,
+                        })).hexdigest()[:32]
+                    if hypothesis.hypothesis_id != expected_id:
+                        raise ValueError("hypothesis identity does not match its evidence")
+                except (KeyError, TypeError, ValueError) as exc:
+                    raise QdasLedgerError("QDAS ledger contains an invalid evidence-linked hypothesis") from exc
         return record
 
     def _verify_unlocked(self) -> tuple[dict[str, Any], ...]:
@@ -213,11 +266,22 @@ class QdasEventLedger:
         self,
         event: ExecutionEvent,
         classification: FailureClassification | None,
+        hypotheses: tuple[FailureHypothesis, ...] | list[FailureHypothesis] | None = None,
     ) -> dict[str, Any]:
         if not isinstance(event, ExecutionEvent):
             raise TypeError("event must be an ExecutionEvent")
         if classification is not None and not isinstance(classification, FailureClassification):
             raise TypeError("classification must be a FailureClassification or None")
+        if hypotheses is not None and (
+            not isinstance(hypotheses, (tuple, list))
+            or len(hypotheses) > 8
+            or any(not isinstance(item, FailureHypothesis) for item in hypotheses)
+        ):
+            raise TypeError("hypotheses must be a bounded sequence of FailureHypothesis values")
+        if hypotheses is not None and any(item.event_id != event.event_id for item in hypotheses):
+            raise ValueError("hypothesis belongs to a different execution event")
+        if event.execution_status == "PASS" and hypotheses:
+            raise ValueError("successful events cannot carry failure hypotheses")
         if classification is not None and classification.event_id != event.event_id:
             raise ValueError("classification belongs to a different execution event")
         expected_classification = classify_failure(event)
@@ -247,6 +311,8 @@ class QdasEventLedger:
                 "event": event.to_dict(),
                 "classification": classification.to_dict() if classification else None,
             }
+            if hypotheses is not None:
+                payload["hypotheses"] = [item.to_dict() for item in hypotheses]
             record = {
                 **payload,
                 "record_digest": hashlib.sha256(_canonical(payload)).hexdigest(),
