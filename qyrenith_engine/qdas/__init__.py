@@ -1,5 +1,5 @@
 """Qyrenith Development Assurance System primitives."""
-from .collector import QdasCaptureResult, capture_process_event
+from .collector import QdasCaptureResult, capture_process_event, record_execution_report
 from .diagnosis import FailureHypothesis, FailureObservation, diagnose_failure
 from .repair import RepairPlan, create_repair_plan
 from .events import (
@@ -20,6 +20,7 @@ __all__ = [
     "FailureObservation",
     "RepairPlan",
     "capture_process_event",
+    "record_execution_report",
     "create_repair_plan",
     "diagnose_failure",
     "ExecutionEvent",
