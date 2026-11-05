@@ -376,6 +376,11 @@ def create_execution_event(
         raise ValueError("execution report stream byte counts must be integers")
     if stdout_bytes > _MAX_OUTPUT_BYTES or stderr_bytes > _MAX_OUTPUT_BYTES:
         raise ValueError("execution report stream byte counts exceed the event limit")
+    supplied_environment_digest = report.get("environment_digest")
+    if supplied_environment_digest is None:
+        environment_digest = environment_fingerprint(environment)
+    else:
+        environment_digest = _digest(supplied_environment_digest, "report.environment_digest")
     return ExecutionEvent(
         event_id=uuid.uuid4().hex,
         project_id=project_id,
@@ -391,7 +396,7 @@ def create_execution_event(
         tool_version=tool_version,
         argv=redact_argv(argv),
         working_directory=working_directory,
-        environment_digest=environment_fingerprint(environment),
+        environment_digest=environment_digest,
         started_at=started_text,
         finished_at=finished_text,
         duration_milliseconds=round(float(duration) * 1000),
