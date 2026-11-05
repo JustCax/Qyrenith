@@ -65,6 +65,34 @@ class QdasRepairPlanTests(unittest.TestCase):
         self.assertEqual(first.affected_paths, ("src/module.py", "tests/test_module.py"))
         self.assertEqual(len(first.to_json_bytes()), len(first.to_json_bytes()))
 
+    def test_revalidates_serialized_plan_identity_and_digest(self):
+        item = event()
+        plan = create_repair_plan(
+            item, hypothesis_for(item),
+            affected_paths=("src/module.py",),
+            intended_change="Restore the missing module.",
+            expected_invariants=("Existing tests remain unchanged.",),
+            risk="LOW",
+            validation_commands=(("python", "-m", "unittest"),),
+            rollback_strategy="Discard the isolated proposal workspace.",
+            created_at=START,
+        )
+        self.assertEqual(type(plan).from_document(plan.to_document()), plan)
+        altered = plan.to_document()
+        altered["intended_change"] = "Change an unrelated module."
+        with self.assertRaisesRegex(ValueError, "digest mismatch"):
+            type(plan).from_document(altered)
+        altered = plan.to_document()
+        altered["plan_id"] = "0" * 32
+        altered["plan_digest"] = __import__("hashlib").sha256(
+            __import__("json").dumps(
+                {key: value for key, value in altered.items() if key != "plan_digest"},
+                sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+            ).encode("utf-8")
+        ).hexdigest()
+        with self.assertRaisesRegex(ValueError, "identifier"):
+            type(plan).from_document(altered)
+
     def test_rejects_hypothesis_from_another_event(self):
         item = event()
         other = event("SyntaxError: invalid syntax")
