@@ -2668,7 +2668,7 @@ def generic_verify(root: Path, execute: bool=False, allow_missing_adapters: bool
             result["status"]="AVAILABLE" if not execute else "PENDING"
         if execute and adapter["available"]:
             started=time.monotonic()
-            event_kind = {"test": "TEST", "build-check": "BUILD", "static-analysis": "STATIC_ANALYSIS"}.get(adapter["kind"], "VERIFICATION")
+            event_kind = {"test": "TEST", "build": "BUILD", "build-check": "BUILD", "static": "STATIC_ANALYSIS", "static-analysis": "STATIC_ANALYSIS"}.get(adapter["kind"], "VERIFICATION")
             code,out=cmdrun(adapter["command"],root,timeout=300,qdas_event_kind=event_kind)
             result["exit_code"]=code
             result["duration_seconds"]=round(time.monotonic()-started,3)
