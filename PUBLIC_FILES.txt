@@ -171,6 +171,7 @@ tests/test_qdas_diagnosis.py
 tests/test_qdas_repair.py
 tests/test_qdas_ledger.py
 tests/test_qdas_lineage.py
+tests/test_qdas_self_verification.py
 tests/test_recovery_and_targets.py
 tests/test_release_contents.py
 tests/test_rust_domain.py
