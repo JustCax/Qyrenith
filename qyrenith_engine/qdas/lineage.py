@@ -111,14 +111,18 @@ class QdasEvidenceLineage:
             event_record = _event_record(event_ledger, event_id, _digest(payload["event_record_digest"], "event_record_digest"))
             hypothesis_id = _digest(payload["hypothesis_id"], "hypothesis_id", 32)
             hypotheses = event_record.get("hypotheses", [])
-            if not any(item.get("hypothesis_id") == hypothesis_id for item in hypotheses):
+            matched_hypothesis = next(
+                (item for item in hypotheses if item.get("hypothesis_id") == hypothesis_id),
+                None,
+            )
+            if matched_hypothesis is None:
                 raise ValueError("repair plan hypothesis is not present in the anchored event record")
             document = payload["plan_document"]
             plan = RepairPlan.from_document(document)
             if plan.event_id != event_id or plan.hypothesis_id != hypothesis_id:
                 raise ValueError("repair plan document is not bound to the source event and hypothesis")
-            if plan.failure_category != event_record["event"]["failure_category"] if "failure_category" in event_record["event"] else False:
-                raise ValueError("repair plan failure category does not match the source event")
+            if plan.failure_category != matched_hypothesis.get("failure_category"):
+                raise ValueError("repair plan failure category does not match its persisted hypothesis")
             supplied = _digest(payload["plan_digest"], "plan_digest")
             if plan.plan_digest != supplied:
                 raise ValueError("repair plan digest does not match its canonical document")
