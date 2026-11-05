@@ -504,7 +504,7 @@ class OwnerTrustStore:
             }
             document = {
                 **payload,
-                "hmac_sha256": hmac.new(self.key, _canonical(payload), hashlib.sha256).hexdigest(),
+                "hmac_sha256": hmac.new(self._key, _canonical(payload), hashlib.sha256).hexdigest(),
             }
             _atomic_write(self.path, _canonical(document) + b"\n")
             self._document = document
