@@ -221,8 +221,12 @@ class ExecutionEvent:
             raise ValueError("execution with incomplete or unsupported state must be BLOCKED")
         if self.execution_status == "PASS" and self.exit_code != 0:
             raise ValueError("PASS event must have a zero exit code")
-        if self.exit_code == 0 and self.execution_status == "FAIL":
-            raise ValueError("FAIL event cannot have a zero exit code")
+        if self.execution_status == "FAIL" and (
+            self.exit_code is None or self.exit_code == 0
+        ):
+            raise ValueError("FAIL event must have a non-zero exit code")
+        if self.execution_status == "ERROR" and self.exit_code is not None:
+            raise ValueError("ERROR event must not claim a process exit code")
 
     def to_dict(self) -> dict[str, Any]:
         return {
