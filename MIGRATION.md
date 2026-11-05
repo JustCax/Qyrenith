@@ -333,7 +333,7 @@ A local hash chain can detect accidental or partial tampering when its trusted t
 
 Before issuing grants, the function re-resolves every worker against the registry at the approval timestamp. It rejects a changed manifest or qualification, a qualification that is not current at approval, permissions not allowed by both policy and worker manifest, resource limits above either declared ceiling, and an authorization expiry later than any worker qualification expiry. Every grant is pinned to one transition, worker ID/version, manifest digest, qualification ID/digest, and qualification expiry. Authorization validity uses a half-open time interval: approved_at <= now < expires_at.
 
-Approval attribution (`approved_by`) is caller-supplied provenance, not authenticated identity or a cryptographic signature. The policy is a local decision input, not a secure account/role system. The authorization object does not persist itself, launch a worker, enforce operating-system permissions, isolate a process, or guarantee that a future executor will enforce the grant. It is a necessary policy artifact, not an execution capability. **Current trust limitation:** because the authorization digest is unkeyed and approver attribution is caller-supplied, a structurally valid record can be fabricated by its producer. `validate_migration_authorization` checks consistency and freshness; it does not prove that a human approved the action. Requirement MI-05 must add a trusted approval channel before this record can gate side effects. A future executor must re-check the exact grant, current time, measured worker bytes, workspace boundary, and runtime-enforced resource controls immediately before each side effect.
+Approval attribution (`approved_by`) is caller-supplied provenance, not authenticated identity or a cryptographic signature. The policy is a local decision input, not a secure account/role system. The authorization object does not persist itself, launch a worker, enforce operating-system permissions, isolate a process, or guarantee that a future executor will enforce the grant. It is a necessary policy artifact, not an execution capability. The opt-in `authorize_migration_with_owner_trust(...)` and `validate_migration_authorization_with_owner_trust(...)` wrappers additionally require exact catalog, worker-manifest, and worker-qualification digests to be trusted in the external owner trust store, and recheck revocation/expiry at validation time. The lower-level `authorize_migration(...)` remains a planning artifact API without this owner-store gate. **Current trust limitation:** even the owner-store wrappers do not authenticate the human approver; a structurally valid authorization record can still be fabricated by its producer. A trusted host approval channel and OS-enforced execution boundary are still required before any worker side effect. A future executor must re-check the exact grant, current time, measured worker bytes, workspace boundary, and runtime-enforced resource controls immediately before each side effect.
 
 A no-op route may receive an authorization record with zero worker grants; it authorizes no worker operation.
 
@@ -346,16 +346,19 @@ from datetime import datetime, timedelta, timezone
 
 from qyrenith_engine.migration import (
     MigrationAuthorizationPolicy,
+    OwnerTrustStore,
     WorkerPermission,
     WorkerResourceLimits,
-    authorize_migration,
-    validate_migration_authorization,
+    authorize_migration_with_owner_trust,
+    validate_migration_authorization_with_owner_trust,
     serialize_migration_authorization,
     serialize_migration_authorization_policy,
 )
 
-# `knowledge` is the exact current catalog reloaded from the owner-controlled trust store.
+# `knowledge` is the exact current catalog loaded by the caller. The owner store
+# separately records trust decisions for its exact content/worker digests.
 now = datetime.now(timezone.utc)
+trust_store = OwnerTrustStore.open()
 policy = MigrationAuthorizationPolicy(
     allowed_permissions=(
         WorkerPermission.READ_PROJECT,
@@ -369,11 +372,12 @@ policy = MigrationAuthorizationPolicy(
     allowed_worker_ids=("reviewed-porter",),
 )
 
-authorization = authorize_migration(
+authorization = authorize_migration_with_owner_trust(
     plan,
     assessment,
     registry,
     policy,
+    trust_store=trust_store,
     approved_by="operator-review-attribution",
     approved_at=now,
     expires_at=now + timedelta(minutes=2),
@@ -382,7 +386,7 @@ authorization = authorize_migration(
         WorkerPermission.WRITE_PROJECT,
     ),
     limits=WorkerResourceLimits(60, 1024 * 1024, 512 * 1024, 50),
-    knowledge=knowledge,  # Reload from the owner-controlled trust store before approval.
+    knowledge=knowledge,
 )
 
 # Persist both records in the caller's trusted audit store.
@@ -390,9 +394,10 @@ policy_bytes = serialize_migration_authorization_policy(policy)
 authorization_bytes = serialize_migration_authorization(authorization)
 
 # Revalidate immediately before a future controlled side effect.
-validate_migration_authorization(
+validate_migration_authorization_with_owner_trust(
     authorization, plan, assessment, registry, policy,
-    knowledge=knowledge,  # Reload again before the side effect.
+    trust_store=trust_store,
+    knowledge=knowledge,
     now=datetime.now(timezone.utc),
 )
 ```
