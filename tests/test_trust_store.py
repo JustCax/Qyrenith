@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 from datetime import datetime, timedelta, timezone
@@ -114,6 +115,21 @@ class OwnerTrustStoreTests(unittest.TestCase):
         self.path.unlink()
         with self.assertRaisesRegex(TrustStoreError, "must exist together"):
             OwnerTrustStore.open(self.path, create=True)
+
+    def test_approval_nonce_is_consumed_once_and_cannot_be_replayed(self):
+        store = OwnerTrustStore.open(self.path, create=True)
+        nonce_digest = "sha256:" + hashlib.sha256(b"one-time-nonce").hexdigest()
+        store.consume_nonce(
+            nonce_digest, reviewed_by="local-host",
+            reviewed_at=NOW, rationale="Consumed one-time host approval",
+        )
+        self.assertTrue(store.is_nonce_consumed(nonce_digest))
+        self.assertFalse(store.is_trusted("APPROVAL_NONCE", nonce_digest, now=NOW))
+        with self.assertRaisesRegex(TrustStoreError, "already been consumed"):
+            store.consume_nonce(
+                nonce_digest, reviewed_by="local-host",
+                reviewed_at=NOW + timedelta(seconds=1),
+            )
 
     def test_rejects_invalid_digest_and_unknown_subject_kind(self):
         store = OwnerTrustStore.open(self.path, create=True)
