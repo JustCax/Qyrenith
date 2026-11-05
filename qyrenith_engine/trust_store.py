@@ -457,7 +457,10 @@ class OwnerTrustStore:
         reviewed_at: datetime | None = None,
         expires_at: datetime | None = None,
         rationale: str,
+        expected_generation: int | None = None,
     ) -> TrustDecision:
+        if expected_generation is not None and (type(expected_generation) is not int or expected_generation < 0):
+            raise ValueError("expected_generation must be a non-negative integer")
         if subject_kind not in _KINDS:
             raise ValueError("unsupported trust subject kind")
         if not isinstance(subject_digest, str) or not _DIGEST.fullmatch(subject_digest):
@@ -472,6 +475,8 @@ class OwnerTrustStore:
         expiry_text = _timestamp(expires_at, "expires_at") if expires_at is not None else None
         with self._locked():
             current = self._reload_locked()
+            if expected_generation is not None and current["generation"] != expected_generation:
+                raise TrustStoreError("trust store changed after host approval was issued")
             if current["generation"] >= _MAX_EVENTS:
                 raise TrustStoreError("trust store reached its event limit")
             if subject_kind == "APPROVAL_NONCE" and any(
@@ -541,12 +546,13 @@ class OwnerTrustStore:
         reviewed_by: str,
         reviewed_at: datetime | None = None,
         rationale: str = "One-time host approval consumed",
+        expected_generation: int | None = None,
     ) -> TrustDecision:
         """Atomically record a single-use approval nonce; duplicate use fails closed."""
         return self.append_decision(
             "APPROVAL_NONCE", nonce_digest, "CONSUME",
             reviewed_by=reviewed_by, reviewed_at=reviewed_at,
-            rationale=rationale,
+            rationale=rationale, expected_generation=expected_generation,
         )
 
     def is_nonce_consumed(self, nonce_digest: str) -> bool:
