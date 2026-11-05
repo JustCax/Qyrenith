@@ -1,9 +1,12 @@
 import hashlib
 import importlib.util
+import io
+import json
 import os
 import tempfile
 import unittest
 from pathlib import Path
+from contextlib import redirect_stdout
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -126,6 +129,36 @@ class QdasCliLifecycleIntegrationTests(unittest.TestCase):
         records = self.ledger().verify()
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]["event"]["event_kind"], "VERIFICATION")
+
+    def test_qdas_cli_verifies_and_summarizes_persisted_history(self):
+        argv = ["python", "-m", "unittest"]
+        with patch.object(QYRENITH, "run_bounded_process", return_value=self.report(argv, exit_code=1, status="FAIL")):
+            QYRENITH.cmdrun(argv, self.root, qdas_event_kind="TEST")
+        output = io.StringIO()
+        args = type("Args", (), {"project": str(self.root), "extra": ["verify"], "limit": 12})()
+        with redirect_stdout(output):
+            result = QYRENITH.cmd_qdas(args)
+        document = json.loads(output.getvalue())
+        self.assertEqual(result, 0)
+        self.assertEqual(document["status"], "INTEGRITY_VERIFIED")
+        self.assertEqual(document["record_count"], 1)
+        self.assertEqual(document["hypothesis_count"], 1)
+        self.assertNotIn(str(self.root), output.getvalue())
+        self.assertIn("does not prove ledger completeness", document["integrity_scope"])
+
+    def test_qdas_cli_distinguishes_missing_history_from_verified_history(self):
+        args = type("Args", (), {"project": str(self.root), "extra": ["summary"], "limit": 12})()
+        output = io.StringIO()
+        with redirect_stdout(output):
+            summary_code = QYRENITH.cmd_qdas(args)
+        self.assertEqual(summary_code, 0)
+        self.assertEqual(json.loads(output.getvalue())["status"], "NOT_INITIALIZED")
+        args.extra = ["verify"]
+        output = io.StringIO()
+        with redirect_stdout(output):
+            verify_code = QYRENITH.cmd_qdas(args)
+        self.assertEqual(verify_code, 2)
+        self.assertEqual(json.loads(output.getvalue())["status"], "BLOCKED")
 
     def test_commands_without_qdas_opt_in_do_not_create_qdas_state(self):
         argv = ["git", "status", "--short"]
