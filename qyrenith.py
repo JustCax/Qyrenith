@@ -174,8 +174,16 @@ def require_qyrenith(root: Path) -> Path:
         if not p.resolve().is_relative_to(root.resolve()): die("PREFLIGHT_FAILURE",f"Qyrenith orchestrator escapes project root: {p}")
     except OSError as e: die("PREFLIGHT_FAILURE",f"Qyrenith orchestrator cannot be resolved: {e}")
     return p
-def cmdrun(cmd: Sequence[str], cwd: Path, timeout: Optional[int] = None) -> Tuple[int, str]:
-    """Run a controller command through the shared bounded process engine."""
+def cmdrun(
+    cmd: Sequence[str],
+    cwd: Path,
+    timeout: Optional[int] = None,
+    *,
+    qdas_event_kind: Optional[str] = None,
+) -> Tuple[int, str]:
+    """Run one bounded command and optionally ingest its existing report into QDAS."""
+    started_at = dt.datetime.now(dt.timezone.utc)
+    revision = source_fingerprint(cwd) if qdas_event_kind is not None else None
     report = run_bounded_process(
         cmd,
         cwd,
@@ -183,6 +191,34 @@ def cmdrun(cmd: Sequence[str], cwd: Path, timeout: Optional[int] = None) -> Tupl
         output_limit=COMMAND_STREAM_LIMIT,
         inherit_environment=True,
     )
+    if qdas_event_kind is not None:
+        try:
+            from qyrenith_engine.qdas import QdasEventLedger, record_execution_report
+
+            root_identity = str(cwd.resolve())
+            project_id = hashlib.sha256(("qyrenith-project:" + root_identity).encode("utf-8")).hexdigest()
+            workspace_id = hashlib.sha256(("qyrenith-workspace:" + root_identity).encode("utf-8")).hexdigest()
+            executable = Path(cmd[0]).name if cmd else "unknown"
+            record_execution_report(
+                report,
+                cwd,
+                QdasEventLedger(cwd / STATE_DIR / "qdas" / "events.jsonl"),
+                project_id=project_id,
+                project_revision=revision or "unknown",
+                workspace_id=workspace_id,
+                event_kind=qdas_event_kind,
+                tool_name=executable[:128] or "unknown",
+                tool_version="not-reported",
+                argv=cmd,
+                environment=os.environ,
+                started_at=started_at,
+            )
+        except Exception as exc:
+            die(
+                "PREFLIGHT_FAILURE",
+                "QDAS could not durably record the completed command; its result is not accepted: "
+                + type(exc).__name__,
+            )
     output = redact_text(report.get("output", ""))
     if report.get("status") == "ERROR":
         die("PREFLIGHT_FAILURE", f"Cannot execute {' '.join(cmd)}: {report.get('error', 'unknown error')}")
@@ -1882,7 +1918,7 @@ def build(root: Path,s: Dict[str,Any]):
         die("BUILD_FAILURE","No canonical build script is available. Build execution is delegated to the project's own toolchain; use `python qyrenith.py verify --project . --execute` for project-neutral verification.")
     _clear_sha256_cache()
     before=project_fingerprint(root); started=time.time(); prev=next((x for x in reversed(s.get("build_history",[])) if x.get("status")=="SUCCESS"),None)
-    code,out=cmdrun(build_command(script,root),root)
+    code,out=cmdrun(build_command(script,root),root,qdas_event_kind="BUILD")
     out=redact_text(out)
     after=project_fingerprint(root); _clear_sha256_cache(); atomic_write(root/STATE_DIR/LAST_BUILD,out)
     jar=jar_info(newest_jar(root),root,started); status,notes=evaluate_build(code,before,after,jar,prev,out)
@@ -2616,7 +2652,8 @@ def generic_verify(root: Path, execute: bool=False, allow_missing_adapters: bool
             result["status"]="AVAILABLE" if not execute else "PENDING"
         if execute and adapter["available"]:
             started=time.monotonic()
-            code,out=cmdrun(adapter["command"],root,timeout=300)
+            event_kind = {"test": "TEST", "build-check": "STATIC_ANALYSIS"}.get(adapter["kind"], "VERIFICATION")
+            code,out=cmdrun(adapter["command"],root,timeout=300,qdas_event_kind=event_kind)
             result["exit_code"]=code
             result["duration_seconds"]=round(time.monotonic()-started,3)
             result["output"]=redact_text(out[-12000:])
@@ -2838,7 +2875,7 @@ def run_full_tests(root: Path) -> int:
     if not test_file.is_file():
         print("No tests/test_qyrenith.py found; nothing to run.")
         return 0
-    code,out=cmdrun([sys.executable,"-m","unittest","discover","-s",str(root/"tests"),"-p","test_*.py","-v"],root)
+    code,out=cmdrun([sys.executable,"-m","unittest","discover","-s",str(root/"tests"),"-p","test_*.py","-v"],root,qdas_event_kind="TEST")
     print(out,end="")
     return code
 def cmd_benchmark(args):
@@ -3629,7 +3666,7 @@ def cmd_external_verify(args):
         if not argv:
             die("PREFLIGHT_FAILURE", "Empty --check-command is not allowed.")
         try:
-            code, output = cmdrun(argv, root, timeout=max(1, min(int(args.timeout), 3600)))
+            code, output = cmdrun(argv, root, timeout=max(1, min(int(args.timeout), 3600)), qdas_event_kind="VERIFICATION")
             limited = "TIMEOUT" in output or "OUTPUT_LIMIT_EXCEEDED" in output
             results.append({
                 "command": argv, "exit_code": code,
