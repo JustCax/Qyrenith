@@ -163,7 +163,7 @@ class QdasRepairPlanTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "successful event"):
             create_repair_plan(
                 passed,
-                diagnose_failure(passed, stdout="", stderr="")[0],
+                hypothesis_for(event()),
                 affected_paths=("src/module.py",),
                 intended_change="Fix something.",
                 expected_invariants=("Tests remain unchanged.",),
