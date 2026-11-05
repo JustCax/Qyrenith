@@ -41,7 +41,7 @@ The current branch contains typed migration identity and transitions, evidence-s
 - Approval MUST be collected by a trusted Qyrenith host interaction, not inferred from `approved_by`, a CLI `--yes` flag, agent instructions, repository files, or worker output.
 - The local host channel requires an interactive terminal (or a separately configured authenticated approval service). It displays the complete action scope and asks the operator to confirm a one-time challenge.
 - The resulting approval binds the exact plan digest, baseline snapshot digest, worker manifest and qualification digests, command digest, permissions, resource limits, target workspace, expiry, and a single-use nonce.
-- The host signs the canonical approval record with the owner-held local integrity key. Validation checks the signature, scope, expiry, current trust decisions, and replay ledger immediately before each side effect.
+- The host signs the canonical approval record with the owner-held local integrity key and binds the exact trust-store ID and generation observed during the prompt. Validation checks the signature, scope, expiry, unchanged trust-store generation, current trust decisions, and replay ledger immediately before each side effect.
 - A non-interactive process without an authenticated approval service remains propose-only. A caller-supplied reviewer string is attribution metadata only.
 - Local interactive approval proves control of the current host session, not a legal identity or protection from malicious code already running as the same OS user.
 
