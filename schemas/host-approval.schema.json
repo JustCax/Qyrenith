@@ -17,6 +17,8 @@
     "nonce",
     "approved_by",
     "host_principal",
+    "trust_store_id",
+    "trust_store_generation",
     "signature"
   ],
   "properties": {
@@ -72,6 +74,14 @@
     "signature": {
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"
+    },
+    "trust_store_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "trust_store_generation": {
+      "type": "integer",
+      "minimum": 0
     }
   }
 }
