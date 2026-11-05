@@ -119,16 +119,23 @@ trust_event = owner_trust["$defs"]["event"]
 require(trust_event.get("additionalProperties") is False,
         "owner trust events must reject unknown fields")
 require(set(trust_event["properties"]["subject_kind"].get("enum", [])) == {
-    "KNOWLEDGE_CATALOG", "WORKER_MANIFEST", "WORKER_QUALIFICATION", "EXECUTION_POLICY",
+    "KNOWLEDGE_CATALOG", "WORKER_MANIFEST", "WORKER_QUALIFICATION",
+    "EXECUTION_POLICY", "APPROVAL_NONCE",
 }, "owner trust subject vocabulary mismatch")
-require(set(trust_event["properties"]["decision"].get("enum", [])) == {"TRUST", "REVOKE"},
+require(set(trust_event["properties"]["decision"].get("enum", [])) == {"TRUST", "REVOKE", "CONSUME"},
         "owner trust decision vocabulary mismatch")
 require(trust_event["properties"]["subject_digest"].get("pattern") == "^sha256:[0-9a-f]{64}$",
         "owner trust decisions must bind exact SHA-256 digests")
-require(len(trust_event.get("allOf", [])) == 1,
-        "owner trust revocation expiry rule is missing")
-require(trust_event["allOf"][0].get("then", {}).get("properties", {}).get("expires_at", {}).get("type") == "null",
-        "owner trust revocations must not expire")
+require(len(trust_event.get("allOf", [])) == 4,
+        "owner trust revocation and nonce-consumption rules are incomplete")
+require(all(
+    rule.get("then", {}).get("properties", {}).get("expires_at", {}).get("type") == "null"
+    for rule in trust_event["allOf"][:2]
+), "owner trust revocations and nonce consumption must not expire")
+require(trust_event["allOf"][2].get("then", {}).get("properties", {}).get("decision", {}).get("const") == "CONSUME",
+        "approval nonce events must only record CONSUME")
+require(set(trust_event["allOf"][3].get("then", {}).get("properties", {}).get("decision", {}).get("enum", [])) == {"TRUST", "REVOKE"},
+        "non-nonce trust events must only record TRUST or REVOKE")
 
 adapter = schemas["adapter-manifest.schema.json"]
 alternatives = adapter.get("anyOf", [])
