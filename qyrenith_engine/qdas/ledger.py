@@ -54,8 +54,13 @@ class QdasEventLedger:
 
     @staticmethod
     def _check_ancestor_links(parent: Path) -> None:
-        """Reject symlink/reparse traversal in every existing parent component."""
-        for ancestor in reversed((parent, *parent.parents)):
+        """Reject symlinks in the ledger directory and its immediate workspace parent.
+
+        Higher system ancestors are intentionally excluded because platforms such as
+        macOS expose temporary roots through stable system symlinks (for example /tmp).
+        The CLI separately validates the project state directories before using them.
+        """
+        for ancestor in (parent, parent.parent):
             try:
                 info = ancestor.lstat()
             except FileNotFoundError:
