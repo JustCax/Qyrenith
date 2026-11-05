@@ -29,7 +29,7 @@ class QdasProcessCaptureTests(unittest.TestCase):
         )
 
     def test_successful_process_is_captured_and_recorded(self):
-        result = self.capture("print('qdas-ok')")
+        result = self.capture("print(bytes([113, 100, 97, 115, 45, 111, 107]).decode())")
         self.assertEqual(result.report["status"], "PASS")
         self.assertEqual(result.event.execution_status, "PASS")
         self.assertIsNone(result.classification)
