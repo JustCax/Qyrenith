@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qyrenith.dev/schemas/qdas-event-ledger-record.schema.json",
+  "title": "Qyrenith QDAS Event Ledger Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "sequence",
+    "previous_digest",
+    "event",
+    "classification",
+    "record_digest"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "previous_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "event": {
+      "$ref": "qdas-execution-event.schema.json"
+    },
+    "classification": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/classification"
+        }
+      ]
+    },
+    "record_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "$defs": {
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classification_id",
+        "event_id",
+        "category",
+        "classifier_id",
+        "classifier_version",
+        "rule_id",
+        "rationale",
+        "confidence",
+        "observed_exit_code"
+      ],
+      "properties": {
+        "classification_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        },
+        "category": {
+          "enum": [
+            "BUILD_FAILURE",
+            "TEST_FAILURE",
+            "STATIC_ANALYSIS_FAILURE",
+            "RUNTIME_FAILURE",
+            "INFRASTRUCTURE_FAILURE",
+            "TIMEOUT",
+            "RESOURCE_LIMIT",
+            "ANALYZER_FAILURE",
+            "UNSUPPORTED_STATE",
+            "UNKNOWN_FAILURE"
+          ]
+        },
+        "classifier_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "classifier_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "rule_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "confidence": {
+          "enum": [
+            "HIGH",
+            "MEDIUM",
+            "LOW"
+          ]
+        },
+        "observed_exit_code": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "event": {
+            "properties": {
+              "execution_status": {
+                "const": "PASS"
+              }
+            },
+            "required": [
+              "execution_status"
+            ]
+          }
+        },
+        "required": [
+          "event"
+        ]
+      },
+      "then": {
+        "properties": {
+          "classification": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "event": {
+            "properties": {
+              "execution_status": {
+                "enum": [
+                  "FAIL",
+                  "BLOCKED",
+                  "ERROR"
+                ]
+              }
+            },
+            "required": [
+              "execution_status"
+            ]
+          }
+        },
+        "required": [
+          "event"
+        ]
+      },
+      "then": {
+        "properties": {
+          "classification": {
+            "$ref": "#/$defs/classification"
+          }
+        }
+      }
+    }
+  ]
+}
