@@ -479,6 +479,11 @@ def classify_failure(event: ExecutionEvent) -> FailureClassification | None:
         )
         if event.event_kind == "STATIC_ANALYSIS":
             category, rule = "ANALYZER_FAILURE", "ANALYZER-EXEC-001"
+    elif event.execution_status == "BLOCKED":
+        category, rule, reason, confidence = (
+            "INFRASTRUCTURE_FAILURE", "EXEC-BLOCKED-001",
+            "Execution was blocked for a reason not represented by a more specific bounded-execution or unsupported-state flag.", "MEDIUM",
+        )
     elif event.event_kind == "BUILD":
         category, rule, reason, confidence = (
             "BUILD_FAILURE", "BUILD-EXIT-001",
@@ -498,11 +503,6 @@ def classify_failure(event: ExecutionEvent) -> FailureClassification | None:
         category, rule, reason, confidence = (
             "RUNTIME_FAILURE", "RUNTIME-EXIT-001",
             "The runtime command completed without a successful exit status.", "HIGH",
-        )
-    elif event.execution_status == "BLOCKED":
-        category, rule, reason, confidence = (
-            "INFRASTRUCTURE_FAILURE", "EXEC-BLOCKED-001",
-            "Execution was blocked for a reason not represented by a more specific bounded-execution flag.", "MEDIUM",
         )
     else:
         category, rule, reason, confidence = (
