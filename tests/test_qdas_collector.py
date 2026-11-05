@@ -63,9 +63,8 @@ class QdasProcessCaptureTests(unittest.TestCase):
         payload = {key: value for key, value in document.items() if key != "record_digest"}
         canonical = json.dumps(payload, ensure_ascii=True, sort_keys=True, separators=(",", ":")).encode("utf-8")
         document["record_digest"] = hashlib.sha256(canonical).hexdigest()
-        self.ledger.path.write_text(
-            json.dumps(document, ensure_ascii=True, sort_keys=True, separators=(",", ":")) + "\n",
-            encoding="utf-8",
+        self.ledger.path.write_bytes(
+            (json.dumps(document, ensure_ascii=True, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
         )
         with self.assertRaisesRegex(QdasLedgerError, "invalid evidence-linked hypothesis"):
             self.ledger.verify()
