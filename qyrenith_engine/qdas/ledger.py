@@ -179,8 +179,7 @@ class QdasEventLedger:
             raise QdasLedgerError("QDAS classification presence contradicts event status")
         return record
 
-    def verify(self) -> tuple[dict[str, Any], ...]:
-        self._check_parent(create=False)
+    def _verify_unlocked(self) -> tuple[dict[str, Any], ...]:
         if not self.path.exists():
             return ()
         info = self._check_path(self.path, directory=False)
@@ -204,6 +203,11 @@ class QdasEventLedger:
             records.append(record)
             previous = record["record_digest"]
         return tuple(records)
+
+    def verify(self) -> tuple[dict[str, Any], ...]:
+        self._check_parent(create=False)
+        with self._lock():
+            return self._verify_unlocked()
 
     def append(
         self,
@@ -230,7 +234,7 @@ class QdasEventLedger:
             raise ValueError("PASS events require no classification; failed events require one")
         self._check_parent(create=True)
         with self._lock():
-            existing = self.verify()
+            existing = self._verify_unlocked()
             if len(existing) >= _MAX_RECORDS:
                 raise QdasLedgerError("QDAS ledger reached its record limit")
             if any(item["event"]["event_id"] == event.event_id for item in existing):
@@ -264,7 +268,7 @@ class QdasEventLedger:
                     os.fsync(stream.fileno())
             except OSError as exc:
                 raise QdasLedgerError("cannot append QDAS ledger record") from exc
-            self.verify()
+            self._verify_unlocked()
             return record
 
 
