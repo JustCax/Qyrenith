@@ -185,6 +185,8 @@ class QdasEventLedger:
                 raise QdasLedgerError("QDAS hypotheses must be a bounded array")
             if event.execution_status == "PASS" and raw_hypotheses:
                 raise QdasLedgerError("passing events cannot carry failure hypotheses")
+            if event.execution_status != "PASS" and not raw_hypotheses:
+                raise QdasLedgerError("failed events with persisted diagnosis require at least one hypothesis")
             for raw in raw_hypotheses:
                 try:
                     if not isinstance(raw, dict):
@@ -215,6 +217,18 @@ class QdasEventLedger:
                         raise ValueError("hypothesis belongs to another event")
                     if classification is None or hypothesis.failure_category != classification.category:
                         raise ValueError("hypothesis category contradicts native classification")
+                    all_observations = hypothesis.supporting_evidence + hypothesis.contradicting_evidence
+                    for observation in all_observations:
+                        if observation.event_id != event.event_id:
+                            raise ValueError("observation belongs to another event")
+                        expected_observation_id = hashlib.sha256(_canonical({
+                            "event_id": observation.event_id,
+                            "stream": observation.stream,
+                            "line_number": observation.line_number,
+                            "line_digest": observation.line_digest,
+                        })).hexdigest()
+                        if observation.observation_id != expected_observation_id:
+                            raise ValueError("observation identity does not match its evidence")
                     observation_ids = sorted(item.observation_id for item in hypothesis.supporting_evidence)
                     if hypothesis.rule_id == "QDAS-ROOT-UNKNOWN-001":
                         expected_id = hashlib.sha256(
@@ -282,6 +296,8 @@ class QdasEventLedger:
             raise ValueError("hypothesis belongs to a different execution event")
         if event.execution_status == "PASS" and hypotheses:
             raise ValueError("successful events cannot carry failure hypotheses")
+        if event.execution_status != "PASS" and hypotheses is not None and not hypotheses:
+            raise ValueError("failed events with persisted diagnosis require at least one hypothesis")
         if classification is not None and classification.event_id != event.event_id:
             raise ValueError("classification belongs to a different execution event")
         expected_classification = classify_failure(event)
