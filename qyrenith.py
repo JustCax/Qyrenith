@@ -3805,7 +3805,7 @@ def cmd_qdas(args):
 
     result = {
         "schema": 1,
-        "status": "INTEGRITY_VERIFIED" if records else "EMPTY",
+        "status": "CHAIN_VERIFIED" if records else "EMPTY",
         "record_count": len(records),
         "status_counts": dict(sorted(status_counts.items())),
         "event_kind_counts": dict(sorted(kind_counts.items())),
