@@ -3774,6 +3774,8 @@ def cmd_qdas(args):
     reject_reparse_path(ledger_path, "QDAS ledger")
     reject_reparse_path(lineage_path, "QDAS lineage ledger")
     if not qdas_dir.is_dir() or not ledger_path.exists():
+        if lineage_path.exists():
+            die("PREFLIGHT_FAILURE", "QDAS evidence lineage exists without its primary execution ledger")
         result = {
             "schema": 1,
             "status": "NOT_INITIALIZED" if action == "summary" else "BLOCKED",
