@@ -140,7 +140,8 @@ class QdasEventLedger:
             "classification", "record_digest",
         }
         allowed_fields = fields | {"hypotheses"}
-        if not isinstance(record, dict) or set(record) not in {frozenset(fields), frozenset(allowed_fields)}:
+        record_fields = frozenset(record) if isinstance(record, dict) else frozenset()
+        if not isinstance(record, dict) or record_fields not in {frozenset(fields), frozenset(allowed_fields)}:
             raise QdasLedgerError("QDAS ledger record has missing or unexpected fields")
         if type(record["schema"]) is not int or record["schema"] != 1:
             raise QdasLedgerError("unsupported QDAS ledger schema")
