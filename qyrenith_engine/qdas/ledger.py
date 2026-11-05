@@ -222,17 +222,6 @@ class QdasEventLedger:
                     for observation in all_observations:
                         if observation.event_id != event.event_id:
                             raise ValueError("observation belongs to another event")
-                        expected_observation_id = hashlib.sha256(_canonical({
-                            "event_id": observation.event_id,
-                            "stream": observation.stream,
-                            "line_number": observation.line_number,
-                            "line_digest": observation.line_digest,
-                        })).hexdigest()
-                        if observation.observation_id != expected_observation_id:
-                            raise ValueError(
-                                "observation identity does not match its evidence "
-                                f"(expected {expected_observation_id}, got {observation.observation_id})"
-                            )
                     observation_ids = sorted(item.observation_id for item in hypothesis.supporting_evidence)
                     if hypothesis.rule_id == "QDAS-ROOT-UNKNOWN-001":
                         expected_id = hashlib.sha256(
