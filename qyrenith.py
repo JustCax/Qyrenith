@@ -3839,8 +3839,8 @@ def cmd_qdas(args):
         "lineage_kind_counts": dict(sorted(lineage_kind_counts.items())),
         "latest_lineage_record_digest": lineage_records[-1]["record_digest"] if lineage_records else None,
         "integrity_scope": (
-            "Internal hash-chain, event, classification, and persisted-hypothesis consistency only. "
-            "This does not prove ledger completeness or provide an independent trust anchor."
+            "Internal hash-chain, event, classification, persisted-hypothesis, and repair-lineage consistency only. "
+            "This does not prove ledger completeness or provide an independent trust anchor; human review records are unauthenticated assertions."
         ),
         "recent_events": recent_events,
     }
