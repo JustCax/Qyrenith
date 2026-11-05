@@ -8,6 +8,7 @@ from datetime import datetime, timezone, timedelta
 from enum import Enum
 import hashlib
 import json
+import re
 from typing import Any
 
 from .knowledge import KnowledgeCatalog, strict_object_pairs
