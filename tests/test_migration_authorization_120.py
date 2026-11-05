@@ -1,8 +1,11 @@
 """Security-boundary tests for plan-bound migration authorization."""
 import hashlib
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import tempfile
+
+from qyrenith_engine.trust_store import OwnerTrustStore, TrustStoreError
 
 from qyrenith_engine.migration import (
     MigrationAuthorizationPolicy,
@@ -26,11 +29,13 @@ from qyrenith_engine.migration import (
     WorkerTrustPolicy,
     assess_route_workers,
     authorize_migration,
+    authorize_migration_with_owner_trust,
     deserialize_migration_authorization,
     serialize_migration_authorization,
     deserialize_migration_authorization_policy,
     serialize_migration_authorization_policy,
     validate_migration_authorization,
+    validate_migration_authorization_with_owner_trust,
     plan_route,
 )
 
@@ -137,6 +142,32 @@ def fixture(knowledge_valid_until="2026-12-01T00:00:00Z"):
     return plan, assessment, registry, policy, limits
 
 
+def owner_trust_store(plan, registry, catalog, *, now=NOW, expires_at=None, trust_workers=True):
+    temporary = tempfile.TemporaryDirectory()
+    store = OwnerTrustStore.open(Path(temporary.name) / "owner" / "trust-store.json", create=True)
+    store._test_temporary_directory = temporary
+    store.trust(
+        "KNOWLEDGE_CATALOG", "sha256:" + catalog.content_digest,
+        reviewed_by="test-owner", reviewed_at=now, expires_at=expires_at,
+        rationale="Explicit test fixture owner decision",
+    )
+    if trust_workers:
+        for registration in registry.registrations():
+            store.trust(
+                "WORKER_MANIFEST", "sha256:" + registration.manifest.manifest_digest,
+                reviewed_by="test-owner", reviewed_at=now, expires_at=expires_at,
+                rationale="Explicit test fixture worker manifest decision",
+            )
+            if registration.qualification is not None:
+                store.trust(
+                    "WORKER_QUALIFICATION",
+                    "sha256:" + registration.qualification.qualification_digest,
+                    reviewed_by="test-owner", reviewed_at=now, expires_at=expires_at,
+                    rationale="Explicit test fixture worker qualification decision",
+                )
+    return store
+
+
 def authorize(*, approved_at=NOW, expires_at=datetime(2026, 11, 4, 18, 10, tzinfo=timezone.utc),
               permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
               limits=None):
@@ -150,6 +181,91 @@ def authorize(*, approved_at=NOW, expires_at=datetime(2026, 11, 4, 18, 10, tzinf
         limits=limits or default_limits,
         knowledge=knowledge_catalog(),
     )
+
+
+class TestOwnerTrustAuthorization(unittest.TestCase):
+    def test_owner_store_allows_only_exact_catalog_manifest_and_qualification(self):
+        plan, assessment, registry, policy, limits = fixture()
+        catalog = knowledge_catalog()
+        store = owner_trust_store(plan, registry, catalog)
+        authorization = authorize_migration_with_owner_trust(
+            plan, assessment, registry, policy,
+            trust_store=store,
+            approved_by="test-reviewer", approved_at=NOW,
+            expires_at=NOW + timedelta(minutes=10),
+            permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
+            limits=limits, knowledge=catalog,
+        )
+        self.assertEqual(authorization.route_plan_digest, plan.plan_digest)
+
+    def test_missing_worker_manifest_trust_blocks_authorization(self):
+        plan, assessment, registry, policy, limits = fixture()
+        catalog = knowledge_catalog()
+        store = owner_trust_store(plan, registry, catalog, trust_workers=False)
+        with self.assertRaisesRegex(TrustStoreError, "WORKER_MANIFEST"):
+            authorize_migration_with_owner_trust(
+                plan, assessment, registry, policy,
+                trust_store=store, approved_by="test-reviewer", approved_at=NOW,
+                expires_at=NOW + timedelta(minutes=10),
+                permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
+                limits=limits, knowledge=catalog,
+            )
+
+    def test_revoked_worker_qualification_blocks_authorization(self):
+        plan, assessment, registry, policy, limits = fixture()
+        catalog = knowledge_catalog()
+        store = owner_trust_store(plan, registry, catalog)
+        qualification = registry.registrations()[0].qualification
+        store.revoke(
+            "WORKER_QUALIFICATION", "sha256:" + qualification.qualification_digest,
+            reviewed_by="test-owner", reviewed_at=NOW + timedelta(seconds=1),
+            rationale="Adversarial revocation fixture",
+        )
+        with self.assertRaisesRegex(TrustStoreError, "WORKER_QUALIFICATION"):
+            authorize_migration_with_owner_trust(
+                plan, assessment, registry, policy,
+                trust_store=store, approved_by="test-reviewer", approved_at=NOW + timedelta(seconds=2),
+                expires_at=NOW + timedelta(minutes=10),
+                permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
+                limits=limits, knowledge=catalog,
+            )
+
+    def test_expired_owner_trust_blocks_authorization(self):
+        plan, assessment, registry, policy, limits = fixture()
+        catalog = knowledge_catalog()
+        expiry = NOW + timedelta(seconds=1)
+        store = owner_trust_store(plan, registry, catalog, expires_at=expiry)
+        with self.assertRaisesRegex(TrustStoreError, "not currently trusted"):
+            authorize_migration_with_owner_trust(
+                plan, assessment, registry, policy,
+                trust_store=store, approved_by="test-reviewer", approved_at=NOW + timedelta(seconds=2),
+                expires_at=NOW + timedelta(minutes=10),
+                permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
+                limits=limits, knowledge=catalog,
+            )
+
+    def test_validation_rechecks_owner_trust_and_honors_revocation(self):
+        plan, assessment, registry, policy, limits = fixture()
+        catalog = knowledge_catalog()
+        store = owner_trust_store(plan, registry, catalog)
+        authorization = authorize_migration_with_owner_trust(
+            plan, assessment, registry, policy,
+            trust_store=store, approved_by="test-reviewer", approved_at=NOW,
+            expires_at=NOW + timedelta(minutes=10),
+            permissions=(WorkerPermission.READ_PROJECT, WorkerPermission.WRITE_PROJECT),
+            limits=limits, knowledge=catalog,
+        )
+        qualification = registry.registrations()[0].qualification
+        store.revoke(
+            "WORKER_QUALIFICATION", "sha256:" + qualification.qualification_digest,
+            reviewed_by="test-owner", reviewed_at=NOW + timedelta(seconds=1),
+            rationale="Revoke after authorization",
+        )
+        with self.assertRaisesRegex(TrustStoreError, "WORKER_QUALIFICATION"):
+            validate_migration_authorization_with_owner_trust(
+                authorization, plan, assessment, registry, policy,
+                trust_store=store, knowledge=catalog, now=NOW + timedelta(seconds=2),
+            )
 
 
 class TestMigrationAuthorization(unittest.TestCase):
