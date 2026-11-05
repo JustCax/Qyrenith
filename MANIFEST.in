@@ -100,6 +100,7 @@ include qyrenith_engine/trust_cli.py
 include qyrenith_engine/migration/__init__.py
 include qyrenith_engine/qdas/__init__.py
 include qyrenith_engine/qdas/events.py
+include qyrenith_engine/qdas/collector.py
 include qyrenith_engine/qdas/ledger.py
 include qyrenith_engine/migration/assurance.py
 include qyrenith_engine/migration/authorization.py
@@ -159,6 +160,7 @@ include tests/test_performance.py
 include tests/test_python_unittest_adapter.py
 include tests/test_qyrenith.py
 include tests/test_qdas_events.py
+include tests/test_qdas_collector.py
 include tests/test_qdas_ledger.py
 include tests/test_recovery_and_targets.py
 include tests/test_release_contents.py
