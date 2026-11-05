@@ -307,6 +307,16 @@ class QdasEvidenceLineageTests(unittest.TestCase):
                 "scope_digest": hashlib.sha256(b"scope").hexdigest(),
             })
 
+    def test_rejects_symlinked_lineage_parent(self):
+        alias = Path(self.temporary.name) / "lineage-alias"
+        try:
+            alias.symlink_to(self.lineage.path.parent, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            self.skipTest("directory symbolic links are unavailable")
+        redirected = QdasEvidenceLineage(alias / "lineage.jsonl", self.events)
+        with self.assertRaisesRegex(QdasLineageError, "parent path is unsafe"):
+            redirected.append("REPAIR_PLAN", {})
+
     def test_rejects_tampered_lineage_record(self):
         self._record_plan()
         raw = json.loads(self.lineage.path.read_text(encoding="utf-8"))
