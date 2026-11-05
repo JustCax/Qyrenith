@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qyrenith.dev/schemas/owner-trust-store.schema.json",
+  "title": "Qyrenith Owner Trust Store",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "store_id",
+    "generation",
+    "events",
+    "hmac_sha256"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "store_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "events": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "$ref": "#/$defs/event"
+      }
+    },
+    "hmac_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "$defs": {
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence",
+        "event_id",
+        "subject_kind",
+        "subject_digest",
+        "decision",
+        "reviewed_by",
+        "reviewed_at",
+        "expires_at",
+        "rationale"
+      ],
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        },
+        "subject_kind": {
+          "enum": [
+            "KNOWLEDGE_CATALOG",
+            "WORKER_MANIFEST",
+            "WORKER_QUALIFICATION",
+            "EXECUTION_POLICY"
+          ]
+        },
+        "subject_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "decision": {
+          "enum": [
+            "TRUST",
+            "REVOKE"
+          ]
+        },
+        "reviewed_by": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "reviewed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "decision": {
+                "const": "REVOKE"
+              }
+            },
+            "required": [
+              "decision"
+            ]
+          },
+          "then": {
+            "properties": {
+              "expires_at": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
