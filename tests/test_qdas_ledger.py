@@ -117,6 +117,18 @@ class QdasEventLedgerTests(unittest.TestCase):
         with self.assertRaisesRegex(QdasLedgerError, "symbolic links"):
             QdasEventLedger(alias).verify()
 
+    def test_rejects_symlinked_ancestor_directory(self):
+        target = Path(self.temporary.name) / "real-parent"
+        target.mkdir()
+        alias = Path(self.temporary.name) / "alias-parent"
+        try:
+            alias.symlink_to(target, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            self.skipTest("directory symbolic links are unavailable")
+        redirected = QdasEventLedger(alias / "nested" / "events.jsonl")
+        with self.assertRaisesRegex(QdasLedgerError, "ancestor paths"):
+            redirected.append(event(), classify_failure(event()))
+
     def test_empty_uncreated_ledger_is_not_a_valid_state_when_parent_missing(self):
         missing = QdasEventLedger(Path(self.temporary.name) / "missing" / "events.jsonl")
         with self.assertRaisesRegex(QdasLedgerError, "does not exist"):
