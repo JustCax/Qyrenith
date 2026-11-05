@@ -322,6 +322,8 @@ class QdasEvidenceLineage:
         # Share the primary ledger's cross-platform lock implementation.
         with QdasEventLedger(self.path)._lock():
             records = list(self._verify_unlocked())
+            if len(records) >= _MAX_RECORDS:
+                raise QdasLineageError("QDAS lineage ledger reached its record limit")
             self._validate_payload(kind, payload, records, self.event_ledger)
             previous = records[-1]["record_digest"] if records else _GENESIS
             record = {
