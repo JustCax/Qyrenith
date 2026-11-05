@@ -11,7 +11,7 @@ import tempfile
 import time
 from typing import Any
 
-from .events import ExecutionEvent, FailureClassification, _canonical, _unique_pairs
+from .events import ExecutionEvent, FailureClassification, _canonical, _unique_pairs, classify_failure
 
 _GENESIS = "0" * 64
 _MAX_RECORDS = 100_000
@@ -165,6 +165,16 @@ class QdasEventLedger:
             raise QdasLedgerError("QDAS ledger event or classification is invalid") from exc
         if classification is not None and classification.event_id != event.event_id:
             raise QdasLedgerError("QDAS classification belongs to another event")
+        expected_classification = classify_failure(event)
+        if (expected_classification is None) != (classification is None):
+            raise QdasLedgerError("QDAS classification presence contradicts the native classifier")
+        if classification is not None and expected_classification is not None:
+            expected_fields = expected_classification.to_dict()
+            actual_fields = classification.to_dict()
+            expected_fields.pop("classification_id")
+            actual_fields.pop("classification_id")
+            if expected_fields != actual_fields:
+                raise QdasLedgerError("QDAS classification does not match the native classifier")
         if (event.execution_status == "PASS") != (classification is None):
             raise QdasLedgerError("QDAS classification presence contradicts event status")
         return record
@@ -206,6 +216,16 @@ class QdasEventLedger:
             raise TypeError("classification must be a FailureClassification or None")
         if classification is not None and classification.event_id != event.event_id:
             raise ValueError("classification belongs to a different execution event")
+        expected_classification = classify_failure(event)
+        if (expected_classification is None) != (classification is None):
+            raise ValueError("classification presence contradicts the native classifier")
+        if classification is not None and expected_classification is not None:
+            expected_fields = expected_classification.to_dict()
+            actual_fields = classification.to_dict()
+            expected_fields.pop("classification_id")
+            actual_fields.pop("classification_id")
+            if expected_fields != actual_fields:
+                raise ValueError("classification does not match the native Qyrenith classifier")
         if (event.execution_status == "PASS") != (classification is None):
             raise ValueError("PASS events require no classification; failed events require one")
         self._check_parent(create=True)
