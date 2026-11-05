@@ -162,11 +162,12 @@ class QdasExecutionEventTests(unittest.TestCase):
                 b'{"schema":1,"schema":1}'
             )
 
-    def test_rejects_pass_with_timeout_or_nonzero_exit(self):
-        with self.assertRaisesRegex(ValueError, "contradicts"):
+    def test_prevents_false_pass_from_exit_code_or_timeout_flags(self):
+        with self.assertRaisesRegex(ValueError, "PASS must have exit_code zero"):
             make_event(status="PASS", exit_code=1)
-        with self.assertRaisesRegex(ValueError, "cannot be marked PASS"):
-            make_event(status="PASS", exit_code=0, timed_out=True)
+        timed_out = make_event(status="PASS", exit_code=0, timed_out=True)
+        self.assertEqual(timed_out.execution_status, "BLOCKED")
+        self.assertEqual(classify_failure(timed_out).category, "TIMEOUT")
 
     def test_rejects_unsupported_status_and_invalid_duration(self):
         with self.assertRaisesRegex(ValueError, "unsupported status"):
