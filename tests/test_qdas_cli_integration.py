@@ -156,6 +156,16 @@ class QdasCliLifecycleIntegrationTests(unittest.TestCase):
         self.assertEqual(result, 0)
         self.assertEqual(json.loads(output.getvalue())["status"], "NOT_INITIALIZED")
 
+    def test_qdas_cli_rejects_lineage_without_primary_event_ledger(self):
+        qdas_dir = self.root / ".qyrenith" / "qdas"
+        qdas_dir.mkdir(parents=True)
+        (qdas_dir / "lineage.jsonl").write_text('{"orphan":true}\\n', encoding="utf-8")
+        args = type("Args", (), {
+            "project": str(self.root), "extra": ["summary"], "limit": 12,
+        })()
+        with self.assertRaises(QYRENITH.QyrenithError):
+            QYRENITH.cmd_qdas(args)
+
     def test_qdas_cli_distinguishes_missing_history_from_verified_history(self):
         args = type("Args", (), {"project": str(self.root), "extra": ["summary"], "limit": 12})()
         output = io.StringIO()
