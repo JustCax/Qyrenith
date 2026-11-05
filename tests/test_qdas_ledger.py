@@ -126,8 +126,9 @@ class QdasEventLedgerTests(unittest.TestCase):
         except (OSError, NotImplementedError):
             self.skipTest("directory symbolic links are unavailable")
         redirected = QdasEventLedger(alias / "nested" / "events.jsonl")
+        item = event()
         with self.assertRaisesRegex(QdasLedgerError, "ancestor paths"):
-            redirected.append(event(), classify_failure(event()))
+            redirected.append(item, classify_failure(item))
 
     def test_empty_uncreated_ledger_is_not_a_valid_state_when_parent_missing(self):
         missing = QdasEventLedger(Path(self.temporary.name) / "missing" / "events.jsonl")
