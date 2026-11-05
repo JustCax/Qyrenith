@@ -219,14 +219,31 @@ class QdasEvidenceLineage:
 
     def verify(self) -> tuple[dict[str, Any], ...]:
         self._check(create=False)
+        with QdasEventLedger(self.path)._lock():
+            return self._verify_unlocked()
+
+    def _verify_unlocked(self) -> tuple[dict[str, Any], ...]:
+        self._check(create=False)
         if not self.path.exists():
             return ()
         try:
+            info = self.path.lstat()
+            attributes = getattr(info, "st_file_attributes", 0)
+            if (
+                stat.S_ISLNK(info.st_mode)
+                or attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+                or not stat.S_ISREG(info.st_mode)
+            ):
+                raise QdasLineageError("QDAS lineage ledger changed to an unsafe file type")
+            if info.st_size > _MAX_BYTES:
+                raise QdasLineageError("QDAS lineage ledger exceeds the 16 MiB limit")
             raw = self.path.read_bytes()
+        except QdasLineageError:
+            raise
         except OSError as exc:
             raise QdasLineageError("cannot read QDAS lineage ledger") from exc
-        if len(raw) > _MAX_BYTES or (raw and not raw.endswith(b"\n")):
-            raise QdasLineageError("QDAS lineage ledger exceeds limits or has an incomplete record")
+        if raw and not raw.endswith(b"\n"):
+            raise QdasLineageError("QDAS lineage ledger has an incomplete trailing record")
         records: list[dict[str, Any]] = []
         previous = _GENESIS
         for sequence, line in enumerate(raw.splitlines(keepends=True), 1):
@@ -254,71 +271,38 @@ class QdasEvidenceLineage:
         if kind not in _KINDS or not isinstance(payload, dict):
             raise ValueError("unsupported QDAS evidence kind or payload")
         self._check(create=True)
-        # Validate and append under an exclusive OS file lock to serialize writers.
-        lock_path = self.path.with_name(self.path.name + ".lock")
-        if lock_path.exists() or lock_path.is_symlink():
-            lock_info = lock_path.lstat()
-            lock_attributes = getattr(lock_info, "st_file_attributes", 0)
-            if stat.S_ISLNK(lock_info.st_mode) or lock_attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400):
-                raise QdasLineageError("QDAS lineage lock must not be a symbolic link or reparse point")
-            if not stat.S_ISREG(lock_info.st_mode):
-                raise QdasLineageError("QDAS lineage lock must be a regular file")
-        flags = os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
-        try:
-            descriptor = os.open(lock_path, flags, 0o600)
-        except OSError as exc:
-            raise QdasLineageError("cannot open QDAS lineage lock") from exc
-        lock_info = os.fstat(descriptor)
-        if not stat.S_ISREG(lock_info.st_mode):
-            os.close(descriptor)
-            raise QdasLineageError("QDAS lineage lock must be a regular file")
-        if os.name != "nt":
-            os.fchmod(descriptor, 0o600)
-        with os.fdopen(descriptor, "r+b") as lock:
-            if os.name == "nt":
-                import msvcrt
-                lock.seek(0, os.SEEK_END)
-                if lock.tell() == 0:
-                    lock.write(b"\0")
-                    lock.flush()
-                lock.seek(0)
-                msvcrt.locking(lock.fileno(), msvcrt.LK_LOCK, 1)
-            else:
-                import fcntl
-                fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-            try:
-                records = list(self.verify()) if self.path.exists() else []
-                self._validate_payload(kind, payload, records, self.event_ledger)
-                previous = records[-1]["record_digest"] if records else _GENESIS
-                record = {
-                    "schema": 1,
-                    "sequence": len(records) + 1,
-                    "previous_digest": previous,
-                    "kind": kind,
-                    "payload": payload,
-                }
-                record["record_digest"] = hashlib.sha256(_canonical(record)).hexdigest()
-                line = _canonical(record) + b"\n"
-                current = self.path.stat().st_size if self.path.exists() else 0
-                if current + len(line) > _MAX_BYTES or len(line) > 128 * 1024:
-                    raise QdasLineageError("QDAS lineage ledger size limit exceeded")
-                append_flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
-                out_fd = os.open(self.path, append_flags, 0o600)
-                if os.name != "nt":
-                    os.fchmod(out_fd, 0o600)
-                with os.fdopen(out_fd, "ab") as stream:
-                    stream.write(line)
-                    stream.flush()
-                    os.fsync(stream.fileno())
-                return record
-            finally:
-                if os.name == "nt":
-                    import msvcrt
-                    lock.seek(0)
-                    msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)
-                else:
-                    import fcntl
-                    fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+        # Share the primary ledger's cross-platform lock implementation.
+        with QdasEventLedger(self.path)._lock():
+            records = list(self._verify_unlocked())
+            self._validate_payload(kind, payload, records, self.event_ledger)
+            previous = records[-1]["record_digest"] if records else _GENESIS
+            record = {
+                "schema": 1,
+                "sequence": len(records) + 1,
+                "previous_digest": previous,
+                "kind": kind,
+                "payload": payload,
+            }
+            record["record_digest"] = hashlib.sha256(_canonical(record)).hexdigest()
+            line = _canonical(record) + b"\n"
+            current = self.path.stat().st_size if self.path.exists() else 0
+            if current + len(line) > _MAX_BYTES or len(line) > 128 * 1024:
+                raise QdasLineageError("QDAS lineage ledger size limit exceeded")
+            append_flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
+            out_fd = os.open(self.path, append_flags, 0o600)
+            out_info = os.fstat(out_fd)
+            if not stat.S_ISREG(out_info.st_mode):
+                os.close(out_fd)
+                raise QdasLineageError("QDAS lineage ledger must be a regular file")
+            if os.name != "nt":
+                os.fchmod(out_fd, 0o600)
+            with os.fdopen(out_fd, "ab") as stream:
+                written = stream.write(line)
+                if written != len(line):
+                    raise QdasLineageError("QDAS lineage append was incomplete")
+                stream.flush()
+                os.fsync(stream.fileno())
+            return record
 
 
 __all__ = ["QdasEvidenceLineage", "QdasLineageError"]
