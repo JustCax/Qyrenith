@@ -174,6 +174,38 @@ def require_qyrenith(root: Path) -> Path:
         if not p.resolve().is_relative_to(root.resolve()): die("PREFLIGHT_FAILURE",f"Qyrenith orchestrator escapes project root: {p}")
     except OSError as e: die("PREFLIGHT_FAILURE",f"Qyrenith orchestrator cannot be resolved: {e}")
     return p
+def record_qdas_process_report(
+    report: Dict[str, Any],
+    cwd: Path,
+    cmd: Sequence[str],
+    event_kind: str,
+    started_at: dt.datetime,
+    project_revision: Optional[str] = None,
+):
+    """Persist an already executed bounded-process report without re-running it."""
+    from qyrenith_engine.qdas import QdasEventLedger, record_execution_report
+
+    ensure_state_dir(cwd)
+    root_identity = str(cwd.resolve())
+    project_id = hashlib.sha256(("qyrenith-project:" + root_identity).encode("utf-8")).hexdigest()
+    workspace_id = hashlib.sha256(("qyrenith-workspace:" + root_identity).encode("utf-8")).hexdigest()
+    executable = Path(cmd[0]).name if cmd else "unknown"
+    return record_execution_report(
+        report,
+        cwd,
+        QdasEventLedger(cwd / STATE_DIR / "qdas" / "events.jsonl"),
+        project_id=project_id,
+        project_revision=project_revision or source_fingerprint(cwd),
+        workspace_id=workspace_id,
+        event_kind=event_kind,
+        tool_name=executable[:128] or "unknown",
+        tool_version="not-reported",
+        argv=cmd,
+        environment=os.environ,
+        started_at=started_at,
+    )
+
+
 def cmdrun(
     cmd: Sequence[str],
     cwd: Path,
@@ -193,27 +225,7 @@ def cmdrun(
     )
     if qdas_event_kind is not None:
         try:
-            from qyrenith_engine.qdas import QdasEventLedger, record_execution_report
-
-            ensure_state_dir(cwd)
-            root_identity = str(cwd.resolve())
-            project_id = hashlib.sha256(("qyrenith-project:" + root_identity).encode("utf-8")).hexdigest()
-            workspace_id = hashlib.sha256(("qyrenith-workspace:" + root_identity).encode("utf-8")).hexdigest()
-            executable = Path(cmd[0]).name if cmd else "unknown"
-            record_execution_report(
-                report,
-                cwd,
-                QdasEventLedger(cwd / STATE_DIR / "qdas" / "events.jsonl"),
-                project_id=project_id,
-                project_revision=revision or "unknown",
-                workspace_id=workspace_id,
-                event_kind=qdas_event_kind,
-                tool_name=executable[:128] or "unknown",
-                tool_version="not-reported",
-                argv=cmd,
-                environment=os.environ,
-                started_at=started_at,
-            )
+            record_qdas_process_report(report, cwd, cmd, qdas_event_kind, started_at, revision)
         except Exception as exc:
             die(
                 "PREFLIGHT_FAILURE",
@@ -3667,7 +3679,7 @@ def cmd_external_verify(args):
         if not argv:
             die("PREFLIGHT_FAILURE", "Empty --check-command is not allowed.")
         try:
-            code, output = cmdrun(argv, root, timeout=max(1, min(int(args.timeout), 3600)), qdas_event_kind="VERIFICATION")
+            code, output = cmdrun(argv, root, timeout=max(1, min(int(args.timeout), 3600)))
             limited = "TIMEOUT" in output or "OUTPUT_LIMIT_EXCEEDED" in output
             results.append({
                 "command": argv, "exit_code": code,
@@ -3735,10 +3747,21 @@ def cmd_bounded_check(args):
         die("PREFLIGHT_FAILURE", f"Invalid command quoting: {exc}")
     if os.name == "nt":
         argv = [token[1:-1] if len(token) >= 2 and token[0] == token[-1] and token[0] in "\\\"'" else token for token in argv]
+    root = root_path(args.project)
+    started_at = dt.datetime.now(dt.timezone.utc)
+    revision = source_fingerprint(root)
     try:
-        result = run_bounded_process(argv, root_path(args.project), timeout=args.timeout, output_limit=args.output_limit)
+        result = run_bounded_process(argv, root, timeout=args.timeout, output_limit=args.output_limit)
     except (OSError, ValueError) as exc:
         die("PREFLIGHT_FAILURE", f"bounded execution could not start: {exc}")
+    try:
+        record_qdas_process_report(result, root, argv, "VERIFICATION", started_at, revision)
+    except Exception as exc:
+        die(
+            "PREFLIGHT_FAILURE",
+            "QDAS could not durably record the completed command; its result is not accepted: "
+            + type(exc).__name__,
+        )
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result["status"] == "PASS" else (2 if result["status"] == "BLOCKED" else 1)
 
