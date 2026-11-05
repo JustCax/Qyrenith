@@ -98,6 +98,19 @@ class QdasCliLifecycleIntegrationTests(unittest.TestCase):
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]["event"]["event_kind"], "STATIC_ANALYSIS")
 
+    def test_full_unittest_lifecycle_is_captured_for_self_verification(self):
+        tests = self.root / "tests"
+        tests.mkdir()
+        (tests / "test_qyrenith.py").write_text("import unittest\\n", encoding="utf-8")
+        process_report = self.report(["python", "-m", "unittest", "discover"])
+        with patch.object(QYRENITH, "run_bounded_process", return_value=process_report) as runner:
+            result = QYRENITH.run_full_tests(self.root)
+        self.assertEqual(result, 0)
+        runner.assert_called_once()
+        records = self.ledger().verify()
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]["event"]["event_kind"], "TEST")
+
     def test_bounded_check_ingests_the_existing_report(self):
         process_report = self.report(["python", "-c", "print(1)"])
         args = type("Args", (), {
