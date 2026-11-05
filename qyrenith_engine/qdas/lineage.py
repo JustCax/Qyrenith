@@ -72,6 +72,10 @@ class QdasEvidenceLineage:
         self.event_ledger = event_ledger
 
     def _check(self, create: bool) -> None:
+        try:
+            QdasEventLedger(self.path)._check_parent(create=create)
+        except QdasLedgerError as exc:
+            raise QdasLineageError("QDAS lineage parent path is unsafe") from exc
         parent = self.path.parent
         if not parent.exists():
             if not create:
