@@ -47,6 +47,9 @@ EXPECTED = {
         "max_output_bytes", "max_changed_files", "max_lifetime_seconds",
         "allowed_worker_ids", "policy_digest",
     ],
+    "owner-trust-store.schema.json": [
+        "schema", "store_id", "generation", "events", "hmac_sha256",
+    ],
     "migration-project-snapshot.schema.json": [
         "schema", "entries", "excluded_paths", "limits", "captured_at", "snapshot_digest",
     ],
@@ -102,6 +105,30 @@ for name, required_fields in EXPECTED.items():
         expected_schema_version = 2 if name == "migration-knowledge.schema.json" else 1
         require(schema["properties"].get("schema") == {"const": expected_schema_version},
                 f"{name} must pin schema version {expected_schema_version}")
+
+owner_trust = schemas["owner-trust-store.schema.json"]
+require(owner_trust.get("additionalProperties") is False,
+        "owner trust store must reject unknown top-level fields")
+require(owner_trust["properties"]["store_id"].get("pattern") == "^[0-9a-f]{32}$",
+        "owner trust store identity format mismatch")
+require(owner_trust["properties"]["hmac_sha256"].get("pattern") == "^[0-9a-f]{64}$",
+        "owner trust store integrity MAC format mismatch")
+require(owner_trust["properties"]["events"].get("maxItems") == 100000,
+        "owner trust store event history must be bounded")
+trust_event = owner_trust["$defs"]["event"]
+require(trust_event.get("additionalProperties") is False,
+        "owner trust events must reject unknown fields")
+require(set(trust_event["properties"]["subject_kind"].get("enum", [])) == {
+    "KNOWLEDGE_CATALOG", "WORKER_MANIFEST", "WORKER_QUALIFICATION", "EXECUTION_POLICY",
+}, "owner trust subject vocabulary mismatch")
+require(set(trust_event["properties"]["decision"].get("enum", [])) == {"TRUST", "REVOKE"},
+        "owner trust decision vocabulary mismatch")
+require(trust_event["properties"]["subject_digest"].get("pattern") == "^sha256:[0-9a-f]{64}$",
+        "owner trust decisions must bind exact SHA-256 digests")
+require(len(trust_event.get("allOf", [])) == 1,
+        "owner trust revocation expiry rule is missing")
+require(trust_event["allOf"][0].get("then", {}).get("properties", {}).get("expires_at", {}).get("type") == "null",
+        "owner trust revocations must not expire")
 
 adapter = schemas["adapter-manifest.schema.json"]
 alternatives = adapter.get("anyOf", [])
