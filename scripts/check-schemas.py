@@ -56,6 +56,18 @@ EXPECTED = {
         "approved_by", "host_principal", "trust_store_id",
         "trust_store_generation", "signature",
     ],
+    "qdas-execution-event.schema.json": [
+        "schema", "event_id", "project_id", "project_revision", "workspace_id",
+        "event_kind", "os_name", "os_version", "architecture", "runtime_name",
+        "runtime_version", "tool_name", "tool_version", "argv", "working_directory",
+        "environment_digest", "started_at", "finished_at", "duration_milliseconds",
+        "exit_code", "execution_status", "timed_out", "output_limited",
+        "output_incomplete", "input_incomplete", "unsupported_state",
+        "stdout_bytes", "stderr_bytes", "stdout_digest", "stderr_digest",
+    ],
+    "qdas-event-ledger-record.schema.json": [
+        "schema", "sequence", "previous_digest", "event", "classification", "record_digest",
+    ],
     "migration-project-snapshot.schema.json": [
         "schema", "entries", "excluded_paths", "limits", "captured_at", "snapshot_digest",
     ],
@@ -160,6 +172,47 @@ require(host_approval["properties"]["trust_store_generation"].get("minimum") == 
         "host approval must bind a non-negative owner trust-store generation")
 require(host_approval["properties"]["action_type"].get("pattern") == "^[A-Z][A-Z0-9_]{1,63}$",
         "host approval action type must be a canonical identifier")
+
+qdas_event = schemas["qdas-execution-event.schema.json"]
+require(qdas_event.get("additionalProperties") is False,
+        "QDAS execution events must reject undeclared fields")
+require(set(qdas_event["properties"]["event_kind"].get("enum", [])) ==
+        {"BUILD", "TEST", "STATIC_ANALYSIS", "RUNTIME", "VERIFICATION", "OTHER"},
+        "QDAS event kind vocabulary mismatch")
+require(set(qdas_event["properties"]["execution_status"].get("enum", [])) ==
+        {"PASS", "FAIL", "BLOCKED", "ERROR"},
+        "QDAS execution status vocabulary mismatch")
+require(qdas_event["properties"]["environment_digest"].get("pattern") == "^[0-9a-f]{64}$",
+        "QDAS events must carry an environment fingerprint")
+require(qdas_event["properties"]["argv"].get("maxItems") == 256,
+        "QDAS event argv must be bounded")
+require(qdas_event["properties"]["stdout_bytes"].get("maximum") == 8388608 and
+        qdas_event["properties"]["stderr_bytes"].get("maximum") == 8388608,
+        "QDAS event output capture must be bounded")
+require(len(qdas_event.get("allOf", [])) == 1,
+        "QDAS event schema must prevent false PASS results")
+pass_event_rule = qdas_event["allOf"][0].get("then", {}).get("properties", {})
+require(pass_event_rule.get("exit_code", {}).get("const") == 0 and
+        pass_event_rule.get("timed_out", {}).get("const") is False and
+        pass_event_rule.get("unsupported_state", {}).get("const") is False,
+        "QDAS PASS events must require successful exit and no blocking flags")
+
+qdas_ledger = schemas["qdas-event-ledger-record.schema.json"]
+require(qdas_ledger.get("additionalProperties") is False,
+        "QDAS ledger records must reject undeclared fields")
+require(qdas_ledger["properties"]["event"].get("$ref") == "qdas-execution-event.schema.json",
+        "QDAS ledger records must embed the normalized execution event")
+require(qdas_ledger["properties"]["record_digest"].get("pattern") == "^[0-9a-f]{64}$",
+        "QDAS ledger records must carry a SHA-256 chain digest")
+require(qdas_ledger["properties"]["sequence"].get("maximum") == 100000,
+        "QDAS ledger record count must be bounded")
+require(set(qdas_ledger["$defs"]["classification"]["properties"]["category"].get("enum", [])) == {
+    "BUILD_FAILURE", "TEST_FAILURE", "STATIC_ANALYSIS_FAILURE", "RUNTIME_FAILURE",
+    "INFRASTRUCTURE_FAILURE", "TIMEOUT", "RESOURCE_LIMIT", "ANALYZER_FAILURE",
+    "UNSUPPORTED_STATE", "UNKNOWN_FAILURE",
+}, "QDAS failure taxonomy mismatch")
+require(len(qdas_ledger.get("allOf", [])) == 2,
+        "QDAS ledger must enforce event/classification state consistency")
 
 adapter = schemas["adapter-manifest.schema.json"]
 alternatives = adapter.get("anyOf", [])
