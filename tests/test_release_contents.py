@@ -120,6 +120,7 @@ class TestReleaseContents(unittest.TestCase):
             self.assertEqual(modules, {
                 "qyrenith.py",
                 "qyrenith_engine/__init__.py",
+                "qyrenith_engine/approval.py",
                 "qyrenith_engine/analysis.py",
                 "qyrenith_engine/boundary.py",
                 "qyrenith_engine/execution.py",
