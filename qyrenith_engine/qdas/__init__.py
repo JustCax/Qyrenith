@@ -1,4 +1,5 @@
 """Qyrenith Development Assurance System primitives."""
+from .collector import QdasCaptureResult, capture_process_event
 from .events import (
     ExecutionEvent,
     FailureClassification,
@@ -12,6 +13,8 @@ from .events import (
 from .ledger import QdasEventLedger, QdasLedgerError, verify_qdas_ledger
 
 __all__ = [
+    "QdasCaptureResult",
+    "capture_process_event",
     "ExecutionEvent",
     "FailureClassification",
     "QdasEventLedger",
