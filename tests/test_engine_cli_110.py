@@ -1,5 +1,6 @@
 """CLI contract tests for Qyrenith's additive engineering commands."""
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -10,15 +11,34 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class TestEngineeringCLI(unittest.TestCase):
-    def run_cli(self, *arguments):
+    def run_cli(self, *arguments, env=None):
         return subprocess.run([sys.executable, str(ROOT / "qyrenith.py"), *arguments],
-                              cwd=ROOT, capture_output=True, text=True, check=False)
+                              cwd=ROOT, env=env, capture_output=True, text=True, check=False)
 
     def test_help_lists_new_commands(self):
         result = self.run_cli("--help")
         self.assertEqual(result.returncode, 0, result.stderr)
         for command in ("source-analysis", "impact", "boundary-check", "bounded-check", "snapshot", "trust-store"):
             self.assertIn(command, result.stdout)
+
+    def test_trust_store_cli_initializes_outside_the_project(self):
+        with tempfile.TemporaryDirectory() as directory:
+            environment = dict(os.environ)
+            if os.name == "nt":
+                environment["APPDATA"] = directory
+            else:
+                environment["XDG_CONFIG_HOME"] = directory
+            initialized = self.run_cli(
+                "trust-store", "--trust-action", "init", env=environment
+            )
+            self.assertEqual(initialized.returncode, 0, initialized.stderr)
+            self.assertIn("INITIALIZED", initialized.stdout)
+            listed = self.run_cli(
+                "trust-store", "--trust-action", "list", env=environment
+            )
+            self.assertEqual(listed.returncode, 0, listed.stderr)
+            self.assertIn('"generation": 0', listed.stdout)
+            self.assertFalse((ROOT / ".qyrenith" / "trust-store.json").exists())
 
     def test_source_analysis_cli_emits_json(self):
         with tempfile.TemporaryDirectory() as directory:
