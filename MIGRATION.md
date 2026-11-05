@@ -339,14 +339,14 @@ A no-op route may receive an authorization record with zero worker grants; it au
 
 ### Minimal authorization flow
 
-Assuming `plan`, `assessment`, and `registry` were produced by the preceding APIs, the caller can create a narrow policy and an approval record:
+Assuming `plan`, `assessment`, and `registry` were produced by the preceding APIs, the caller can create a narrow policy and a plan-bound authorization record:
 
 ```python
 from datetime import datetime, timedelta, timezone
 
+from qyrenith_engine import OwnerTrustStore
 from qyrenith_engine.migration import (
     MigrationAuthorizationPolicy,
-    OwnerTrustStore,
     WorkerPermission,
     WorkerResourceLimits,
     authorize_migration_with_owner_trust,
