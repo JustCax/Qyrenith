@@ -182,6 +182,13 @@ class QdasExecutionEventTests(unittest.TestCase):
         self.assertEqual(timed_out.execution_status, "BLOCKED")
         self.assertEqual(classify_failure(timed_out).category, "TIMEOUT")
 
+    def test_execution_status_requires_consistent_exit_code(self):
+        with self.assertRaisesRegex(ValueError, "FAIL event must have a non-zero exit code"):
+            make_event(status="FAIL", exit_code=None)
+        with self.assertRaisesRegex(ValueError, "ERROR event must not claim a process exit code"):
+            make_event(status="ERROR", exit_code=1)
+        self.assertEqual(make_event(status="ERROR", exit_code=None).execution_status, "ERROR")
+
     def test_rejects_unsupported_status_and_invalid_duration(self):
         with self.assertRaisesRegex(ValueError, "unsupported status"):
             create_execution_event(
