@@ -222,7 +222,7 @@ class QdasEventLedger:
             raise ValueError("classification belongs to a different execution event")
         expected_classification = classify_failure(event)
         if (expected_classification is None) != (classification is None):
-            raise ValueError("classification presence contradicts the native classifier")
+            raise ValueError("failed events require one classification from the native classifier")
         if classification is not None and expected_classification is not None:
             expected_fields = expected_classification.to_dict()
             actual_fields = classification.to_dict()
