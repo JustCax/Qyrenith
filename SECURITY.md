@@ -11,6 +11,16 @@ The tool intentionally does not provide a generic arbitrary-shell execution comm
 If you find a security issue in Qyrenith, report it privately to the repository maintainers before public disclosure.
 
 
+## Owner trust store API
+
+The 1.2.0 branch introduces an owner-scoped trust-decision store through \`qyrenith_engine.trust_store.OwnerTrustStore\`. By default it stores trust state in the current user's Qyrenith configuration directory, outside the managed project. It records append-only TRUST and REVOKE decisions for exact SHA-256 digests of knowledge catalogs, worker manifests, worker qualifications, and execution policies. POSIX storage uses owner-only permissions; the Windows default path is constrained to the current user profile and rejects reparse-point paths.
+
+The store authenticates its canonical contents with a local HMAC key and detects accidental or repository-local tampering. This is not a publisher signature, remote attestation, or defense against malicious code already running as the same OS user. Reviewer names are attribution metadata, not authenticated identity. A trust decision must never be inferred from a project file or imported allowlist.
+
+**Important current limitation:** this store API is not yet wired into migration authorization, worker dispatch, or the legacy \`worker-run\` command. It does not authorize execution. The legacy command's \`--yes\` option is a caller assertion, not authenticated host approval, and the shared subprocess runner is not an OS sandbox. Until the trusted approval channel and OS-enforced sandbox are integrated, migration-worker and QDAS repair execution remain propose-only.
+
+
+
 ## Security finding review
 
 Secret-like findings are blocking by default. A finding can be explicitly reviewed only with its exact finding ID, a non-empty reason, and `--yes`:
