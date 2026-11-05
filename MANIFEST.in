@@ -104,6 +104,7 @@ include qyrenith_engine/qdas/collector.py
 include qyrenith_engine/qdas/diagnosis.py
 include qyrenith_engine/qdas/repair.py
 include qyrenith_engine/qdas/ledger.py
+include qyrenith_engine/qdas/lineage.py
 include qyrenith_engine/migration/assurance.py
 include qyrenith_engine/migration/authorization.py
 include qyrenith_engine/migration/knowledge.py
@@ -169,6 +170,7 @@ include tests/test_qdas_collector.py
 include tests/test_qdas_diagnosis.py
 include tests/test_qdas_repair.py
 include tests/test_qdas_ledger.py
+include tests/test_qdas_lineage.py
 include tests/test_recovery_and_targets.py
 include tests/test_release_contents.py
 include tests/test_rust_domain.py
