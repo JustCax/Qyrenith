@@ -274,7 +274,7 @@ class ExecutionEvent:
             "runtime_version", "tool_name", "tool_version", "argv",
             "working_directory", "environment_digest", "started_at", "finished_at",
             "duration_milliseconds", "exit_code", "execution_status", "timed_out",
-            "output_limited", "output_incomplete", "input_incomplete", "stdout_bytes",
+            "output_limited", "output_incomplete", "input_incomplete", "unsupported_state", "stdout_bytes",
             "stderr_bytes", "stdout_digest", "stderr_digest",
         }
         if not isinstance(value, dict) or set(value) != fields:
