@@ -149,6 +149,54 @@ class RepairPlan:
     def to_document(self) -> dict[str, Any]:
         return {**self.to_dict(), "plan_digest": self.plan_digest}
 
+    @classmethod
+    def from_document(cls, document: dict[str, Any]) -> "RepairPlan":
+        """Parse and fully revalidate a serialized repair plan document."""
+        fields = {
+            "schema", "plan_id", "event_id", "hypothesis_id", "failure_category",
+            "affected_paths", "intended_change", "expected_invariants", "risk",
+            "required_permissions", "validation_commands", "rollback_strategy",
+            "created_at", "execution_mode", "human_review_required", "plan_digest",
+        }
+        if not isinstance(document, dict) or set(document) != fields:
+            raise ValueError("repair plan document has missing or unexpected fields")
+        for name in ("affected_paths", "expected_invariants", "required_permissions", "validation_commands"):
+            if not isinstance(document[name], list):
+                raise ValueError(name + " must be a JSON array")
+        if any(not isinstance(command, list) for command in document["validation_commands"]):
+            raise ValueError("validation_commands must contain JSON arrays")
+        plan = cls(
+            schema=document["schema"], plan_id=document["plan_id"],
+            event_id=document["event_id"], hypothesis_id=document["hypothesis_id"],
+            failure_category=document["failure_category"],
+            affected_paths=tuple(document["affected_paths"]),
+            intended_change=document["intended_change"],
+            expected_invariants=tuple(document["expected_invariants"]),
+            risk=document["risk"], required_permissions=tuple(document["required_permissions"]),
+            validation_commands=tuple(tuple(command) for command in document["validation_commands"]),
+            rollback_strategy=document["rollback_strategy"], created_at=document["created_at"],
+            execution_mode=document["execution_mode"],
+            human_review_required=document["human_review_required"],
+        )
+        if document["plan_digest"] != plan.plan_digest:
+            raise ValueError("repair plan document digest mismatch")
+        identity = {
+            "event_id": plan.event_id,
+            "hypothesis_id": plan.hypothesis_id,
+            "affected_paths": list(plan.affected_paths),
+            "intended_change": plan.intended_change,
+            "expected_invariants": list(plan.expected_invariants),
+            "risk": plan.risk,
+            "required_permissions": list(plan.required_permissions),
+            "validation_commands": [list(item) for item in plan.validation_commands],
+            "rollback_strategy": plan.rollback_strategy,
+            "created_at": plan.created_at,
+        }
+        expected_id = hashlib.sha256(_canonical(identity)).hexdigest()[:32]
+        if plan.plan_id != expected_id:
+            raise ValueError("repair plan identifier does not match its canonical contents")
+        return plan
+
     def to_json_bytes(self) -> bytes:
         return _canonical(self.to_document()) + b"\n"
 
