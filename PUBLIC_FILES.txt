@@ -126,6 +126,7 @@ schemas/migration-worker-qualification.schema.json
 schemas/owner-trust-store.schema.json
 schemas/qdas-execution-event.schema.json
 schemas/qdas-event-ledger-record.schema.json
+schemas/qdas-evidence-lineage-record.schema.json
 schemas/qdas-failure-hypothesis.schema.json
 schemas/qdas-repair-plan.schema.json
 schemas/host-approval.schema.json
