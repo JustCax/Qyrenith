@@ -68,6 +68,17 @@ EXPECTED = {
     "qdas-event-ledger-record.schema.json": [
         "schema", "sequence", "previous_digest", "event", "classification", "record_digest",
     ],
+    "qdas-failure-hypothesis.schema.json": [
+        "hypothesis_id", "event_id", "failure_category", "rule_id", "statement",
+        "supporting_evidence", "contradicting_evidence", "confidence",
+        "confidence_rationale", "missing_evidence", "state",
+    ],
+    "qdas-repair-plan.schema.json": [
+        "schema", "plan_id", "event_id", "hypothesis_id", "failure_category",
+        "affected_paths", "intended_change", "expected_invariants", "risk",
+        "required_permissions", "validation_commands", "rollback_strategy",
+        "created_at", "execution_mode", "human_review_required", "plan_digest",
+    ],
     "migration-project-snapshot.schema.json": [
         "schema", "entries", "excluded_paths", "limits", "captured_at", "snapshot_digest",
     ],
@@ -213,6 +224,33 @@ require(set(qdas_ledger["$defs"]["classification"]["properties"]["category"].get
 }, "QDAS failure taxonomy mismatch")
 require(len(qdas_ledger.get("allOf", [])) == 2,
         "QDAS ledger must enforce event/classification state consistency")
+
+qdas_hypothesis = schemas["qdas-failure-hypothesis.schema.json"]
+require(qdas_hypothesis.get("additionalProperties") is False,
+        "QDAS hypotheses must reject undeclared fields")
+require(qdas_hypothesis["properties"]["state"].get("const") == "UNCONFIRMED",
+        "QDAS diagnostic hypotheses must never self-promote to confirmed root causes")
+require(qdas_hypothesis["properties"]["supporting_evidence"].get("minItems") == 1,
+        "QDAS hypotheses must cite supporting evidence")
+require(qdas_hypothesis["$defs"]["observation"]["properties"]["excerpt"].get("maxLength") == 320,
+        "QDAS diagnostic excerpts must be bounded")
+
+qdas_repair = schemas["qdas-repair-plan.schema.json"]
+require(qdas_repair.get("additionalProperties") is False,
+        "QDAS repair plans must reject undeclared fields")
+require(qdas_repair["properties"]["execution_mode"].get("const") == "PROPOSE_ONLY",
+        "QDAS repair plans must be propose-only")
+require(qdas_repair["properties"]["human_review_required"].get("const") is True,
+        "QDAS repair plans must always require human review")
+require(qdas_repair["properties"]["affected_paths"].get("maxItems") == 256,
+        "QDAS repair scope must be bounded")
+require(qdas_repair["properties"]["expected_invariants"].get("minItems") == 1,
+        "QDAS repair plans must define expected invariants")
+require(qdas_repair["properties"]["validation_commands"].get("maxItems") == 32,
+        "QDAS repair validation commands must be bounded")
+require(set(qdas_repair["properties"]["required_permissions"]["items"].get("enum", [])) ==
+        EXPECTED_WORKER_PERMISSIONS,
+        "QDAS repair permission vocabulary mismatch")
 
 adapter = schemas["adapter-manifest.schema.json"]
 alternatives = adapter.get("anyOf", [])
