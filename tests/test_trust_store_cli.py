@@ -79,7 +79,7 @@ class TrustStoreCliTests(unittest.TestCase):
         self.assertEqual(result, 0, errors.getvalue())
         self.assertIn("RECORDED", output.getvalue())
         store = OwnerTrustStore.open(self.path)
-        self.assertTrue(store.is_trusted("WORKER_MANIFEST", DIGEST, now=now))
+        self.assertTrue(store.is_trusted("WORKER_MANIFEST", DIGEST, now=datetime.now(timezone.utc) + timedelta(seconds=1)))
 
     def test_wrong_challenge_does_not_change_store(self):
         store = OwnerTrustStore.open(self.path, create=True)
