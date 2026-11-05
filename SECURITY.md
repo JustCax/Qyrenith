@@ -15,7 +15,16 @@ If you find a security issue in Qyrenith, report it privately to the repository 
 
 The 1.2.0 branch introduces an owner-scoped trust-decision store through `qyrenith_engine.trust_store.OwnerTrustStore`. By default it stores trust state in the current user's Qyrenith configuration directory, outside the managed project. It records append-only TRUST and REVOKE decisions for exact SHA-256 digests of knowledge catalogs, worker manifests, worker qualifications, and execution policies. POSIX storage uses owner-only permissions; the Windows default path is constrained to the current user profile and rejects reparse-point paths.
 
-The store authenticates its canonical contents with a local HMAC key and detects accidental or repository-local tampering. This is not a publisher signature, remote attestation, or defense against malicious code already running as the same OS user. Reviewer names are attribution metadata, not authenticated identity. A trust decision must never be inferred from a project file or imported allowlist.
+The store authenticates its canonical contents with a local HMAC key and detects accidental or repository-local tampering. Use the interactive CLI for owner decisions:
+
+\`\`\`text
+python qyrenith.py trust-store --trust-action init
+python qyrenith.py trust-store --trust-action list
+python qyrenith.py trust-store --trust-action trust --trust-kind WORKER_MANIFEST --digest sha256:<64-lowercase-hex> --reason "Reviewed exact worker build"
+python qyrenith.py trust-store --trust-action revoke --trust-kind WORKER_MANIFEST --digest sha256:<64-lowercase-hex> --reason "Worker withdrawn"
+\`\`\`
+
+Trust/revoke commands require an interactive terminal and an exact one-time challenge. The lower-level Python API remains an administrative primitive and can be called programmatically by code running as the same user; use the CLI only from a trusted local session. This is not a publisher signature, remote attestation, or defense against malicious code already running as the same OS user. Reviewer names are attribution metadata, not authenticated identity. A trust decision must never be inferred from a project file or imported allowlist.
 
 **Important current limitation:** the store is now consumed by the opt-in `authorize_migration_with_owner_trust` and `validate_migration_authorization_with_owner_trust` APIs, which recheck exact catalog, manifest, and qualification digests and honor revocation. The trust store is not yet wired into worker dispatch or the legacy `worker-run` command, and these helpers still do not authenticate the human approver or authorize execution by themselves. The legacy command's `--yes` option is a caller assertion, not authenticated host approval, and the shared subprocess runner is not an OS sandbox. Until the trusted approval channel and OS-enforced sandbox are integrated, migration-worker and QDAS repair execution remain propose-only.
 
