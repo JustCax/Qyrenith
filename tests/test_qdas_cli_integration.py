@@ -146,6 +146,14 @@ class QdasCliLifecycleIntegrationTests(unittest.TestCase):
         self.assertNotIn(str(self.root), output.getvalue())
         self.assertIn("does not prove ledger completeness", document["integrity_scope"])
 
+    def test_qdas_command_is_reachable_through_the_public_cli_parser(self):
+        output = io.StringIO()
+        argv = ["qyrenith.py", "qdas", "summary", "--project", str(self.root)]
+        with patch.object(QYRENITH.sys, "argv", argv), redirect_stdout(output):
+            result = QYRENITH.main()
+        self.assertEqual(result, 0)
+        self.assertEqual(json.loads(output.getvalue())["status"], "NOT_INITIALIZED")
+
     def test_qdas_cli_distinguishes_missing_history_from_verified_history(self):
         args = type("Args", (), {"project": str(self.root), "extra": ["summary"], "limit": 12})()
         output = io.StringIO()
