@@ -88,6 +88,32 @@ class QdasCliLifecycleIntegrationTests(unittest.TestCase):
             with self.assertRaises(QYRENITH.QyrenithError):
                 QYRENITH.cmdrun(argv, self.root, qdas_event_kind="BUILD")
 
+    def test_generic_verify_ingests_build_check_report(self):
+        process_report = self.report(["python", "-m", "compileall"])
+        with patch.object(QYRENITH, "run_bounded_process", return_value=process_report) as runner:
+            result = QYRENITH.generic_verify(self.root, execute=True)
+        self.assertEqual(result["status"], "PASS")
+        runner.assert_called_once()
+        records = self.ledger().verify()
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]["event"]["event_kind"], "BUILD")
+
+    def test_bounded_check_ingests_the_existing_report(self):
+        process_report = self.report(["python", "-c", "print(1)"])
+        args = type("Args", (), {
+            "check_command_one": "python -c 'print(1)'",
+            "project": str(self.root),
+            "timeout": 5,
+            "output_limit": 4096,
+        })()
+        with patch("qyrenith_engine.run_bounded_process", return_value=process_report) as runner:
+            result = QYRENITH.cmd_bounded_check(args)
+        self.assertEqual(result, 0)
+        runner.assert_called_once()
+        records = self.ledger().verify()
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]["event"]["event_kind"], "VERIFICATION")
+
     def test_commands_without_qdas_opt_in_do_not_create_qdas_state(self):
         argv = ["git", "status", "--short"]
         with patch.object(QYRENITH, "run_bounded_process", return_value=self.report(argv)):
