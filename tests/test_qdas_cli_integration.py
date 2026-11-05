@@ -143,6 +143,8 @@ class QdasCliLifecycleIntegrationTests(unittest.TestCase):
         self.assertEqual(document["status"], "CHAIN_VERIFIED")
         self.assertEqual(document["record_count"], 1)
         self.assertEqual(document["hypothesis_count"], 1)
+        self.assertEqual(document["lineage_status"], "NOT_INITIALIZED")
+        self.assertEqual(document["lineage_record_count"], 0)
         self.assertNotIn(str(self.root), output.getvalue())
         self.assertIn("does not prove ledger completeness", document["integrity_scope"])
 
