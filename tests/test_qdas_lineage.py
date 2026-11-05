@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 from qyrenith_engine.qdas.events import _canonical
 from qyrenith_engine.qdas import (
@@ -139,6 +140,12 @@ class QdasEvidenceLineageTests(unittest.TestCase):
             "REVERIFICATION", "REGRESSION", "FINAL_VERDICT",
         ])
         self.assertEqual(records[-1]["record_digest"], verdict["record_digest"])
+
+    def test_lineage_scan_verifies_primary_event_ledger_only_once(self):
+        self._record_plan()
+        with patch.object(self.events, "verify", wraps=self.events.verify) as verify_events:
+            self.lineage.verify()
+        verify_events.assert_called_once_with()
 
     def test_concurrent_plan_appends_preserve_one_contiguous_chain(self):
         payloads = []
