@@ -202,6 +202,24 @@ class QdasEvidenceLineageTests(unittest.TestCase):
                 "patch_applied": True,
             })
 
+    def test_patch_rejects_revision_drift_and_unplanned_paths(self):
+        _, review = self._approved_plan()
+        base = {
+            "plan_digest": self.plan.plan_digest,
+            "review_record_digest": review["record_digest"],
+            "base_revision": "revision-0",
+            "resulting_revision": "revision-after",
+            "diff_digest": hashlib.sha256(b"observed diff").hexdigest(),
+            "changed_paths": ["src/module.py"],
+            "patch_applied": True,
+        }
+        wrong_base = dict(base, base_revision="revision-other")
+        with self.assertRaisesRegex(ValueError, "base revision"):
+            self.lineage.append("PATCH", wrong_base)
+        outside_scope = dict(base, changed_paths=["tests/unplanned.py"])
+        with self.assertRaisesRegex(ValueError, "exceed the approved repair plan"):
+            self.lineage.append("PATCH", outside_scope)
+
     def test_reverification_must_reference_a_passing_event(self):
         _, review = self._approved_plan()
         patch = self.lineage.append("PATCH", {
