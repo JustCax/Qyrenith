@@ -11,6 +11,7 @@ import os
 from pathlib import Path, PurePosixPath
 import re
 import stat
+from datetime import datetime, timezone
 from typing import Any
 
 from .ledger import QdasEventLedger, QdasLedgerError
@@ -135,7 +136,19 @@ class QdasEvidenceLineage:
                 raise ValueError("human review evidence fields are invalid")
             plan_digest = _digest(payload["plan_digest"], "plan_digest")
             _text(payload["reviewer_id"], "reviewer_id", 256)
-            _text(payload["reviewed_at"], "reviewed_at", 64)
+            reviewed_at = _text(payload["reviewed_at"], "reviewed_at", 64)
+            try:
+                parsed_review_time = datetime.fromisoformat(
+                    reviewed_at[:-1] + "+00:00" if reviewed_at.endswith("Z") else reviewed_at
+                )
+            except ValueError as exc:
+                raise ValueError("reviewed_at must be a canonical UTC ISO-8601 timestamp") from exc
+            if (
+                parsed_review_time.tzinfo is None
+                or parsed_review_time.utcoffset() != timezone.utc.utcoffset(parsed_review_time)
+                or parsed_review_time.isoformat().replace("+00:00", "Z") != reviewed_at
+            ):
+                raise ValueError("reviewed_at must be a canonical UTC ISO-8601 timestamp")
             if payload["decision"] not in {"APPROVE", "REJECT"}:
                 raise ValueError("human review decision must be APPROVE or REJECT")
             if payload["authentication_state"] != "UNAUTHENTICATED_ASSERTION":
