@@ -218,6 +218,110 @@
           }
         }
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "execution_status": {
+            "const": "FAIL"
+          }
+        },
+        "required": [
+          "execution_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "exit_code": {
+            "type": "integer",
+            "not": {
+              "const": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "execution_status": {
+            "const": "ERROR"
+          }
+        },
+        "required": [
+          "execution_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "exit_code": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "anyOf": [
+          {
+            "properties": {
+              "timed_out": {
+                "const": true
+              }
+            },
+            "required": [
+              "timed_out"
+            ]
+          },
+          {
+            "properties": {
+              "output_limited": {
+                "const": true
+              }
+            },
+            "required": [
+              "output_limited"
+            ]
+          },
+          {
+            "properties": {
+              "output_incomplete": {
+                "const": true
+              }
+            },
+            "required": [
+              "output_incomplete"
+            ]
+          },
+          {
+            "properties": {
+              "input_incomplete": {
+                "const": true
+              }
+            },
+            "required": [
+              "input_incomplete"
+            ]
+          },
+          {
+            "properties": {
+              "unsupported_state": {
+                "const": true
+              }
+            },
+            "required": [
+              "unsupported_state"
+            ]
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "execution_status": {
+            "const": "BLOCKED"
+          }
+        }
+      }
     }
   ]
 }
