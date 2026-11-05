@@ -3740,6 +3740,87 @@ def cmd_boundary_check(args):
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result["status"] == "PASS" else 2
 
+def cmd_qdas(args):
+    """Inspect the local QDAS ledger without exposing raw command output or user paths."""
+    root = root_path(args.project)
+    action = args.extra[0] if args.extra else "summary"
+    if len(args.extra) > 1 or action not in {"summary", "verify"}:
+        die("PREFLIGHT_FAILURE", "qdas accepts one optional action: summary or verify")
+    limit = args.limit
+    if type(limit) is not int or not 1 <= limit <= 1000:
+        die("PREFLIGHT_FAILURE", "qdas event display limit must be between 1 and 1000")
+
+    state_dir = root / STATE_DIR
+    if state_dir.is_symlink() or (state_dir.exists() and not state_dir.is_dir()):
+        die("PREFLIGHT_FAILURE", "QDAS state path is not a safe directory")
+    qdas_dir = state_dir / "qdas"
+    ledger_path = qdas_dir / "events.jsonl"
+    if not qdas_dir.is_dir() or not ledger_path.exists():
+        result = {
+            "schema": 1,
+            "status": "NOT_INITIALIZED" if action == "summary" else "BLOCKED",
+            "record_count": 0,
+            "hypothesis_count": 0,
+            "integrity_scope": "No QDAS execution ledger is present; no execution history is inferred.",
+        }
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0 if action == "summary" else 2
+
+    try:
+        from qyrenith_engine.qdas import QdasEventLedger
+        records = QdasEventLedger(ledger_path).verify()
+    except Exception as exc:
+        die("PREFLIGHT_FAILURE", "QDAS ledger integrity verification failed: " + type(exc).__name__)
+
+    status_counts = {}
+    kind_counts = {}
+    failure_counts = {}
+    hypothesis_count = 0
+    for record in records:
+        event = record["event"]
+        status_counts[event["execution_status"]] = status_counts.get(event["execution_status"], 0) + 1
+        kind_counts[event["event_kind"]] = kind_counts.get(event["event_kind"], 0) + 1
+        classification = record["classification"]
+        if classification is not None:
+            category = classification["category"]
+            failure_counts[category] = failure_counts.get(category, 0) + 1
+        hypothesis_count += len(record.get("hypotheses", []))
+
+    recent_events = []
+    for record in records[-limit:]:
+        event = record["event"]
+        classification = record["classification"]
+        recent_events.append({
+            "event_id": event["event_id"],
+            "event_kind": event["event_kind"],
+            "execution_status": event["execution_status"],
+            "failure_category": classification["category"] if classification else None,
+            "hypothesis_count": len(record.get("hypotheses", [])),
+            "started_at": event["started_at"],
+        })
+
+    result = {
+        "schema": 1,
+        "status": "INTEGRITY_VERIFIED" if records else "EMPTY",
+        "record_count": len(records),
+        "status_counts": dict(sorted(status_counts.items())),
+        "event_kind_counts": dict(sorted(kind_counts.items())),
+        "failure_category_counts": dict(sorted(failure_counts.items())),
+        "hypothesis_count": hypothesis_count,
+        "unconfirmed_hypothesis_count": hypothesis_count,
+        "latest_record_digest": records[-1]["record_digest"] if records else None,
+        "integrity_scope": (
+            "Internal hash-chain, event, classification, and persisted-hypothesis consistency only. "
+            "This does not prove ledger completeness or provide an independent trust anchor."
+        ),
+        "recent_events": recent_events,
+    }
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    if action == "verify" and not records:
+        return 2
+    return 0
+
+
 def cmd_bounded_check(args):
     from qyrenith_engine import run_bounded_process
     if not args.check_command_one:
@@ -3833,7 +3914,7 @@ def cmd_snapshot(args):
 # Parser / main
 # ---------------------------------------------------------------------------
 def parser():
-    p=argparse.ArgumentParser(description=f"Qyrenith {VERSION} Project Verification & Control Plane"); p.add_argument("command",choices=["audit","plan","port","continue","build","verify","policy","skills","reality","inspect","explain","dry-run","rollback","doctor","status","report","self-test","benchmark","failure-quality","security-test","security-review","recovery-test","graph","compatibility","replay","adapters","worker-run","artifact-inspect","evidence","git-test","fuzz-test","public-audit","domains","intelligence","external-check","external-verify","source-analysis","impact","boundary-check","bounded-check","snapshot","trust-store"]); p.add_argument("-p","--project",default="."); p.add_argument("--check-command",action="append",default=[],help="Explicit command for external-verify; repeat for multiple checks"); p.add_argument("--target-mc",default=""); p.add_argument("--target-loader",default=""); p.add_argument("--target-loader-version",default=""); p.add_argument("--resume",action="store_true"); p.add_argument("--yes",action="store_true",help="Explicitly approve a new external worker command when used with worker-run"); p.add_argument("--noninteractive",action="store_true"); p.add_argument("--managed",action="store_true"); p.add_argument("--allow-unknown-dependencies",action="store_true"); p.add_argument("--allow-missing-adapters",action="store_true",help="For verify --ci: downgrade detected-but-unavailable adapters to informational instead of blocking; never turns zero available adapters into PASS."); p.add_argument("--task",default=""); p.add_argument("--execute",action="store_true"); p.add_argument("--ci",action="store_true"); p.add_argument("--limit",type=int,default=12); p.add_argument("--worker",default=""); p.add_argument("--operation",default="result",choices=["discover","inspect","plan","execute","result","port"]); p.add_argument("--timeout",type=int,default=120); p.add_argument("--baseline",default="",help="Baseline external-check JSON for diffing (external-check only)"); p.add_argument("--run-runtime",action="store_true"); p.add_argument("--run-failure-lab",action="store_true"); p.add_argument("--run-mutations",action="store_true"); p.add_argument("--run-counterfactual",action="store_true"); p.add_argument("--verdict",action="store_true"); p.add_argument("--finding-id",default=""); p.add_argument("--reason",default=""); p.add_argument("--max-files",type=int,default=10000); p.add_argument("--max-entries",type=int,default=50000); p.add_argument("--check-command-one",default=""); p.add_argument("--output-limit",type=int,default=16000,help="Maximum captured subprocess output bytes (256–1000000)"); p.add_argument("--snapshot-file",default="",help="Existing canonical snapshot JSON file for snapshot verify"); p.add_argument("--snapshot-exclude",action="append",default=[],help="Additional project-relative path exclusion for snapshot capture"); p.add_argument("--snapshot-max-entries",type=int,default=200000); p.add_argument("--snapshot-max-file-bytes",type=int,default=256*1024*1024); p.add_argument("--snapshot-max-total-bytes",type=int,default=2*1024*1024*1024); p.add_argument("--snapshot-max-depth",type=int,default=64); p.add_argument("--trust-action",choices=["init","list","trust","revoke"]); p.add_argument("--trust-kind",choices=["KNOWLEDGE_CATALOG","WORKER_MANIFEST","WORKER_QUALIFICATION","EXECUTION_POLICY"]); p.add_argument("--digest",default=""); p.add_argument("--expires-at",default=None); p.add_argument("extra",nargs="*"); return p
+    p=argparse.ArgumentParser(description=f"Qyrenith {VERSION} Project Verification & Control Plane"); p.add_argument("command",choices=["audit","plan","port","continue","build","verify","policy","skills","reality","inspect","explain","dry-run","rollback","doctor","status","report","self-test","benchmark","failure-quality","security-test","security-review","recovery-test","graph","compatibility","replay","adapters","worker-run","artifact-inspect","evidence","git-test","fuzz-test","public-audit","domains","intelligence","external-check","external-verify","source-analysis","impact","boundary-check","bounded-check","snapshot","trust-store","qdas"]); p.add_argument("-p","--project",default="."); p.add_argument("--check-command",action="append",default=[],help="Explicit command for external-verify; repeat for multiple checks"); p.add_argument("--target-mc",default=""); p.add_argument("--target-loader",default=""); p.add_argument("--target-loader-version",default=""); p.add_argument("--resume",action="store_true"); p.add_argument("--yes",action="store_true",help="Explicitly approve a new external worker command when used with worker-run"); p.add_argument("--noninteractive",action="store_true"); p.add_argument("--managed",action="store_true"); p.add_argument("--allow-unknown-dependencies",action="store_true"); p.add_argument("--allow-missing-adapters",action="store_true",help="For verify --ci: downgrade detected-but-unavailable adapters to informational instead of blocking; never turns zero available adapters into PASS."); p.add_argument("--task",default=""); p.add_argument("--execute",action="store_true"); p.add_argument("--ci",action="store_true"); p.add_argument("--limit",type=int,default=12); p.add_argument("--worker",default=""); p.add_argument("--operation",default="result",choices=["discover","inspect","plan","execute","result","port"]); p.add_argument("--timeout",type=int,default=120); p.add_argument("--baseline",default="",help="Baseline external-check JSON for diffing (external-check only)"); p.add_argument("--run-runtime",action="store_true"); p.add_argument("--run-failure-lab",action="store_true"); p.add_argument("--run-mutations",action="store_true"); p.add_argument("--run-counterfactual",action="store_true"); p.add_argument("--verdict",action="store_true"); p.add_argument("--finding-id",default=""); p.add_argument("--reason",default=""); p.add_argument("--max-files",type=int,default=10000); p.add_argument("--max-entries",type=int,default=50000); p.add_argument("--check-command-one",default=""); p.add_argument("--output-limit",type=int,default=16000,help="Maximum captured subprocess output bytes (256–1000000)"); p.add_argument("--snapshot-file",default="",help="Existing canonical snapshot JSON file for snapshot verify"); p.add_argument("--snapshot-exclude",action="append",default=[],help="Additional project-relative path exclusion for snapshot capture"); p.add_argument("--snapshot-max-entries",type=int,default=200000); p.add_argument("--snapshot-max-file-bytes",type=int,default=256*1024*1024); p.add_argument("--snapshot-max-total-bytes",type=int,default=2*1024*1024*1024); p.add_argument("--snapshot-max-depth",type=int,default=64); p.add_argument("--trust-action",choices=["init","list","trust","revoke"]); p.add_argument("--trust-kind",choices=["KNOWLEDGE_CATALOG","WORKER_MANIFEST","WORKER_QUALIFICATION","EXECUTION_POLICY"]); p.add_argument("--digest",default=""); p.add_argument("--expires-at",default=None); p.add_argument("extra",nargs="*"); return p
 def main():
     args=parser().parse_intermixed_args()
     try:
@@ -3844,6 +3925,7 @@ def main():
         # unrelated external project and is inspected without writing Qyrenith state.
         if args.command=="external-check": return cmd_external_check(args)
         if args.command=="external-verify": return cmd_external_verify(args)
+        if args.command=="qdas": return cmd_qdas(args)
         if args.command=="self-test": return self_test()
         if args.command=="intelligence":
             root=root_path(args.project); require_qyrenith(root); intelligence_suite(root)
