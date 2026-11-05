@@ -65,7 +65,8 @@
             "KNOWLEDGE_CATALOG",
             "WORKER_MANIFEST",
             "WORKER_QUALIFICATION",
-            "EXECUTION_POLICY"
+            "EXECUTION_POLICY",
+            "APPROVAL_NONCE"
           ]
         },
         "subject_digest": {
@@ -75,7 +76,8 @@
         "decision": {
           "enum": [
             "TRUST",
-            "REVOKE"
+            "REVOKE",
+            "CONSUME"
           ]
         },
         "reviewed_by": {
@@ -116,6 +118,68 @@
             "properties": {
               "expires_at": {
                 "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "decision": {
+                "const": "CONSUME"
+              }
+            },
+            "required": [
+              "decision"
+            ]
+          },
+          "then": {
+            "properties": {
+              "expires_at": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "subject_kind": {
+                "const": "APPROVAL_NONCE"
+              }
+            },
+            "required": [
+              "subject_kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "decision": {
+                "const": "CONSUME"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "subject_kind": {
+                "not": {
+                  "const": "APPROVAL_NONCE"
+                }
+              }
+            },
+            "required": [
+              "subject_kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "decision": {
+                "enum": [
+                  "TRUST",
+                  "REVOKE"
+                ]
               }
             }
           }
