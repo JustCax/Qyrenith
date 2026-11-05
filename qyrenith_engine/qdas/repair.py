@@ -108,7 +108,9 @@ class RepairPlan:
         if len(set(commands)) != len(commands):
             raise ValueError("validation_commands must be unique")
         object.__setattr__(self, "validation_commands", tuple(commands))
-        _utc(datetime.fromisoformat(self.created_at.replace("Z", "+00:00")), "created_at")
+        parsed_created_at = datetime.fromisoformat(self.created_at.replace("Z", "+00:00"))
+        if _utc(parsed_created_at, "created_at") != self.created_at:
+            raise ValueError("created_at must use canonical UTC milliseconds")
         if self.execution_mode != "PROPOSE_ONLY":
             raise ValueError("repair plans are propose-only and cannot request execution mode")
         if self.human_review_required is not True:
@@ -166,25 +168,32 @@ def create_repair_plan(
         raise ValueError("failure hypothesis belongs to a different event")
     if event.execution_status == "PASS":
         raise ValueError("a successful event cannot receive a repair plan")
-    if not isinstance(affected_paths, (tuple, list)):
-        raise ValueError("affected_paths must be a sequence")
-    if not isinstance(expected_invariants, (tuple, list)):
-        raise ValueError("expected_invariants must be a sequence")
-    if not isinstance(required_permissions, (tuple, list)):
-        raise ValueError("required_permissions must be a sequence")
-    if not isinstance(validation_commands, (tuple, list)):
-        raise ValueError("validation_commands must be a sequence")
+    if not isinstance(affected_paths, (tuple, list)) or any(not isinstance(item, str) for item in affected_paths):
+        raise ValueError("affected_paths must be a sequence of strings")
+    if not isinstance(expected_invariants, (tuple, list)) or any(not isinstance(item, str) for item in expected_invariants):
+        raise ValueError("expected_invariants must be a sequence of strings")
+    if not isinstance(required_permissions, (tuple, list)) or any(not isinstance(item, str) for item in required_permissions):
+        raise ValueError("required_permissions must be a sequence of strings")
+    if not isinstance(validation_commands, (tuple, list)) or any(
+        isinstance(item, (str, bytes)) or not isinstance(item, (tuple, list))
+        for item in validation_commands
+    ):
+        raise ValueError("validation_commands must be a sequence of argument sequences")
+    normalized_paths = tuple(sorted(affected_paths))
+    normalized_invariants = tuple(sorted(expected_invariants))
+    normalized_permissions = tuple(sorted(set(required_permissions)))
+    normalized_commands = tuple(tuple(item) for item in validation_commands)
     instant = datetime.now(timezone.utc) if created_at is None else created_at
     created_text = _utc(instant, "created_at")
     plan_id = hashlib.sha256(_canonical({
         "event_id": event.event_id,
         "hypothesis_id": hypothesis.hypothesis_id,
-        "affected_paths": sorted(affected_paths),
+        "affected_paths": list(normalized_paths),
         "intended_change": intended_change,
-        "expected_invariants": sorted(expected_invariants),
+        "expected_invariants": list(normalized_invariants),
         "risk": risk,
-        "required_permissions": sorted(set(required_permissions)),
-        "validation_commands": [list(item) for item in validation_commands],
+        "required_permissions": list(normalized_permissions),
+        "validation_commands": [list(item) for item in normalized_commands],
         "rollback_strategy": rollback_strategy,
         "created_at": created_text,
     })).hexdigest()[:32]
@@ -193,12 +202,12 @@ def create_repair_plan(
         event_id=event.event_id,
         hypothesis_id=hypothesis.hypothesis_id,
         failure_category=hypothesis.failure_category,
-        affected_paths=tuple(sorted(affected_paths)),
+        affected_paths=normalized_paths,
         intended_change=intended_change,
-        expected_invariants=tuple(sorted(expected_invariants)),
+        expected_invariants=normalized_invariants,
         risk=risk,
-        required_permissions=tuple(sorted(set(required_permissions))),
-        validation_commands=tuple(tuple(item) for item in validation_commands),
+        required_permissions=normalized_permissions,
+        validation_commands=normalized_commands,
         rollback_strategy=rollback_strategy,
         created_at=created_text,
     )
