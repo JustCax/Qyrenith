@@ -1,6 +1,7 @@
 import hashlib
 import json
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -127,6 +128,42 @@ class QdasEvidenceLineageTests(unittest.TestCase):
             "REVERIFICATION", "REGRESSION", "FINAL_VERDICT",
         ])
         self.assertEqual(records[-1]["record_digest"], verdict["record_digest"])
+
+    def test_concurrent_plan_appends_preserve_one_contiguous_chain(self):
+        payloads = []
+        for offset in range(1, 9):
+            failed = make_event("FAIL", "BUILD", "ModuleNotFoundError: fixture", offset)
+            hypothesis = diagnose_failure(
+                failed, stdout="", stderr="ModuleNotFoundError: fixture"
+            )[0]
+            event_record = self.events.append(
+                failed, classify_failure(failed), (hypothesis,)
+            )
+            plan = create_repair_plan(
+                failed,
+                hypothesis,
+                affected_paths=("src/module.py",),
+                intended_change="Restore the missing module import.",
+                expected_invariants=("Existing tests remain unchanged.",),
+                risk="LOW",
+                validation_commands=(("python", "-m", "unittest"),),
+                rollback_strategy="Restore the captured source snapshot.",
+                created_at=START + timedelta(seconds=offset * 3),
+            )
+            payloads.append({
+                "event_id": event_record["event"]["event_id"],
+                "event_record_digest": event_record["record_digest"],
+                "hypothesis_id": hypothesis.hypothesis_id,
+                "plan_document": plan.to_document(),
+                "plan_digest": plan.plan_digest,
+            })
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            list(pool.map(lambda payload: self.lineage.append("REPAIR_PLAN", payload), payloads))
+        records = self.lineage.verify()
+        self.assertEqual(len(records), 8)
+        self.assertEqual([item["sequence"] for item in records], list(range(1, 9)))
+        for previous, current in zip(records, records[1:]):
+            self.assertEqual(current["previous_digest"], previous["record_digest"])
 
     def test_rejects_plan_without_matching_persisted_hypothesis(self):
         payload = {
