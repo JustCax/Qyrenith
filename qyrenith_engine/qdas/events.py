@@ -38,7 +38,7 @@ _BEARER = re.compile(r"(?i)(\bBearer\s+)[A-Za-z0-9._~+/=-]{8,}")
 _ASSIGNMENT = re.compile(
     r"(?i)(\b(?:token|secret|password|passwd|api[_-]?key|access[_-]?key|"
     r"private[_-]?key|authorization|cookie)\b\s*[:=]\s*)"
-    r"(['\"]?)[^\s,'\";]{6,}"
+    r"(?!Bearer\b)(['\"]?)[^\s,'\";]{6,}"
 )
 _SENSITIVE_ARG = re.compile(
     r"(?i)^--?(?:token|secret|password|passwd|api[-_]?key|access[-_]?key|"
