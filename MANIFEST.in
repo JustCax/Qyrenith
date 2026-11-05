@@ -94,12 +94,14 @@ include qyrenith_engine/__init__.py
 include qyrenith_engine/analysis.py
 include qyrenith_engine/boundary.py
 include qyrenith_engine/execution.py
+qyrenith_engine/trust_store.py
 include qyrenith_engine/migration/__init__.py
 include qyrenith_engine/migration/assurance.py
 include qyrenith_engine/migration/authorization.py
 include qyrenith_engine/migration/knowledge.py
 include qyrenith_engine/migration/model.py
 include qyrenith_engine/migration/planner.py
+qyrenith_engine/migration/preparation.py
 include qyrenith_engine/migration/snapshot.py
 include qyrenith_engine/migration/workspace.py
 include qyrenith_engine/migration/worker.py
@@ -128,10 +130,12 @@ include tests/__init__.py
 include tests/test_allow_missing_adapters.py
 include tests/test_core_regressions.py
 include tests/test_engine_110.py
+tests/test_trust_store.py
 include tests/test_migration_assurance_120.py
 include tests/test_migration_authorization_120.py
 include tests/test_migration_benchmarks_120.py
 include tests/test_migration_core_120.py
+tests/test_migration_preparation_120.py
 include tests/test_migration_snapshot_120.py
 include tests/test_migration_workspace_120.py
 include tests/test_migration_worker_120.py
