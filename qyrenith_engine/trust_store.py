@@ -239,7 +239,7 @@ class OwnerTrustStore:
 
     def __init__(self, path: Path, key: bytes, document: dict[str, Any]) -> None:
         self.path = path
-        self.key = key
+        self._key = key
         self._document = document
 
     @classmethod
@@ -438,7 +438,7 @@ class OwnerTrustStore:
     def _reload_locked(self) -> dict[str, Any]:
         _reject_reparse_or_symlink(self.path, directory=False)
         source = self.path.read_bytes()
-        document = self._parse_document(source, self.key)
+        document = self._parse_document(source, self._key)
         if document["store_id"] != self.store_id:
             raise TrustStoreError("trust-store identity changed during update")
         return document
