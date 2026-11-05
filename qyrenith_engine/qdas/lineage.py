@@ -197,7 +197,7 @@ class QdasEvidenceLineage:
                 or parsed_review_time.isoformat().replace("+00:00", "Z") != reviewed_at
             ):
                 raise ValueError("reviewed_at must be a canonical UTC ISO-8601 timestamp")
-            if payload["decision"] not in {"APPROVE", "REJECT"}:
+            if not isinstance(payload["decision"], str) or payload["decision"] not in {"APPROVE", "REJECT"}:
                 raise ValueError("human review decision must be APPROVE or REJECT")
             if payload["authentication_state"] != "UNAUTHENTICATED_ASSERTION":
                 raise ValueError("this API cannot authenticate human identity or approval")
@@ -303,7 +303,7 @@ class QdasEvidenceLineage:
                 raise ValueError("reverification evidence belongs to another patch")
             if refs["regression_record_digest"]["payload"]["patch_record_digest"] != payload["patch_record_digest"]:
                 raise ValueError("regression evidence belongs to another patch")
-            if payload["verdict"] not in {"PASS", "FAIL", "INCONCLUSIVE"}:
+            if not isinstance(payload["verdict"], str) or payload["verdict"] not in {"PASS", "FAIL", "INCONCLUSIVE"}:
                 raise ValueError("final verdict must be PASS, FAIL, or INCONCLUSIVE")
             reverification_event = _event_record(
                 event_index,
@@ -401,7 +401,7 @@ class QdasEvidenceLineage:
         return tuple(records)
 
     def append(self, kind: str, payload: dict[str, Any]) -> dict[str, Any]:
-        if kind not in _KINDS or not isinstance(payload, dict):
+        if not isinstance(kind, str) or kind not in _KINDS or not isinstance(payload, dict):
             raise ValueError("unsupported QDAS evidence kind or payload")
         self._check(create=True)
         # Share the primary ledger's cross-platform lock implementation.
