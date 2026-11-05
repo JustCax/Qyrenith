@@ -117,6 +117,7 @@ include schemas/migration-transition.schema.json
 include schemas/migration-worker-manifest.schema.json
 include schemas/migration-worker-qualification.schema.json
 include schemas/owner-trust-store.schema.json
+include schemas/host-approval.schema.json
 include schemas/migration-worker-assessment.schema.json
 include schemas/migration-authorization.schema.json
 include schemas/migration-authorization-policy.schema.json
