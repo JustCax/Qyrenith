@@ -338,7 +338,10 @@ class QdasEvidenceLineage:
         raise ValueError("unsupported QDAS evidence kind")
 
     def _verified_event_index(self) -> dict[tuple[str, str], dict[str, Any]]:
-        records = self.event_ledger.verify()
+        try:
+            records = self.event_ledger.verify()
+        except QdasLedgerError as exc:
+            raise QdasLineageError("primary QDAS event ledger verification failed") from exc
         return {
             (item["event"]["event_id"], item["record_digest"]): item
             for item in records
