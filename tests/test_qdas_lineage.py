@@ -213,6 +213,27 @@ class QdasEvidenceLineageTests(unittest.TestCase):
                 "patch_applied": True,
             })
 
+    def test_reverification_scope_digest_must_match_the_execution_event(self):
+        _, review = self._approved_plan()
+        patch = self.lineage.append("PATCH", {
+            "plan_digest": self.plan.plan_digest,
+            "review_record_digest": review["record_digest"],
+            "base_revision": "revision-0",
+            "resulting_revision": "revision-after",
+            "diff_digest": hashlib.sha256(b"observed diff").hexdigest(),
+            "changed_paths": ["src/module.py"],
+            "patch_applied": True,
+        })
+        verification = make_event("PASS", "BUILD", offset=1, revision="revision-after")
+        verification_record = self.events.append(verification, None)
+        with self.assertRaisesRegex(ValueError, "scope digest"):
+            self.lineage.append("REVERIFICATION", {
+                "patch_record_digest": patch["record_digest"],
+                "event_id": verification.event_id,
+                "event_record_digest": verification_record["record_digest"],
+                "scope_digest": hashlib.sha256(b"unrelated scope").hexdigest(),
+            })
+
     def test_patch_rejects_revision_drift_and_unplanned_paths(self):
         _, review = self._approved_plan()
         base = {
