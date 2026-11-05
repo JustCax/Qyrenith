@@ -13,6 +13,11 @@
 
 Never upgrade a status based on documentation alone. Every requirement has a positive test, negative/adversarial test, evidence artifact, dependency, and implementation target.
 
+## QDAS CLI lifecycle integration note
+
+The shared controller command runner now supports opt-in ingestion of the already captured bounded-process report. Build, generic verification adapters, the full unittest suite, and explicitly executed external verification commands use this path; the command is never launched a second time for QDAS. Each recorded event binds a path-derived opaque project/workspace identifier, a pre-execution source fingerprint, redacted argv, the process runner's effective-environment digest, timing, bounded output metadata, native classification, and digest-bound output observations. QDAS ledger persistence failure blocks acceptance of the command result. This is process-report ingestion, not an OS sandbox, and the path-derived identifiers are local workspace identities rather than portable repository identities. Lifecycle coverage and end-to-end evidence remain PARTIAL until CI and integration tests verify all supported paths.
+
+
 ## Requirement mapping
 
 | Requirement ID | Implementation target | Acceptance test target | Evidence artifact | Dependencies | Current status |
