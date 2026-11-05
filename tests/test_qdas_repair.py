@@ -29,8 +29,11 @@ def event(output="ModuleNotFoundError: No module named 'fixture'"):
     )
 
 
-def hypothesis_for(item):
-    return diagnose_failure(item, stdout="", stderr="ModuleNotFoundError: No module named 'fixture'")[0]
+def hypothesis_for(
+    item,
+    output="ModuleNotFoundError: No module named 'fixture'",
+):
+    return diagnose_failure(item, stdout="", stderr=output)[0]
 
 
 class QdasRepairPlanTests(unittest.TestCase):
@@ -65,7 +68,7 @@ class QdasRepairPlanTests(unittest.TestCase):
     def test_rejects_hypothesis_from_another_event(self):
         item = event()
         other = event("SyntaxError: invalid syntax")
-        other_hypothesis = hypothesis_for(other)
+        other_hypothesis = hypothesis_for(other, "SyntaxError: invalid syntax")
         with self.assertRaisesRegex(ValueError, "different event"):
             create_repair_plan(
                 item, other_hypothesis,
