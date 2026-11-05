@@ -8,7 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import stat
 from typing import Any
@@ -135,8 +135,18 @@ class QdasEvidenceLineage:
                 _text(payload[name], name, 256)
             _digest(payload["diff_digest"], "diff_digest")
             paths = payload["changed_paths"]
-            if not isinstance(paths, list) or not paths or len(paths) > 256 or any(not isinstance(p, str) or not p or p.startswith("/") or ".." in p.split("/") or "\\" in p for p in paths):
-                raise ValueError("changed_paths must be bounded project-relative paths")
+            if not isinstance(paths, list) or not 1 <= len(paths) <= 256:
+                raise ValueError("changed_paths must contain between 1 and 256 paths")
+            for path in paths:
+                if (
+                    not isinstance(path, str) or not path or len(path) > 4096
+                    or "\\" in path or "\x00" in path or path.startswith("/")
+                    or re.match(r"^[A-Za-z]:", path)
+                    or any(part in {"", ".", ".."} for part in path.split("/"))
+                    or any(char in path for char in "*?[]")
+                    or PurePosixPath(path).as_posix() != path
+                ):
+                    raise ValueError("changed_paths must use canonical safe project-relative paths")
             if paths != sorted(set(paths)):
                 raise ValueError("changed_paths must be unique and sorted")
             if payload["patch_applied"] is not True:
@@ -216,7 +226,7 @@ class QdasEvidenceLineage:
                 record = json.loads(line.decode("utf-8"), object_pairs_hook=_unique_pairs)
                 if not isinstance(record, dict) or set(record) != {"schema", "sequence", "previous_digest", "kind", "payload", "record_digest"}:
                     raise ValueError("unexpected record fields")
-                if record["schema"] != 1 or type(record["sequence"]) is not int or record["sequence"] != sequence:
+                if type(record["schema"]) is not int or record["schema"] != 1 or type(record["sequence"]) is not int or record["sequence"] != sequence:
                     raise ValueError("invalid schema or sequence")
                 if record["previous_digest"] != previous or record["kind"] not in _KINDS or not isinstance(record["payload"], dict):
                     raise ValueError("invalid lineage linkage")
@@ -236,11 +246,24 @@ class QdasEvidenceLineage:
         self._check(create=True)
         # Validate and append under an exclusive OS file lock to serialize writers.
         lock_path = self.path.with_name(self.path.name + ".lock")
+        if lock_path.exists() or lock_path.is_symlink():
+            lock_info = lock_path.lstat()
+            lock_attributes = getattr(lock_info, "st_file_attributes", 0)
+            if stat.S_ISLNK(lock_info.st_mode) or lock_attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400):
+                raise QdasLineageError("QDAS lineage lock must not be a symbolic link or reparse point")
+            if not stat.S_ISREG(lock_info.st_mode):
+                raise QdasLineageError("QDAS lineage lock must be a regular file")
         flags = os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
         try:
             descriptor = os.open(lock_path, flags, 0o600)
         except OSError as exc:
             raise QdasLineageError("cannot open QDAS lineage lock") from exc
+        lock_info = os.fstat(descriptor)
+        if not stat.S_ISREG(lock_info.st_mode):
+            os.close(descriptor)
+            raise QdasLineageError("QDAS lineage lock must be a regular file")
+        if os.name != "nt":
+            os.fchmod(descriptor, 0o600)
         with os.fdopen(descriptor, "r+b") as lock:
             if os.name == "nt":
                 import msvcrt
