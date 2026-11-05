@@ -52,7 +52,7 @@ def record_execution_report(
         tool_name=tool_name,
         tool_version=tool_version,
         argv=argv,
-        working_directory=str(root),
+        working_directory=".",
         environment=environment,
         started_at=started_at,
         finished_at=ended,
