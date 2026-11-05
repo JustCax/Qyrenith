@@ -107,6 +107,17 @@ class QdasExecutionEventTests(unittest.TestCase):
         event = make_event(status="BLOCKED", exit_code=None, unsupported_state=True)
         self.assertEqual(classify_failure(event).category, "UNSUPPORTED_STATE")
 
+    def test_unsupported_state_overrides_reported_success(self):
+        event = make_event(status="PASS", exit_code=0, unsupported_state=True)
+        self.assertEqual(event.execution_status, "BLOCKED")
+        self.assertEqual(classify_failure(event).category, "UNSUPPORTED_STATE")
+
+    def test_rejects_pass_event_with_unsupported_state_flag(self):
+        event = make_event(status="BLOCKED", exit_code=0, unsupported_state=True)
+        invalid = {**event.to_dict(), "execution_status": "PASS"}
+        with self.assertRaisesRegex(ValueError, "PASS event contradicts"):
+            ExecutionEvent.from_dict(invalid)
+
     def test_successful_event_has_no_failure_classification(self):
         event = make_event(status="PASS", exit_code=0)
         self.assertIsNone(classify_failure(event))
