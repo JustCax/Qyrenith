@@ -52,14 +52,15 @@ def _execution_scope_digest(event: dict[str, Any]) -> str:
     return hashlib.sha256(_canonical({key: event[key] for key in fields})).hexdigest()
 
 
-def _event_record(ledger: QdasEventLedger, event_id: str, digest: str) -> dict[str, Any]:
-    matches = [
-        item for item in ledger.verify()
-        if item["event"]["event_id"] == event_id and item["record_digest"] == digest
-    ]
-    if len(matches) != 1:
+def _event_record(
+    event_index: dict[tuple[str, str], dict[str, Any]],
+    event_id: str,
+    digest: str,
+) -> dict[str, Any]:
+    record = event_index.get((event_id, digest))
+    if record is None:
         raise QdasLineageError("referenced execution event is absent or its record digest does not match")
-    return matches[0]
+    return record
 
 
 class QdasEvidenceLineage:
@@ -106,14 +107,18 @@ class QdasEvidenceLineage:
                 raise QdasLineageError("QDAS lineage ledger must be owner-only")
 
     @staticmethod
-    def _validate_payload(kind: str, payload: dict[str, Any], earlier: list[dict[str, Any]],
-                          event_ledger: QdasEventLedger) -> None:
+    def _validate_payload(
+        kind: str,
+        payload: dict[str, Any],
+        earlier: list[dict[str, Any]],
+        event_index: dict[tuple[str, str], dict[str, Any]],
+    ) -> None:
         if kind == "REPAIR_PLAN":
             required = {"event_id", "event_record_digest", "hypothesis_id", "plan_document", "plan_digest"}
             if set(payload) != required:
                 raise ValueError("repair plan evidence fields are invalid")
             event_id = _digest(payload["event_id"], "event_id", 32)
-            event_record = _event_record(event_ledger, event_id, _digest(payload["event_record_digest"], "event_record_digest"))
+            event_record = _event_record(event_index, event_id, _digest(payload["event_record_digest"], "event_record_digest"))
             hypothesis_id = _digest(payload["hypothesis_id"], "hypothesis_id", 32)
             hypotheses = event_record.get("hypotheses", [])
             matched_hypothesis = next(
@@ -177,7 +182,7 @@ class QdasEvidenceLineage:
             if plan_entry is None:
                 raise ValueError("patch evidence references an unknown repair plan")
             source_event = _event_record(
-                event_ledger,
+                event_index,
                 plan_entry["payload"]["event_id"],
                 plan_entry["payload"]["event_record_digest"],
             )["event"]
@@ -269,12 +274,23 @@ class QdasEvidenceLineage:
             return
         raise ValueError("unsupported QDAS evidence kind")
 
+    def _verified_event_index(self) -> dict[tuple[str, str], dict[str, Any]]:
+        records = self.event_ledger.verify()
+        return {
+            (item["event"]["event_id"], item["record_digest"]): item
+            for item in records
+        }
+
     def verify(self) -> tuple[dict[str, Any], ...]:
         self._check(create=False)
+        event_index = self._verified_event_index()
         with QdasEventLedger(self.path)._lock():
-            return self._verify_unlocked()
+            return self._verify_unlocked(event_index)
 
-    def _verify_unlocked(self) -> tuple[dict[str, Any], ...]:
+    def _verify_unlocked(
+        self,
+        event_index: dict[tuple[str, str], dict[str, Any]],
+    ) -> tuple[dict[str, Any], ...]:
         self._check(create=False)
         if not self.path.exists():
             return ()
@@ -312,7 +328,7 @@ class QdasEvidenceLineage:
                 digest = hashlib.sha256(_canonical({key: value for key, value in record.items() if key != "record_digest"})).hexdigest()
                 if digest != record["record_digest"] or _canonical(record) + b"\n" != line:
                     raise ValueError("lineage digest or canonical encoding mismatch")
-                self._validate_payload(record["kind"], record["payload"], records, self.event_ledger)
+                self._validate_payload(record["kind"], record["payload"], records, event_index)
             except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError, KeyError, QdasLedgerError, QdasLineageError) as exc:
                 raise QdasLineageError("QDAS lineage record " + str(sequence) + " is invalid") from exc
             records.append(record)
@@ -325,10 +341,11 @@ class QdasEvidenceLineage:
         self._check(create=True)
         # Share the primary ledger's cross-platform lock implementation.
         with QdasEventLedger(self.path)._lock():
-            records = list(self._verify_unlocked())
+            event_index = self._verified_event_index()
+            records = list(self._verify_unlocked(event_index))
             if len(records) >= _MAX_RECORDS:
                 raise QdasLineageError("QDAS lineage ledger reached its record limit")
-            self._validate_payload(kind, payload, records, self.event_ledger)
+            self._validate_payload(kind, payload, records, event_index)
             previous = records[-1]["record_digest"] if records else _GENESIS
             record = {
                 "schema": 1,
