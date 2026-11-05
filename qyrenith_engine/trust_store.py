@@ -70,10 +70,12 @@ def default_trust_store_path() -> Path:
     """Return the per-user configuration path, never a project-relative path."""
     if os.name == "nt":
         root = os.environ.get("APPDATA")
-        base = Path(root) if root else Path.home() / "AppData" / "Roaming"
+        base = Path(root).expanduser() if root else Path.home() / "AppData" / "Roaming"
     else:
         root = os.environ.get("XDG_CONFIG_HOME")
-        base = Path(root) if root else Path.home() / ".config"
+        base = Path(root).expanduser() if root else Path.home() / ".config"
+    if not base.is_absolute():
+        raise TrustStoreError("user configuration directory must be an absolute path")
     return base / "Qyrenith" / "trust-store.json"
 
 
@@ -97,6 +99,17 @@ def _reject_reparse_or_symlink(path: Path, *, directory: bool) -> os.stat_result
         if info.st_mode & 0o077:
             raise TrustStoreError("trust-store permissions expose data beyond the owner")
     return info
+
+
+def _reject_git_worktree_path(directory: Path) -> None:
+    current = directory.resolve(strict=True)
+    while True:
+        marker = current / ".git"
+        if marker.exists() or marker.is_symlink():
+            raise TrustStoreError("owner trust store must not be placed inside a Git worktree")
+        if current.parent == current:
+            break
+        current = current.parent
 
 
 def _ensure_private_directory(directory: Path, *, create: bool) -> None:
@@ -238,6 +251,7 @@ class OwnerTrustStore:
         if not target.name or target.name in {".", ".."}:
             raise TrustStoreError("trust-store filename is invalid")
         _ensure_private_directory(target.parent, create=create)
+        _reject_git_worktree_path(target.parent)
         if os.name == "nt":
             profile = Path.home().resolve(strict=True)
             profile_store_root = target.parent.parent.resolve(strict=True)
