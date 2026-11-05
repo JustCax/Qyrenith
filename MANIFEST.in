@@ -98,6 +98,9 @@ include qyrenith_engine/execution.py
 include qyrenith_engine/trust_store.py
 include qyrenith_engine/trust_cli.py
 include qyrenith_engine/migration/__init__.py
+include qyrenith_engine/qdas/__init__.py
+include qyrenith_engine/qdas/events.py
+include qyrenith_engine/qdas/ledger.py
 include qyrenith_engine/migration/assurance.py
 include qyrenith_engine/migration/authorization.py
 include qyrenith_engine/migration/knowledge.py
@@ -118,6 +121,8 @@ include schemas/migration-transition.schema.json
 include schemas/migration-worker-manifest.schema.json
 include schemas/migration-worker-qualification.schema.json
 include schemas/owner-trust-store.schema.json
+include schemas/qdas-execution-event.schema.json
+include schemas/qdas-event-ledger-record.schema.json
 include schemas/host-approval.schema.json
 include schemas/migration-worker-assessment.schema.json
 include schemas/migration-authorization.schema.json
@@ -153,6 +158,8 @@ include tests/test_node_domain.py
 include tests/test_performance.py
 include tests/test_python_unittest_adapter.py
 include tests/test_qyrenith.py
+include tests/test_qdas_events.py
+include tests/test_qdas_ledger.py
 include tests/test_recovery_and_targets.py
 include tests/test_release_contents.py
 include tests/test_rust_domain.py
