@@ -17,12 +17,12 @@ The 1.2.0 branch introduces an owner-scoped trust-decision store through `qyreni
 
 The store authenticates its canonical contents with a local HMAC key and detects accidental or repository-local tampering. Use the interactive CLI for owner decisions:
 
-\`\`\`text
+```text
 python qyrenith.py trust-store --trust-action init
 python qyrenith.py trust-store --trust-action list
 python qyrenith.py trust-store --trust-action trust --trust-kind WORKER_MANIFEST --digest sha256:<64-lowercase-hex> --reason "Reviewed exact worker build"
 python qyrenith.py trust-store --trust-action revoke --trust-kind WORKER_MANIFEST --digest sha256:<64-lowercase-hex> --reason "Worker withdrawn"
-\`\`\`
+```
 
 Trust/revoke commands require an interactive terminal and an exact one-time challenge. The lower-level Python API remains an administrative primitive and can be called programmatically by code running as the same user; use the CLI only from a trusted local session. This is not a publisher signature, remote attestation, or defense against malicious code already running as the same OS user. Reviewer names are attribution metadata, not authenticated identity. A trust decision must never be inferred from a project file or imported allowlist.
 
