@@ -13,6 +13,8 @@ from typing import Any
 from .knowledge import KnowledgeCatalog, strict_object_pairs
 from .planner import RoutePlan
 from ..trust_store import OwnerTrustStore
+from ..approval import HostApproval, HostApprovalRequest, create_host_approval_request, validate_host_approval
+from .workspace import WorkspaceDescriptor
 from .worker import (
     MigrationWorkerRegistry,
     RouteWorkerAssessment,
@@ -721,6 +723,122 @@ def validate_migration_authorization_with_owner_trust(
         )
 
 
+def migration_step_approval_scope(
+    authorization: MigrationAuthorization,
+    plan: RoutePlan,
+    grant: MigrationStepGrant,
+    workspace: WorkspaceDescriptor,
+    *,
+    command_digest: str,
+    sandbox_profile_id: str,
+    sandbox_profile_digest: str,
+) -> dict[str, Any]:
+    """Build the exact human-visible scope for one migration worker side effect."""
+    if not isinstance(authorization, MigrationAuthorization) or not isinstance(plan, RoutePlan):
+        raise TypeError("authorization and plan must use migration contract types")
+    if not isinstance(grant, MigrationStepGrant):
+        raise TypeError("grant must be a MigrationStepGrant")
+    if not isinstance(workspace, WorkspaceDescriptor):
+        raise TypeError("workspace must be a WorkspaceDescriptor")
+    if authorization.route_plan_digest != plan.plan_digest:
+        raise ValueError("authorization does not match the exact route plan")
+    if grant not in authorization.grants:
+        raise ValueError("step grant is not part of the exact authorization")
+    if grant.transition_id not in {item.transition_id for item in plan.transitions}:
+        raise ValueError("step grant transition is not present in the route plan")
+    if (
+        not isinstance(command_digest, str)
+        or not re.fullmatch(r"(?:sha256:)?[0-9a-f]{64}", command_digest)
+    ):
+        raise ValueError("command_digest must be an exact lowercase SHA-256 digest")
+    if not isinstance(sandbox_profile_id, str) or not sandbox_profile_id.strip() or len(sandbox_profile_id) > 256:
+        raise ValueError("sandbox_profile_id must be non-empty bounded text")
+    if (
+        not isinstance(sandbox_profile_digest, str)
+        or not re.fullmatch(r"(?:sha256:)?[0-9a-f]{64}", sandbox_profile_digest)
+    ):
+        raise ValueError("sandbox_profile_digest must be an exact lowercase SHA-256 digest")
+    return {
+        "route_plan_digest": plan.plan_digest,
+        "authorization_digest": authorization.authorization_digest,
+        "worker_assessment_digest": authorization.worker_assessment_digest,
+        "transition_id": grant.transition_id,
+        "worker_id": grant.worker_id,
+        "worker_version": grant.worker_version,
+        "manifest_digest": grant.manifest_digest,
+        "qualification_id": grant.qualification_id,
+        "qualification_digest": grant.qualification_digest,
+        "permissions": [item.value for item in grant.permissions],
+        "resource_limits": grant.limits.to_dict(),
+        "source_snapshot_digest": workspace.source_snapshot_digest,
+        "workspace_id": workspace.workspace_id,
+        "workspace_descriptor_digest": workspace.descriptor_digest,
+        "workspace_path": workspace.workspace_path,
+        "project_path": workspace.project_path,
+        "target_identity": workspace.target.to_dict(),
+        "command_digest": command_digest.removeprefix("sha256:"),
+        "sandbox_profile_id": sandbox_profile_id,
+        "sandbox_profile_digest": sandbox_profile_digest.removeprefix("sha256:"),
+    }
+
+
+def create_migration_step_approval_request(
+    authorization: MigrationAuthorization,
+    plan: RoutePlan,
+    grant: MigrationStepGrant,
+    workspace: WorkspaceDescriptor,
+    *,
+    command_digest: str,
+    sandbox_profile_id: str,
+    sandbox_profile_digest: str,
+    lifetime_seconds: int = 300,
+    now: datetime | None = None,
+) -> HostApprovalRequest:
+    """Create a one-time host approval request bound to one worker, workspace, command, and sandbox profile."""
+    scope = migration_step_approval_scope(
+        authorization, plan, grant, workspace,
+        command_digest=command_digest,
+        sandbox_profile_id=sandbox_profile_id,
+        sandbox_profile_digest=sandbox_profile_digest,
+    )
+    return create_host_approval_request(
+        "MIGRATION_STEP", scope, lifetime_seconds=lifetime_seconds, now=now
+    )
+
+
+def validate_migration_step_approval(
+    authorization: MigrationAuthorization,
+    plan: RoutePlan,
+    assessment: RouteWorkerAssessment,
+    registry: MigrationWorkerRegistry,
+    policy: MigrationAuthorizationPolicy,
+    grant: MigrationStepGrant,
+    workspace: WorkspaceDescriptor,
+    approval: HostApproval,
+    *,
+    trust_store: OwnerTrustStore,
+    knowledge: KnowledgeCatalog,
+    command_digest: str,
+    sandbox_profile_id: str,
+    sandbox_profile_digest: str,
+    now: datetime,
+) -> None:
+    """Revalidate policy/trust and consume a one-time host approval immediately before a step."""
+    validate_migration_authorization_with_owner_trust(
+        authorization, plan, assessment, registry, policy,
+        trust_store=trust_store, knowledge=knowledge, now=now,
+    )
+    scope = migration_step_approval_scope(
+        authorization, plan, grant, workspace,
+        command_digest=command_digest,
+        sandbox_profile_id=sandbox_profile_id,
+        sandbox_profile_digest=sandbox_profile_digest,
+    )
+    validate_host_approval(
+        approval, "MIGRATION_STEP", scope, trust_store, now=now, consume=True
+    )
+
+
 def serialize_migration_authorization_policy(policy: MigrationAuthorizationPolicy) -> bytes:
     if not isinstance(policy, MigrationAuthorizationPolicy):
         raise TypeError("policy must be a MigrationAuthorizationPolicy")
@@ -749,4 +867,6 @@ __all__ = [
     "validate_migration_authorization",
     "authorize_migration_with_owner_trust",
     "validate_migration_authorization_with_owner_trust",
+    "migration_step_approval_scope", "create_migration_step_approval_request",
+    "validate_migration_step_approval",
 ]
