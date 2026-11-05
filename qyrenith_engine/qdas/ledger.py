@@ -229,7 +229,10 @@ class QdasEventLedger:
                             "line_digest": observation.line_digest,
                         })).hexdigest()
                         if observation.observation_id != expected_observation_id:
-                            raise ValueError("observation identity does not match its evidence")
+                            raise ValueError(
+                                "observation identity does not match its evidence "
+                                f"(expected {expected_observation_id}, got {observation.observation_id})"
+                            )
                     observation_ids = sorted(item.observation_id for item in hypothesis.supporting_evidence)
                     if hypothesis.rule_id == "QDAS-ROOT-UNKNOWN-001":
                         expected_id = hashlib.sha256(
