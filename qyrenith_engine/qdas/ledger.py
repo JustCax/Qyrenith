@@ -35,6 +35,7 @@ class QdasEventLedger:
 
     def _check_parent(self, *, create: bool) -> None:
         parent = self.path.parent
+        self._check_ancestor_links(parent)
         if parent.exists() or parent.is_symlink():
             self._check_path(parent, directory=True)
         elif create:
@@ -47,8 +48,27 @@ class QdasEventLedger:
             self._check_path(parent, directory=True)
         else:
             raise QdasLedgerError("QDAS ledger directory does not exist")
+        self._check_ancestor_links(parent)
         if os.name != "nt" and parent.stat().st_mode & 0o077:
             raise QdasLedgerError("QDAS ledger directory must be owner-only")
+
+    @staticmethod
+    def _check_ancestor_links(parent: Path) -> None:
+        """Reject symlink/reparse traversal in every existing parent component."""
+        for ancestor in reversed((parent, *parent.parents)):
+            try:
+                info = ancestor.lstat()
+            except FileNotFoundError:
+                continue
+            except OSError as exc:
+                raise QdasLedgerError("cannot inspect QDAS ledger ancestor") from exc
+            if stat.S_ISLNK(info.st_mode):
+                raise QdasLedgerError("QDAS ledger ancestor paths must not be symbolic links")
+            attributes = getattr(info, "st_file_attributes", 0)
+            if attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400):
+                raise QdasLedgerError("QDAS ledger ancestor paths must not be reparse points")
+            if not stat.S_ISDIR(info.st_mode):
+                raise QdasLedgerError("QDAS ledger ancestor must be a directory")
 
     @staticmethod
     def _check_path(path: Path, *, directory: bool) -> os.stat_result:
