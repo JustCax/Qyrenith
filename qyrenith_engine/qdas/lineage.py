@@ -41,6 +41,15 @@ def _digest(value: Any, name: str, length: int = 64) -> str:
     return value
 
 
+def _execution_scope_digest(event: dict[str, Any]) -> str:
+    fields = (
+        "event_id", "event_kind", "project_revision", "tool_name", "tool_version",
+        "argv", "working_directory", "environment_digest", "execution_status",
+        "exit_code", "stdout_digest", "stderr_digest",
+    )
+    return hashlib.sha256(_canonical({key: event[key] for key in fields})).hexdigest()
+
+
 def _event_record(ledger: QdasEventLedger, event_id: str, digest: str) -> dict[str, Any]:
     matches = [
         item for item in ledger.verify()
@@ -198,7 +207,9 @@ class QdasEvidenceLineage:
             patch_revision = patch["payload"]["resulting_revision"]
             if event["project_revision"] != patch_revision:
                 raise ValueError(kind.lower() + " event revision does not match the observed patch revision")
-            _digest(payload["scope_digest"], "scope_digest")
+            supplied_scope_digest = _digest(payload["scope_digest"], "scope_digest")
+            if supplied_scope_digest != _execution_scope_digest(event):
+                raise ValueError(kind.lower() + " scope digest does not match the referenced execution event")
             if any(item["kind"] == kind and item["payload"]["patch_record_digest"] == patch_digest for item in earlier):
                 raise ValueError(kind.lower() + " evidence is already recorded for this patch")
             return
