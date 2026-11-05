@@ -69,14 +69,24 @@ class QdasEvidenceLineage:
             if os.name != "nt":
                 parent.chmod(0o700)
         info = parent.lstat()
-        if not stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode):
-            raise QdasLineageError("QDAS lineage parent must be a real directory")
+        parent_attributes = getattr(info, "st_file_attributes", 0)
+        if (
+            not stat.S_ISDIR(info.st_mode)
+            or stat.S_ISLNK(info.st_mode)
+            or parent_attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+        ):
+            raise QdasLineageError("QDAS lineage parent must be a real non-reparse directory")
         if os.name != "nt" and (info.st_uid != os.getuid() or info.st_mode & 0o077):
             raise QdasLineageError("QDAS lineage directory must be owner-only")
         if self.path.exists() or self.path.is_symlink():
             item = self.path.lstat()
-            if stat.S_ISLNK(item.st_mode) or not stat.S_ISREG(item.st_mode):
-                raise QdasLineageError("QDAS lineage ledger must be a regular file")
+            item_attributes = getattr(item, "st_file_attributes", 0)
+            if (
+                stat.S_ISLNK(item.st_mode)
+                or not stat.S_ISREG(item.st_mode)
+                or item_attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+            ):
+                raise QdasLineageError("QDAS lineage ledger must be a regular non-reparse file")
             if os.name != "nt" and (item.st_uid != os.getuid() or item.st_mode & 0o077):
                 raise QdasLineageError("QDAS lineage ledger must be owner-only")
 
