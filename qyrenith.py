@@ -3769,8 +3769,10 @@ def cmd_qdas(args):
         die("PREFLIGHT_FAILURE", "QDAS state path is not a directory")
     qdas_dir = state_dir / "qdas"
     ledger_path = qdas_dir / "events.jsonl"
+    lineage_path = qdas_dir / "lineage.jsonl"
     reject_reparse_path(qdas_dir, "QDAS directory")
     reject_reparse_path(ledger_path, "QDAS ledger")
+    reject_reparse_path(lineage_path, "QDAS lineage ledger")
     if not qdas_dir.is_dir() or not ledger_path.exists():
         result = {
             "schema": 1,
@@ -3783,10 +3785,17 @@ def cmd_qdas(args):
         return 0 if action == "summary" else 2
 
     try:
-        from qyrenith_engine.qdas import QdasEventLedger
-        records = QdasEventLedger(ledger_path).verify()
+        from qyrenith_engine.qdas import QdasEventLedger, QdasEvidenceLineage
+        event_ledger = QdasEventLedger(ledger_path)
+        records = event_ledger.verify()
+        lineage = QdasEvidenceLineage(lineage_path, event_ledger)
+        lineage_records = lineage.verify() if lineage_path.exists() else ()
     except Exception as exc:
-        die("PREFLIGHT_FAILURE", "QDAS ledger integrity verification failed: " + type(exc).__name__)
+        die("PREFLIGHT_FAILURE", "QDAS event or evidence lineage verification failed: " + type(exc).__name__)
+
+    lineage_kind_counts = {}
+    for item in lineage_records:
+        lineage_kind_counts[item["kind"]] = lineage_kind_counts.get(item["kind"], 0) + 1
 
     status_counts = {}
     kind_counts = {}
@@ -3825,6 +3834,10 @@ def cmd_qdas(args):
         "hypothesis_count": hypothesis_count,
         "unconfirmed_hypothesis_count": hypothesis_count,
         "latest_record_digest": records[-1]["record_digest"] if records else None,
+        "lineage_status": "CHAIN_VERIFIED" if lineage_records else ("EMPTY" if lineage_path.exists() else "NOT_INITIALIZED"),
+        "lineage_record_count": len(lineage_records),
+        "lineage_kind_counts": dict(sorted(lineage_kind_counts.items())),
+        "latest_lineage_record_digest": lineage_records[-1]["record_digest"] if lineage_records else None,
         "integrity_scope": (
             "Internal hash-chain, event, classification, and persisted-hypothesis consistency only. "
             "This does not prove ledger completeness or provide an independent trust anchor."
