@@ -140,7 +140,7 @@ class QdasCliLifecycleIntegrationTests(unittest.TestCase):
             result = QYRENITH.cmd_qdas(args)
         document = json.loads(output.getvalue())
         self.assertEqual(result, 0)
-        self.assertEqual(document["status"], "INTEGRITY_VERIFIED")
+        self.assertEqual(document["status"], "CHAIN_VERIFIED")
         self.assertEqual(document["record_count"], 1)
         self.assertEqual(document["hypothesis_count"], 1)
         self.assertNotIn(str(self.root), output.getvalue())
