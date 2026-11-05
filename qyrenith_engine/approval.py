@@ -74,7 +74,9 @@ def _scope_bytes(scope: object) -> bytes:
         _validate_scope_value(scope)
         encoded = _canonical(scope)
     except (TypeError, ValueError) as exc:
-        raise ValueError("approval scope must contain only finite JSON values with string keys") from exc
+        raise ValueError(
+            "approval scope must contain only finite JSON values with string keys: " + str(exc)
+        ) from exc
     if len(encoded) > _MAX_SCOPE_BYTES:
         raise ValueError("approval scope exceeds the 64 KiB limit")
     return encoded
