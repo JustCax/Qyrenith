@@ -252,6 +252,10 @@ class OwnerTrustStore:
         key_path = target.with_name(target.name + ".key")
         store_exists = target.exists() or target.is_symlink()
         key_exists = key_path.exists() or key_path.is_symlink()
+        if store_exists:
+            _reject_reparse_or_symlink(target, directory=False)
+        if key_exists:
+            _reject_reparse_or_symlink(key_path, directory=False)
         if not store_exists and not key_exists:
             if not create:
                 raise TrustStoreError("owner trust store is not initialized")
