@@ -92,6 +92,7 @@ include pyproject.toml
 include qyrenith.py
 include qyrenith_engine/__init__.py
 include qyrenith_engine/analysis.py
+include qyrenith_engine/approval.py
 include qyrenith_engine/boundary.py
 include qyrenith_engine/execution.py
 include qyrenith_engine/trust_store.py
@@ -134,6 +135,7 @@ include tests/test_allow_missing_adapters.py
 include tests/test_core_regressions.py
 include tests/test_engine_110.py
 include tests/test_trust_store.py
+include tests/test_host_approval.py
 include tests/test_trust_store_cli.py
 include tests/test_migration_assurance_120.py
 include tests/test_migration_authorization_120.py
