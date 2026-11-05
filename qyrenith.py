@@ -3750,15 +3750,25 @@ def cmd_qdas(args):
     if type(limit) is not int or not 1 <= limit <= 1000:
         die("PREFLIGHT_FAILURE", "qdas event display limit must be between 1 and 1000")
 
+    def reject_reparse_path(path: Path, label: str) -> None:
+        try:
+            info = path.lstat()
+        except FileNotFoundError:
+            return
+        except OSError:
+            die("PREFLIGHT_FAILURE", f"cannot inspect {label} path")
+        attributes = getattr(info, "st_file_attributes", 0)
+        if stat.S_ISLNK(info.st_mode) or attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400):
+            die("PREFLIGHT_FAILURE", f"{label} path must not be a symbolic link or reparse point")
+
     state_dir = root / STATE_DIR
-    if state_dir.is_symlink() or (state_dir.exists() and not state_dir.is_dir()):
-        die("PREFLIGHT_FAILURE", "QDAS state path is not a safe directory")
+    reject_reparse_path(state_dir, "QDAS state")
+    if state_dir.exists() and not state_dir.is_dir():
+        die("PREFLIGHT_FAILURE", "QDAS state path is not a directory")
     qdas_dir = state_dir / "qdas"
     ledger_path = qdas_dir / "events.jsonl"
-    if qdas_dir.is_symlink():
-        die("PREFLIGHT_FAILURE", "QDAS directory must not be a symbolic link")
-    if ledger_path.is_symlink():
-        die("PREFLIGHT_FAILURE", "QDAS ledger path must not be a symbolic link")
+    reject_reparse_path(qdas_dir, "QDAS directory")
+    reject_reparse_path(ledger_path, "QDAS ledger")
     if not qdas_dir.is_dir() or not ledger_path.exists():
         result = {
             "schema": 1,
