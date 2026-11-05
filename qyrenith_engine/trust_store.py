@@ -233,13 +233,12 @@ class OwnerTrustStore:
     def open(
         cls, path: str | Path | None = None, *, create: bool = False
     ) -> "OwnerTrustStore":
-        using_default_path = path is None
         target = Path(path) if path is not None else default_trust_store_path()
         target = target.expanduser().absolute()
         if not target.name or target.name in {".", ".."}:
             raise TrustStoreError("trust-store filename is invalid")
         _ensure_private_directory(target.parent, create=create)
-        if os.name == "nt" and using_default_path:
+        if os.name == "nt":
             profile = Path.home().resolve(strict=True)
             profile_store_root = target.parent.parent.resolve(strict=True)
             try:
@@ -308,7 +307,13 @@ class OwnerTrustStore:
             raise TrustStoreError("trust store exceeds the 4 MiB limit")
         try:
             text = source.decode("utf-8")
-            document = json.loads(text, object_pairs_hook=OwnerTrustStore._unique_pairs)
+            document = json.loads(
+                text,
+                object_pairs_hook=OwnerTrustStore._unique_pairs,
+                parse_constant=lambda value: (_ for _ in ()).throw(
+                    TrustStoreError(f"invalid JSON constant: {value}")
+                ),
+            )
         except (UnicodeDecodeError, json.JSONDecodeError, TrustStoreError) as exc:
             raise TrustStoreError("trust store is not valid strict UTF-8 JSON") from exc
         expected = {"schema", "store_id", "generation", "events", "hmac_sha256"}
@@ -322,7 +327,10 @@ class OwnerTrustStore:
             raise TrustStoreError("trust-store generation is invalid")
         if not isinstance(document["events"], list) or len(document["events"]) != document["generation"]:
             raise TrustStoreError("trust-store event count does not match generation")
-        events = tuple(TrustDecision.from_dict(item) for item in document["events"])
+        try:
+            events = tuple(TrustDecision.from_dict(item) for item in document["events"])
+        except (TypeError, ValueError, TrustStoreError) as exc:
+            raise TrustStoreError("trust store contains an invalid decision event") from exc
         if tuple(item.sequence for item in events) != tuple(range(1, len(events) + 1)):
             raise TrustStoreError("trust-store event sequence is not contiguous")
         if len({item.event_id for item in events}) != len(events):
