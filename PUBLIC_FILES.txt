@@ -101,6 +101,8 @@ qyrenith_engine/migration/__init__.py
 qyrenith_engine/qdas/__init__.py
 qyrenith_engine/qdas/events.py
 qyrenith_engine/qdas/collector.py
+qyrenith_engine/qdas/diagnosis.py
+qyrenith_engine/qdas/repair.py
 qyrenith_engine/qdas/ledger.py
 qyrenith_engine/migration/assurance.py
 qyrenith_engine/migration/authorization.py
@@ -124,6 +126,8 @@ schemas/migration-worker-qualification.schema.json
 schemas/owner-trust-store.schema.json
 schemas/qdas-execution-event.schema.json
 schemas/qdas-event-ledger-record.schema.json
+schemas/qdas-failure-hypothesis.schema.json
+schemas/qdas-repair-plan.schema.json
 schemas/host-approval.schema.json
 schemas/migration-worker-assessment.schema.json
 schemas/migration-authorization.schema.json
@@ -161,6 +165,8 @@ tests/test_python_unittest_adapter.py
 tests/test_qyrenith.py
 tests/test_qdas_events.py
 tests/test_qdas_collector.py
+tests/test_qdas_diagnosis.py
+tests/test_qdas_repair.py
 tests/test_qdas_ledger.py
 tests/test_recovery_and_targets.py
 tests/test_release_contents.py
