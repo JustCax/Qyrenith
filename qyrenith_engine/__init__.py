@@ -1,5 +1,6 @@
 """Additive deterministic engineering capabilities for Qyrenith."""
 from .analysis import analyze_project, build_change_impact, compare_baselines
+from .approval import (HostApproval, HostApprovalError, HostApprovalRequest, approve_host_request, create_host_approval_request, validate_host_approval)
 from .boundary import inspect_project_boundary
 from .execution import run_bounded_process, run_bounded_worker
 from .trust_store import OwnerTrustStore, TrustDecision, TrustStoreError, default_trust_store_path
@@ -26,6 +27,8 @@ from .migration import (
 
 __all__ = [
     "analyze_project", "build_change_impact", "compare_baselines",
+    "HostApproval", "HostApprovalError", "HostApprovalRequest",
+    "approve_host_request", "create_host_approval_request", "validate_host_approval",
     "inspect_project_boundary", "run_bounded_process", "run_bounded_worker",
     "OwnerTrustStore", "TrustDecision", "TrustStoreError", "default_trust_store_path",
     "AssuranceLedger", "AssuranceLedgerError", "LedgerLockedError", "verify_assurance_chain",
