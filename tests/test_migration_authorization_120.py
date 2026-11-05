@@ -1,4 +1,5 @@
 """Security-boundary tests for plan-bound migration authorization."""
+import atexit
 import hashlib
 import unittest
 from datetime import datetime, timedelta, timezone
@@ -43,6 +44,16 @@ from qyrenith_engine.migration import (
 ROOT = Path(__file__).resolve().parents[1]
 VERIFIER_DIGEST = "sha256:" + hashlib.sha256((ROOT / "qyrenith_engine/migration/knowledge.py").read_bytes()).hexdigest()
 NOW = datetime(2026, 11, 4, 18, 0, tzinfo=timezone.utc)
+
+_OWNER_TRUST_TEST_DIRECTORIES = []
+
+
+def _cleanup_owner_trust_test_directories():
+    for directory in _OWNER_TRUST_TEST_DIRECTORIES:
+        directory.cleanup()
+
+
+atexit.register(_cleanup_owner_trust_test_directories)
 SOURCE = MigrationIdentity(
     domain="minecraft", product="minecraft", product_version="1.21",
     platform="java", loader="fabric", loader_version="0.16",
@@ -146,6 +157,7 @@ def owner_trust_store(plan, registry, catalog, *, now=NOW, expires_at=None, trus
     temporary = tempfile.TemporaryDirectory()
     store = OwnerTrustStore.open(Path(temporary.name) / "owner" / "trust-store.json", create=True)
     store._test_temporary_directory = temporary
+    _OWNER_TRUST_TEST_DIRECTORIES.append(temporary)
     store.trust(
         "KNOWLEDGE_CATALOG", "sha256:" + catalog.content_digest,
         reviewed_by="test-owner", reviewed_at=now, expires_at=expires_at,
