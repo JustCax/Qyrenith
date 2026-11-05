@@ -28,7 +28,7 @@ class TestReleaseContents(unittest.TestCase):
             self.skipTest("the 1.2.0 release artifact policy activates at version 1.2.0")
         selected = {
             name for name in manifest_files()
-            if re.fullmatch(r"RELEASE_NOTES_[0-9]+\\.[0-9]+\\.[0-9]+\\.md", Path(name).name)
+            if re.fullmatch(r"RELEASE_NOTES_[0-9]+\.[0-9]+\.[0-9]+\.md", Path(name).name)
         }
         self.assertEqual(selected, {f"RELEASE_NOTES_{version}.md"})
 
