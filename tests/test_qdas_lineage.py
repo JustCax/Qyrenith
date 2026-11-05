@@ -187,6 +187,25 @@ class QdasEvidenceLineageTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "hypothesis"):
             self.lineage.append("REPAIR_PLAN", payload)
 
+    def test_rejects_rehashed_repair_plan_with_unsafe_path(self):
+        document = self.plan.to_document()
+        document["affected_paths"] = ["../outside.py"]
+        document["plan_digest"] = hashlib.sha256(
+            json.dumps(
+                {key: value for key, value in document.items() if key != "plan_digest"},
+                sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+            ).encode("utf-8")
+        ).hexdigest()
+        payload = {
+            "event_id": self.failure_record["event"]["event_id"],
+            "event_record_digest": self.failure_record["record_digest"],
+            "hypothesis_id": self.hypothesis.hypothesis_id,
+            "plan_document": document,
+            "plan_digest": document["plan_digest"],
+        }
+        with self.assertRaisesRegex(ValueError, "parent directories"):
+            self.lineage.append("REPAIR_PLAN", payload)
+
     def test_review_is_explicitly_not_authenticated(self):
         self._record_plan()
         payload = {
