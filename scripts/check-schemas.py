@@ -53,7 +53,8 @@ EXPECTED = {
     "host-approval.schema.json": [
         "schema", "approval_id", "request_id", "action_type", "request_digest",
         "scope_digest", "issued_at", "approved_at", "expires_at", "nonce",
-        "approved_by", "host_principal", "signature",
+        "approved_by", "host_principal", "trust_store_id",
+        "trust_store_generation", "signature",
     ],
     "migration-project-snapshot.schema.json": [
         "schema", "entries", "excluded_paths", "limits", "captured_at", "snapshot_digest",
@@ -153,6 +154,10 @@ require(host_approval["properties"]["nonce"].get("pattern") == "^[0-9a-f]{48}$",
         "host approval must carry a one-time nonce")
 require(host_approval["properties"]["signature"].get("pattern") == "^[0-9a-f]{64}$",
         "host approval must carry a keyed integrity signature")
+require(host_approval["properties"]["trust_store_id"].get("pattern") == "^[0-9a-f]{32}$",
+        "host approval must bind the owner trust store identity")
+require(host_approval["properties"]["trust_store_generation"].get("minimum") == 0,
+        "host approval must bind a non-negative owner trust-store generation")
 require(host_approval["properties"]["action_type"].get("pattern") == "^[A-Z][A-Z0-9_]{1,63}$",
         "host approval action type must be a canonical identifier")
 
