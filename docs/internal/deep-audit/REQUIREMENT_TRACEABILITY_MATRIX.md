@@ -231,6 +231,15 @@ The target package paths are planned interfaces, not claims that those packages 
 
 Migration-specific existing tests include `tests/test_migration_core_120.py`, `tests/test_migration_worker_120.py`, `tests/test_migration_authorization_120.py`, `tests/test_migration_assurance_120.py`, `tests/test_migration_snapshot_120.py`, and `tests/test_migration_workspace_120.py`. They prove only their tested contracts, not the complete MI-01..MI-14 lifecycle.
 
+## 1.2.0 release artifact hygiene gate
+
+| Requirement ID | Requirement | Implementation target | Acceptance evidence | Status |
+|---|---|---|---|---|
+| REL-01 | The 1.2.0 source archive, wheel, and public ZIP/TAR must not contain obsolete release-note files or stale files retained only for older releases. | PUBLIC_FILES.txt, MANIFEST.in, pyproject.toml, release assembly and verification | Inspect the complete file inventory of each built artifact; compare it against the 1.2.0 approved allowlist; reject legacy-only files and untracked generated files | NOT_STARTED |
+| REL-02 | Required compatibility documentation and migration history must remain intentionally selected; no blanket deletion based only on an old version number. | Release allowlist review | Owner-reviewed keep/remove rationale for every historical release note and compatibility document | NOT_STARTED |
+
+The current 1.1.0 baseline and its existing artifacts remain unchanged. RELEASE_NOTES_1.0.0.md and RELEASE_NOTES_1.1.0.md are currently selected by the source manifest; their removal is deferred to the deliberate 1.2.0 artifact review, where all three distribution formats must be checked independently.
+
 ## Change control
 
 Update this matrix in the same change that implements a requirement. A status change to TESTED or VERIFIED must link the exact CI run, test IDs, revision, environment, evidence digests, and reviewer. Any requirement removed from 1.2.0 requires explicit owner approval and an architecture/plan update.
