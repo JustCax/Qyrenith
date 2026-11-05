@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qyrenith.dev/schemas/qdas-repair-plan.schema.json",
+  "title": "Qyrenith QDAS Repair Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "plan_id",
+    "event_id",
+    "hypothesis_id",
+    "failure_category",
+    "affected_paths",
+    "intended_change",
+    "expected_invariants",
+    "risk",
+    "required_permissions",
+    "validation_commands",
+    "rollback_strategy",
+    "created_at",
+    "execution_mode",
+    "human_review_required",
+    "plan_digest"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "plan_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "hypothesis_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "failure_category": {
+      "enum": [
+        "BUILD_FAILURE",
+        "TEST_FAILURE",
+        "STATIC_ANALYSIS_FAILURE",
+        "RUNTIME_FAILURE",
+        "INFRASTRUCTURE_FAILURE",
+        "TIMEOUT",
+        "RESOURCE_LIMIT",
+        "ANALYZER_FAILURE",
+        "UNSUPPORTED_STATE",
+        "UNKNOWN_FAILURE"
+      ]
+    },
+    "affected_paths": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4096,
+        "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*[\\\\*?\\[\\]])[^\\\\\\u0000]+$"
+      }
+    },
+    "intended_change": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "expected_invariants": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 50,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 512
+      }
+    },
+    "risk": {
+      "enum": [
+        "LOW",
+        "MEDIUM",
+        "HIGH"
+      ]
+    },
+    "required_permissions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 7,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "READ_PROJECT",
+          "WRITE_PROJECT",
+          "EXECUTE_PROCESS",
+          "NETWORK",
+          "INSTALL_DEPENDENCIES",
+          "GIT_WRITE",
+          "PUBLISH_ARTIFACT"
+        ]
+      }
+    },
+    "validation_commands": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 32,
+      "items": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 64,
+        "items": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384
+        }
+      }
+    },
+    "rollback_strategy": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "execution_mode": {
+      "const": "PROPOSE_ONLY"
+    },
+    "human_review_required": {
+      "const": true
+    },
+    "plan_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}
