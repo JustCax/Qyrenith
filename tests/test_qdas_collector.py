@@ -1,3 +1,5 @@
+import hashlib
+import json
 import sys
 import tempfile
 import unittest
@@ -43,6 +45,30 @@ class QdasProcessCaptureTests(unittest.TestCase):
         self.assertEqual(result.report["exit_code"], 7)
         self.assertEqual(result.classification.category, "BUILD_FAILURE")
         self.assertEqual(len(self.ledger.verify()), 1)
+
+    def test_failure_hypotheses_are_persisted_and_bound_to_the_event(self):
+        result = self.capture("raise SystemExit(7)", kind="TEST")
+        record = self.ledger.verify()[0]
+        self.assertEqual(len(record["hypotheses"]), len(result.hypotheses))
+        self.assertGreaterEqual(len(record["hypotheses"]), 1)
+        for hypothesis in record["hypotheses"]:
+            self.assertEqual(hypothesis["event_id"], result.event.event_id)
+            self.assertEqual(hypothesis["state"], "UNCONFIRMED")
+            self.assertTrue(hypothesis["supporting_evidence"])
+
+    def test_tampered_hypothesis_state_fails_ledger_verification(self):
+        self.capture("raise SystemExit(7)", kind="TEST")
+        document = json.loads(self.ledger.path.read_text(encoding="utf-8"))
+        document["hypotheses"][0]["state"] = "CONFIRMED"
+        payload = {key: value for key, value in document.items() if key != "record_digest"}
+        canonical = json.dumps(payload, ensure_ascii=True, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        document["record_digest"] = hashlib.sha256(canonical).hexdigest()
+        self.ledger.path.write_text(
+            json.dumps(document, ensure_ascii=True, sort_keys=True, separators=(",", ":")) + "\\n",
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(Exception, "invalid evidence-linked hypothesis"):
+            self.ledger.verify()
 
     def test_timeout_is_captured_as_blocked_not_pass(self):
         result = self.capture("import time; time.sleep(3)", timeout=1)
