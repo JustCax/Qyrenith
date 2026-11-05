@@ -71,7 +71,14 @@ class RepairPlan:
                 raise ValueError(f"{field} must be a UUID hex value")
         if not isinstance(self.event_id, str) or not re.fullmatch(r"[0-9a-f]{32}", self.event_id):
             raise ValueError("event_id must be a UUID hex value")
-        for field in ("failure_category", "intended_change", "rollback_strategy"):
+        if self.failure_category not in {
+            "BUILD_FAILURE", "TEST_FAILURE", "STATIC_ANALYSIS_FAILURE",
+            "RUNTIME_FAILURE", "INFRASTRUCTURE_FAILURE", "TIMEOUT",
+            "RESOURCE_LIMIT", "ANALYZER_FAILURE", "UNSUPPORTED_STATE",
+            "UNKNOWN_FAILURE",
+        }:
+            raise ValueError("failure_category is not part of the QDAS failure taxonomy")
+        for field in ("intended_change", "rollback_strategy"):
             _bounded_text(getattr(self, field), field)
         if not isinstance(self.affected_paths, tuple) or not 1 <= len(self.affected_paths) <= _MAX_PATHS:
             raise ValueError("affected_paths must contain between 1 and 256 paths")
@@ -164,10 +171,10 @@ def create_repair_plan(
         raise TypeError("event must be an ExecutionEvent")
     if not isinstance(hypothesis, FailureHypothesis):
         raise TypeError("hypothesis must be a FailureHypothesis")
-    if hypothesis.event_id != event.event_id:
-        raise ValueError("failure hypothesis belongs to a different event")
     if event.execution_status == "PASS":
         raise ValueError("a successful event cannot receive a repair plan")
+    if hypothesis.event_id != event.event_id:
+        raise ValueError("failure hypothesis belongs to a different event")
     if not isinstance(affected_paths, (tuple, list)) or any(not isinstance(item, str) for item in affected_paths):
         raise ValueError("affected_paths must be a sequence of strings")
     if not isinstance(expected_invariants, (tuple, list)) or any(not isinstance(item, str) for item in expected_invariants):
