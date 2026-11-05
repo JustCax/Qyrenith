@@ -40,6 +40,14 @@ _ASSIGNMENT = re.compile(
     r"private[_-]?key|authorization|cookie)\b\s*[:=]\s*)"
     r"(['\"]?)[^\s,'\";]{6,}"
 )
+_SENSITIVE_ARG = re.compile(
+    r"(?i)^--?(?:token|secret|password|passwd|api[-_]?key|access[-_]?key|"
+    r"private[-_]?key|authorization|cookie)$"
+)
+_INLINE_SECRET_ARG = re.compile(
+    r"(?i)^(--?(?:token|secret|password|passwd|api[-_]?key|access[-_]?key|"
+    r"private[-_]?key|authorization|cookie)=).+$"
+)
 
 
 def _canonical(value: Any) -> bytes:
@@ -93,6 +101,28 @@ def redact_output(value: str) -> str:
 def digest_output(value: str) -> str:
     return hashlib.sha256(redact_output(value).encode("utf-8", "replace")).hexdigest()
 
+def redact_argv(argv: Sequence[str]) -> tuple[str, ...]:
+    """Redact secret-bearing command-line values before event persistence."""
+    result = []
+    redact_next = False
+    for value in argv:
+        if not isinstance(value, str):
+            raise ValueError("argv items must be strings")
+        if redact_next:
+            result.append("[REDACTED]")
+            redact_next = False
+            continue
+        if _SENSITIVE_ARG.fullmatch(value):
+            result.append(value)
+            redact_next = True
+            continue
+        inline = _INLINE_SECRET_ARG.match(value)
+        if inline:
+            result.append(inline.group(1) + "[REDACTED]")
+            continue
+        result.append(redact_output(value))
+    return tuple(result)
+
 
 def environment_fingerprint(environment: Mapping[str, str]) -> str:
     """Fingerprint non-secret environment inputs without persisting raw values."""
@@ -136,6 +166,7 @@ class ExecutionEvent:
     output_limited: bool
     output_incomplete: bool
     input_incomplete: bool
+    unsupported_state: bool
     stdout_bytes: int
     stderr_bytes: int
     stdout_digest: str
@@ -178,7 +209,7 @@ class ExecutionEvent:
                 raise ValueError(f"{field} must be a bounded non-negative integer")
         if self.exit_code is not None and type(self.exit_code) is not int:
             raise ValueError("exit_code must be an integer or null")
-        for field in ("timed_out", "output_limited", "output_incomplete", "input_incomplete"):
+        for field in ("timed_out", "output_limited", "output_incomplete", "input_incomplete", "unsupported_state"):
             if type(getattr(self, field)) is not bool:
                 raise ValueError(f"{field} must be a boolean")
         if self.execution_status == "PASS" and (
@@ -218,6 +249,7 @@ class ExecutionEvent:
             "output_limited": self.output_limited,
             "output_incomplete": self.output_incomplete,
             "input_incomplete": self.input_incomplete,
+            "unsupported_state": self.unsupported_state,
             "stdout_bytes": self.stdout_bytes,
             "stderr_bytes": self.stderr_bytes,
             "stdout_digest": self.stdout_digest,
@@ -323,12 +355,13 @@ def create_execution_event(
     if not isinstance(stdout, str) or not isinstance(stderr, str):
         raise ValueError("execution report streams must be text")
     exit_code = report.get("exit_code")
-    for flag in ("timed_out", "output_limited", "output_truncated", "output_incomplete", "input_incomplete"):
+    for flag in ("timed_out", "output_limited", "output_truncated", "output_incomplete", "input_incomplete", "unsupported_state"):
         if flag in report and type(report[flag]) is not bool:
             raise ValueError(f"execution report {flag} must be a boolean")
     output_limited = bool(report.get("output_limited") or report.get("output_truncated"))
     output_incomplete = bool(report.get("output_incomplete"))
     input_incomplete = bool(report.get("input_incomplete"))
+    unsupported_state = bool(report.get("unsupported_state"))
     timed_out = bool(report.get("timed_out"))
     if timed_out or output_limited or output_incomplete or input_incomplete:
         status = "BLOCKED"
@@ -356,7 +389,7 @@ def create_execution_event(
         runtime_version=platform.python_version() if runtime_version is None else runtime_version,
         tool_name=tool_name,
         tool_version=tool_version,
-        argv=tuple(argv),
+        argv=redact_argv(argv),
         working_directory=working_directory,
         environment_digest=environment_fingerprint(environment),
         started_at=started_text,
@@ -368,6 +401,7 @@ def create_execution_event(
         output_limited=output_limited,
         output_incomplete=output_incomplete,
         input_incomplete=input_incomplete,
+        unsupported_state=unsupported_state,
         stdout_bytes=stdout_bytes,
         stderr_bytes=stderr_bytes,
         stdout_digest=digest_output(stdout),
@@ -423,7 +457,12 @@ def classify_failure(event: ExecutionEvent) -> FailureClassification | None:
         raise TypeError("event must be an ExecutionEvent")
     if event.execution_status == "PASS":
         return None
-    if event.timed_out:
+    if event.unsupported_state:
+        category, rule, reason, confidence = (
+            "UNSUPPORTED_STATE", "EXEC-UNSUPPORTED-001",
+            "The required operation or execution capability is explicitly unsupported.", "HIGH",
+        )
+    elif event.timed_out:
         category, rule, reason, confidence = (
             "TIMEOUT", "EXEC-TIMEOUT-001",
             "The bounded execution deadline expired before completion.", "HIGH",
@@ -486,5 +525,5 @@ def classify_failure(event: ExecutionEvent) -> FailureClassification | None:
 __all__ = [
     "ExecutionEvent", "FailureClassification", "classify_failure",
     "create_execution_event", "digest_output", "environment_fingerprint",
-    "redact_output",
+    "redact_argv", "redact_output",
 ]
