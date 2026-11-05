@@ -60,7 +60,10 @@ class QdasEventLedger:
         macOS expose temporary roots through stable system symlinks (for example /tmp).
         The CLI separately validates the project state directories before using them.
         """
-        for ancestor in (parent, parent.parent):
+        ancestors = (parent, parent.parent)
+        if parent.name == "qdas" and parent.parent.name == ".qyrenith":
+            ancestors += (parent.parent.parent,)
+        for ancestor in ancestors:
             try:
                 info = ancestor.lstat()
             except FileNotFoundError:
