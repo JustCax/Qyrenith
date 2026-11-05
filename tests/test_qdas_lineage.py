@@ -293,7 +293,7 @@ class QdasEvidenceLineageTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "exceed the approved repair plan"):
             self.lineage.append("PATCH", outside_scope)
 
-    def test_reverification_must_reference_a_passing_event(self):
+    def test_failed_reverification_is_recorded_and_forces_fail_verdict(self):
         _, review = self._approved_plan()
         patch = self.lineage.append("PATCH", {
             "plan_digest": self.plan.plan_digest,
@@ -304,15 +304,40 @@ class QdasEvidenceLineageTests(unittest.TestCase):
             "changed_paths": ["src/module.py"],
             "patch_applied": True,
         })
-        failed = make_event("FAIL", "BUILD", "still broken", 1)
-        failed_record = self.events.append(failed, classify_failure(failed), diagnose_failure(failed, stdout="", stderr="still broken"))
-        with self.assertRaisesRegex(ValueError, "passing execution event"):
-            self.lineage.append("REVERIFICATION", {
-                "patch_record_digest": patch["record_digest"],
-                "event_id": failed.event_id,
-                "event_record_digest": failed_record["record_digest"],
-                "scope_digest": hashlib.sha256(b"scope").hexdigest(),
-            })
+        failed = make_event("FAIL", "BUILD", "still broken", 1, revision="revision-after")
+        failed_record = self.events.append(
+            failed,
+            classify_failure(failed),
+            diagnose_failure(failed, stdout="", stderr="still broken"),
+        )
+        reverification = self.lineage.append("REVERIFICATION", {
+            "patch_record_digest": patch["record_digest"],
+            "event_id": failed.event_id,
+            "event_record_digest": failed_record["record_digest"],
+            "scope_digest": event_scope_digest(failed),
+        })
+        regression = make_event("PASS", "TEST", offset=2, revision="revision-after")
+        regression_record = self.events.append(regression, None)
+        regression_evidence = self.lineage.append("REGRESSION", {
+            "patch_record_digest": patch["record_digest"],
+            "event_id": regression.event_id,
+            "event_record_digest": regression_record["record_digest"],
+            "scope_digest": event_scope_digest(regression),
+        })
+        verdict_payload = {
+            "plan_digest": self.plan.plan_digest,
+            "patch_record_digest": patch["record_digest"],
+            "reverification_record_digest": reverification["record_digest"],
+            "regression_record_digest": regression_evidence["record_digest"],
+            "verdict": "PASS",
+            "rationale": "This verdict must be rejected because the rebuild failed.",
+        }
+        with self.assertRaisesRegex(ValueError, "PASS verdict requires passing"):
+            self.lineage.append("FINAL_VERDICT", verdict_payload)
+        verdict_payload["verdict"] = "FAIL"
+        verdict_payload["rationale"] = "The rebuild failed after the patch was applied."
+        verdict = self.lineage.append("FINAL_VERDICT", verdict_payload)
+        self.assertEqual(self.lineage.verify()[-1]["record_digest"], verdict["record_digest"])
 
     def test_rejects_symlinked_lineage_parent(self):
         alias = Path(self.temporary.name) / "lineage-alias"
