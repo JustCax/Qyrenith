@@ -47,10 +47,31 @@ def _parse_utc(value: str, field: str) -> datetime:
     return normalized
 
 
+def _validate_scope_value(value: Any) -> None:
+    if value is None or type(value) in {str, bool, int}:
+        return
+    if isinstance(value, float):
+        if value != value or value in {float("inf"), float("-inf")}:
+            raise ValueError("approval scope cannot contain non-finite numbers")
+        return
+    if isinstance(value, dict):
+        if any(not isinstance(key, str) for key in value):
+            raise ValueError("approval scope object keys must be strings")
+        for item in value.values():
+            _validate_scope_value(item)
+        return
+    if isinstance(value, list):
+        for item in value:
+            _validate_scope_value(item)
+        return
+    raise ValueError("approval scope must contain only JSON objects, arrays, and scalar values")
+
+
 def _scope_bytes(scope: object) -> bytes:
     if not isinstance(scope, dict):
         raise ValueError("approval scope must be a JSON object")
     try:
+        _validate_scope_value(scope)
         encoded = _canonical(scope)
     except (TypeError, ValueError) as exc:
         raise ValueError("approval scope must contain only finite JSON values with string keys") from exc
