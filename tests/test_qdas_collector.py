@@ -38,6 +38,7 @@ class QdasProcessCaptureTests(unittest.TestCase):
         records = self.ledger.verify()
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]["event"]["event_id"], result.event.event_id)
+        self.assertEqual(records[0]["event"]["working_directory"], ".")
         self.assertNotIn("qdas-ok", self.ledger.path.read_text(encoding="utf-8"))
 
     def test_nonzero_process_exit_is_classified_and_recorded(self):
