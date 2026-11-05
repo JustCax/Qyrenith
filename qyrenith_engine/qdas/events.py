@@ -36,7 +36,8 @@ _SENSITIVE_KEY = re.compile(
 )
 _BEARER = re.compile(r"(?i)(\bBearer\s+)[A-Za-z0-9._~+/=-]{8,}")
 _ASSIGNMENT = re.compile(
-    r"(?i)(\b(?:token|secret|password|passwd|api[_-]?key|access[_-]?key|"
+    r"(?i)(\b(?:api[_-]?token|access[_-]?token|client[_-]?secret|"
+    r"refresh[_-]?token|token|secret|password|passwd|api[_-]?key|access[_-]?key|"
     r"private[_-]?key|authorization|cookie)\b\s*[:=]\s*)"
     r"(?!Bearer\b)(['\"]?)[^\s,'\";]{6,}"
 )
