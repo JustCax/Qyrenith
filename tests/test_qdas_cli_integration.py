@@ -96,7 +96,7 @@ class QdasCliLifecycleIntegrationTests(unittest.TestCase):
         runner.assert_called_once()
         records = self.ledger().verify()
         self.assertEqual(len(records), 1)
-        self.assertEqual(records[0]["event"]["event_kind"], "BUILD")
+        self.assertEqual(records[0]["event"]["event_kind"], "STATIC_ANALYSIS")
 
     def test_bounded_check_ingests_the_existing_report(self):
         process_report = self.report(["python", "-c", "print(1)"])
