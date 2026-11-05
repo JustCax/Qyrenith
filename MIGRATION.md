@@ -350,6 +350,38 @@ python qyrenith.py trust-store --trust-action trust --trust-kind WORKER_QUALIFIC
 ```
 
 Use the exact lowercase SHA-256 digests emitted by the corresponding APIs. There are no wildcard or prefix trust decisions. Revoke a digest with `--trust-action revoke`; revocation is checked again by the owner-trust authorization wrappers. Trust-store administration is not yet integrated into worker dispatch and does not replace authenticated action approval or OS sandbox enforcement.
+### Step-scoped host approval
+
+For a worker step, create a separate approval request only after the exact workspace has been prepared and verified. The scope binds the route and authorization digests, exact worker/qualification, permission set, resource limits, source snapshot, workspace descriptor and paths, command digest, and sandbox profile identity/digest:
+
+```python
+from qyrenith_engine import approve_host_request
+from qyrenith_engine.migration import (
+    create_migration_step_approval_request,
+    validate_migration_step_approval,
+)
+
+request = create_migration_step_approval_request(
+    authorization, plan, grant, workspace, snapshot,
+    command_digest=worker_command_digest,
+    sandbox_profile_id=sandbox_profile_id,
+    sandbox_profile_digest=sandbox_profile_digest,
+)
+approval = approve_host_request(request, trust_store)
+
+# Call at the final action boundary, after sandbox setup and immediately before launch.
+validate_migration_step_approval(
+    authorization, plan, assessment, registry, policy, grant,
+    workspace, snapshot, approval,
+    trust_store=trust_store, knowledge=knowledge,
+    command_digest=worker_command_digest,
+    sandbox_profile_id=sandbox_profile_id,
+    sandbox_profile_digest=sandbox_profile_digest,
+    now=now,
+)
+```
+
+The validation rechecks current owner trust and authorization, verifies that the workspace still matches the source snapshot, compares the exact command and sandbox profile scope, and consumes the approval nonce exactly once. A changed workspace, command, target, permission, limit, or sandbox profile requires a new approval. The helper is a pre-execution gate only: it does not create or enforce the OS sandbox, and there is not yet a migration worker executor that invokes it.
 ### Minimal authorization flow
 
 Assuming `plan`, `assessment`, and `registry` were produced by the preceding APIs, the caller can create a narrow policy and a plan-bound authorization record:
