@@ -266,8 +266,8 @@ class QdasEvidenceLineage:
             event_id = _digest(payload["event_id"], "event_id", 32)
             event_record = _event_record(event_index, event_id, _digest(payload["event_record_digest"], "event_record_digest"))
             event = event_record["event"]
-            if event["execution_status"] != "PASS":
-                raise ValueError(kind.lower() + " evidence must reference a passing execution event")
+            if event["execution_status"] not in {"PASS", "FAIL", "ERROR", "BLOCKED"}:
+                raise ValueError(kind.lower() + " evidence has an unsupported execution status")
             allowed_kinds = {"TEST"} if kind == "REGRESSION" else {"BUILD", "VERIFICATION"}
             if event["event_kind"] not in allowed_kinds:
                 raise ValueError(kind.lower() + " evidence references an execution event of the wrong kind")
@@ -305,6 +305,28 @@ class QdasEvidenceLineage:
                 raise ValueError("regression evidence belongs to another patch")
             if payload["verdict"] not in {"PASS", "FAIL", "INCONCLUSIVE"}:
                 raise ValueError("final verdict must be PASS, FAIL, or INCONCLUSIVE")
+            reverification_event = _event_record(
+                event_index,
+                refs["reverification_record_digest"]["payload"]["event_id"],
+                refs["reverification_record_digest"]["payload"]["event_record_digest"],
+            )["event"]
+            regression_event = _event_record(
+                event_index,
+                refs["regression_record_digest"]["payload"]["event_id"],
+                refs["regression_record_digest"]["payload"]["event_record_digest"],
+            )["event"]
+            evidence_statuses = {
+                reverification_event["execution_status"],
+                regression_event["execution_status"],
+            }
+            if payload["verdict"] == "PASS" and evidence_statuses != {"PASS"}:
+                raise ValueError("PASS verdict requires passing rebuild and regression evidence")
+            if payload["verdict"] == "FAIL" and "FAIL" not in evidence_statuses:
+                raise ValueError("FAIL verdict requires at least one failed verification event")
+            if payload["verdict"] == "INCONCLUSIVE" and (
+                "FAIL" in evidence_statuses or evidence_statuses == {"PASS"}
+            ):
+                raise ValueError("INCONCLUSIVE verdict requires blocked or errored verification evidence")
             if payload["verdict"] == "PASS":
                 review = lineage_index["reviews"].get(plan_digest)
                 if review is None or review["payload"]["decision"] != "APPROVE":
