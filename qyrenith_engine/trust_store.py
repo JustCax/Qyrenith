@@ -383,17 +383,26 @@ class OwnerTrustStore:
                         os.close(descriptor)
                         raise TrustStoreError("trust-store lock permissions are unsafe")
                 self.stream = os.fdopen(descriptor, "r+b")
-                if os.name == "nt":
-                    import msvcrt
-                    self.stream.seek(0, os.SEEK_END)
-                    if self.stream.tell() == 0:
-                        self.stream.write(b"\0")
-                        self.stream.flush()
-                    self.stream.seek(0)
-                    msvcrt.locking(self.stream.fileno(), msvcrt.LK_LOCK, 1)
-                else:
-                    import fcntl
-                    fcntl.flock(self.stream.fileno(), fcntl.LOCK_EX)
+                deadline = time.monotonic() + 5.0
+                while True:
+                    try:
+                        if os.name == "nt":
+                            import msvcrt
+                            self.stream.seek(0, os.SEEK_END)
+                            if self.stream.tell() == 0:
+                                self.stream.write(b"\0")
+                                self.stream.flush()
+                            self.stream.seek(0)
+                            msvcrt.locking(self.stream.fileno(), msvcrt.LK_NBLCK, 1)
+                        else:
+                            import fcntl
+                            fcntl.flock(self.stream.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        break
+                    except OSError as exc:
+                        if time.monotonic() >= deadline:
+                            self.stream.close()
+                            raise TrustStoreError("timed out waiting for the owner trust-store lock") from exc
+                        time.sleep(0.05)
                 return self
 
             def __exit__(self, exc_type, exc, traceback):
