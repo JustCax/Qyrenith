@@ -20,7 +20,7 @@ from qyrenith_engine.qdas import (
 START = datetime(2026, 11, 5, 8, 0, tzinfo=timezone.utc)
 
 
-def make_event(status, kind, stderr="", offset=0):
+def make_event(status, kind, stderr="", offset=0, revision=None):
     start = START + timedelta(seconds=offset * 3)
     return create_execution_event(
         {
@@ -31,7 +31,7 @@ def make_event(status, kind, stderr="", offset=0):
             "stderr": stderr,
         },
         project_id="lineage-fixture",
-        project_revision="revision-" + str(offset),
+        project_revision=revision or ("revision-" + str(offset)),
         workspace_id="lineage-workspace",
         event_kind=kind,
         tool_name="fixture",
@@ -92,13 +92,13 @@ class QdasEvidenceLineageTests(unittest.TestCase):
         patch = self.lineage.append("PATCH", {
             "plan_digest": self.plan.plan_digest,
             "review_record_digest": review["record_digest"],
-            "base_revision": "revision-before",
+            "base_revision": "revision-0",
             "resulting_revision": "revision-after",
             "diff_digest": hashlib.sha256(b"observed diff").hexdigest(),
             "changed_paths": ["src/module.py"],
             "patch_applied": True,
         })
-        verification = make_event("PASS", "BUILD", offset=1)
+        verification = make_event("PASS", "BUILD", offset=1, revision="revision-after")
         verification_record = self.events.append(verification, None)
         reverification = self.lineage.append("REVERIFICATION", {
             "patch_record_digest": patch["record_digest"],
@@ -106,7 +106,7 @@ class QdasEvidenceLineageTests(unittest.TestCase):
             "event_record_digest": verification_record["record_digest"],
             "scope_digest": hashlib.sha256(b"build scope").hexdigest(),
         })
-        regression = make_event("PASS", "TEST", offset=2)
+        regression = make_event("PASS", "TEST", offset=2, revision="revision-after")
         regression_record = self.events.append(regression, None)
         regression_evidence = self.lineage.append("REGRESSION", {
             "patch_record_digest": patch["record_digest"],
@@ -207,8 +207,8 @@ class QdasEvidenceLineageTests(unittest.TestCase):
         patch = self.lineage.append("PATCH", {
             "plan_digest": self.plan.plan_digest,
             "review_record_digest": review["record_digest"],
-            "base_revision": "before",
-            "resulting_revision": "after",
+            "base_revision": "revision-0",
+            "resulting_revision": "revision-after",
             "diff_digest": hashlib.sha256(b"diff").hexdigest(),
             "changed_paths": ["src/module.py"],
             "patch_applied": True,
