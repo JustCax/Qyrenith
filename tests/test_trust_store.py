@@ -136,6 +136,14 @@ class OwnerTrustStoreTests(unittest.TestCase):
                 reviewed_at=NOW, expires_at=NOW, rationale="Invalid expiry",
             )
 
+    def test_rejects_store_inside_git_worktree(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "repository"
+            root.mkdir()
+            (root / ".git").mkdir()
+            with self.assertRaisesRegex(TrustStoreError, "inside a Git worktree"):
+                OwnerTrustStore.open(root / ".qyrenith" / "trust-store.json", create=True)
+
     def test_rejects_symbolic_link_store_path(self):
         with tempfile.TemporaryDirectory() as temporary:
             real = Path(temporary) / "real.json"
