@@ -90,6 +90,21 @@ class HostApprovalTests(unittest.TestCase):
                 now=now + timedelta(seconds=1),
             )
 
+    def test_trust_store_generation_change_invalidates_pending_approval(self):
+        now = datetime.now(timezone.utc).replace(microsecond=0)
+        request = create_host_approval_request("MIGRATION_STEP", self.scope, now=now)
+        approval, _ = self.approve(request, now=now)
+        self.store.trust(
+            "EXECUTION_POLICY", "sha256:" + "9" * 64,
+            reviewed_by="test-owner", reviewed_at=now + timedelta(seconds=1),
+            rationale="Concurrent trust-store update",
+        )
+        with self.assertRaisesRegex(HostApprovalError, "trust store changed"):
+            validate_host_approval(
+                approval, "MIGRATION_STEP", self.scope, self.store,
+                now=now + timedelta(seconds=2),
+            )
+
     def test_nonce_is_consumed_atomically_and_replay_is_rejected(self):
         now = datetime.now(timezone.utc).replace(microsecond=0)
         request = create_host_approval_request("MIGRATION_STEP", self.scope, now=now)
