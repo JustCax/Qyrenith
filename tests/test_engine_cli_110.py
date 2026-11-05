@@ -17,7 +17,7 @@ class TestEngineeringCLI(unittest.TestCase):
     def test_help_lists_new_commands(self):
         result = self.run_cli("--help")
         self.assertEqual(result.returncode, 0, result.stderr)
-        for command in ("source-analysis", "impact", "boundary-check", "bounded-check", "snapshot"):
+        for command in ("source-analysis", "impact", "boundary-check", "bounded-check", "snapshot", "trust-store"):
             self.assertIn(command, result.stdout)
 
     def test_source_analysis_cli_emits_json(self):
