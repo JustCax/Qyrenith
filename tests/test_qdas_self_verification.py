@@ -1,7 +1,7 @@
 """Verify that the QDAS integrity gate is mandatory in the full self-test."""
 import importlib.util
 import io
-from contextlib import redirect_stdout
+from contextlib import ExitStack, redirect_stdout
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -25,23 +25,35 @@ class QdasSelfVerificationTests(unittest.TestCase):
 
     def test_self_test_fails_closed_when_qdas_ledger_verification_fails(self):
         calls = []
-        patches = self._common_patches(calls)
-        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], \\
-             patch.object(QYRENITH, "cmd_qdas", side_effect=lambda args: calls.append(("qdas", args.extra)) or 2), \\
-             patch.object(QYRENITH, "public_audit") as public_audit, redirect_stdout(io.StringIO()):
-            result = QYRENITH.self_test()
+        with ExitStack() as stack:
+            for item in self._common_patches(calls):
+                stack.enter_context(item)
+            stack.enter_context(patch.object(
+                QYRENITH, "cmd_qdas",
+                side_effect=lambda args: calls.append(("qdas", args.extra)) or 2,
+            ))
+            public_audit = stack.enter_context(patch.object(QYRENITH, "public_audit"))
+            with redirect_stdout(io.StringIO()):
+                result = QYRENITH.self_test()
         self.assertEqual(result, 1)
         self.assertEqual(calls[-1], ("qdas", ["verify"]))
         public_audit.assert_not_called()
 
     def test_self_test_runs_public_audit_only_after_qdas_verification(self):
         calls = []
-        patches = self._common_patches(calls)
-        with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], \\
-             patch.object(QYRENITH, "cmd_qdas", side_effect=lambda args: calls.append(("qdas", args.extra)) or 0), \\
-             patch.object(QYRENITH, "public_audit", side_effect=lambda root: calls.append("public_audit") or {"status": "PASS"}), \\
-             redirect_stdout(io.StringIO()):
-            result = QYRENITH.self_test()
+        with ExitStack() as stack:
+            for item in self._common_patches(calls):
+                stack.enter_context(item)
+            stack.enter_context(patch.object(
+                QYRENITH, "cmd_qdas",
+                side_effect=lambda args: calls.append(("qdas", args.extra)) or 0,
+            ))
+            stack.enter_context(patch.object(
+                QYRENITH, "public_audit",
+                side_effect=lambda root: calls.append("public_audit") or {"status": "PASS"},
+            ))
+            with redirect_stdout(io.StringIO()):
+                result = QYRENITH.self_test()
         self.assertEqual(result, 0)
         self.assertEqual(calls[-2:], [("qdas", ["verify"]), "public_audit"])
 
