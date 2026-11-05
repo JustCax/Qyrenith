@@ -4,7 +4,7 @@ Execution, filesystem mutation, worker dispatch, and assurance persistence are
 intentionally not implied by route planning.
 """
 from .assurance import AssuranceLedger, AssuranceLedgerError, LedgerLockedError, verify_assurance_chain
-from .authorization import (MigrationAuthorization, MigrationAuthorizationPolicy, MigrationStepGrant, authorize_migration, authorize_migration_with_owner_trust, deserialize_migration_authorization, serialize_migration_authorization, deserialize_migration_authorization_policy, serialize_migration_authorization_policy, validate_migration_authorization, validate_migration_authorization_with_owner_trust)
+from .authorization import (MigrationAuthorization, MigrationAuthorizationPolicy, MigrationStepGrant, authorize_migration, authorize_migration_with_owner_trust, deserialize_migration_authorization, serialize_migration_authorization, deserialize_migration_authorization_policy, serialize_migration_authorization_policy, validate_migration_authorization, validate_migration_authorization_with_owner_trust, migration_step_approval_scope, create_migration_step_approval_request, validate_migration_step_approval)
 from .knowledge import (
     EvidenceReference,
     KnowledgeCatalog,
@@ -34,6 +34,8 @@ __all__ = [
     "deserialize_migration_authorization_policy", "serialize_migration_authorization_policy",
     "validate_migration_authorization",
     "authorize_migration_with_owner_trust", "validate_migration_authorization_with_owner_trust",
+    "migration_step_approval_scope", "create_migration_step_approval_request",
+    "validate_migration_step_approval",
     "EvidenceReference",
     "KnowledgeCatalog",
     "KnowledgeStatus",
