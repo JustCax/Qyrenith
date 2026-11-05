@@ -846,7 +846,7 @@ def validate_migration_step_approval(
         trust_store=trust_store, knowledge=knowledge, now=now,
     )
     scope = migration_step_approval_scope(
-        authorization, plan, grant, workspace,
+        authorization, plan, grant, workspace, snapshot,
         command_digest=command_digest,
         sandbox_profile_id=sandbox_profile_id,
         sandbox_profile_digest=sandbox_profile_digest,
