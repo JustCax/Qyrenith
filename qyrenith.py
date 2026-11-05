@@ -2971,6 +2971,8 @@ def self_test() -> int:
         if code!=0: return code
     print("Benchmark suite")
     if cmd_benchmark(argparse.Namespace(project=str(root)))!=0: return 1
+    print("QDAS ledger integrity")
+    if cmd_qdas(argparse.Namespace(project=str(root), extra=["verify"], limit=12)) != 0: return 1
     report=public_audit(root)
     print("Public audit:", report["status"])
     return 0 if report["status"]=="PASS" else 1
