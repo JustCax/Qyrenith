@@ -381,7 +381,7 @@ validate_migration_step_approval(
 )
 ```
 
-The validation rechecks current owner trust and authorization, verifies that the workspace still matches the source snapshot, compares the exact command and sandbox profile scope, and consumes the approval nonce exactly once. A changed workspace, command, target, permission, limit, or sandbox profile requires a new approval. The helper is a pre-execution gate only: it does not create or enforce the OS sandbox, and there is not yet a migration worker executor that invokes it.
+The validation rechecks current owner trust and authorization, requires the owner trust-store ID/generation to remain unchanged since the prompt, verifies that the workspace still matches the source snapshot, compares the exact command and sandbox profile scope, and consumes the approval nonce exactly once. A changed workspace, command, target, permission, limit, or sandbox profile requires a new approval. The helper is a pre-execution gate only: it does not create or enforce the OS sandbox, and there is not yet a migration worker executor that invokes it.
 ### Minimal authorization flow
 
 Assuming `plan`, `assessment`, and `registry` were produced by the preceding APIs, the caller can create a narrow policy and a plan-bound authorization record:
