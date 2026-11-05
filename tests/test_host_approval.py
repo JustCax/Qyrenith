@@ -122,6 +122,12 @@ class HostApprovalTests(unittest.TestCase):
         with self.assertRaisesRegex(HostApprovalError, "not confirmed"):
             self.approve(request, answer="APPROVE WRONG WRONG", now=now)
 
+    def test_scope_rejects_non_string_keys_and_non_finite_numbers(self):
+        with self.assertRaisesRegex(ValueError, "keys must be strings"):
+            create_host_approval_request("MIGRATION_STEP", {1: "invalid"})
+        with self.assertRaisesRegex(ValueError, "non-finite"):
+            create_host_approval_request("MIGRATION_STEP", {"ratio": float("nan")})
+
     def test_noninteractive_host_cannot_issue_approval(self):
         now = datetime.now(timezone.utc).replace(microsecond=0)
         request = create_host_approval_request("MIGRATION_STEP", self.scope, now=now)
