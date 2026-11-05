@@ -14,6 +14,7 @@ import stat
 from typing import Any
 
 from .ledger import QdasEventLedger, QdasLedgerError
+from .repair import RepairPlan
 from .events import _canonical, _unique_pairs
 
 _GENESIS = "0" * 64
@@ -113,13 +114,14 @@ class QdasEvidenceLineage:
             if not any(item.get("hypothesis_id") == hypothesis_id for item in hypotheses):
                 raise ValueError("repair plan hypothesis is not present in the anchored event record")
             document = payload["plan_document"]
-            if not isinstance(document, dict) or document.get("event_id") != event_id or document.get("hypothesis_id") != hypothesis_id:
+            plan = RepairPlan.from_document(document)
+            if plan.event_id != event_id or plan.hypothesis_id != hypothesis_id:
                 raise ValueError("repair plan document is not bound to the source event and hypothesis")
+            if plan.failure_category != event_record["event"]["failure_category"] if "failure_category" in event_record["event"] else False:
+                raise ValueError("repair plan failure category does not match the source event")
             supplied = _digest(payload["plan_digest"], "plan_digest")
-            if hashlib.sha256(_canonical({key: value for key, value in document.items() if key != "plan_digest"})).hexdigest() != supplied:
+            if plan.plan_digest != supplied:
                 raise ValueError("repair plan digest does not match its canonical document")
-            if document.get("execution_mode") != "PROPOSE_ONLY" or document.get("human_review_required") is not True:
-                raise ValueError("repair plan must remain propose-only and require human review")
             if any(item["kind"] == "REPAIR_PLAN" and item["payload"]["plan_digest"] == supplied for item in earlier):
                 raise ValueError("repair plan is already recorded")
             return
