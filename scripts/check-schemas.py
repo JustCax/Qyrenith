@@ -68,6 +68,9 @@ EXPECTED = {
     "qdas-event-ledger-record.schema.json": [
         "schema", "sequence", "previous_digest", "event", "classification", "record_digest",
     ],
+    "qdas-evidence-lineage-record.schema.json": [
+        "schema", "sequence", "previous_digest", "kind", "payload", "record_digest",
+    ],
     "qdas-failure-hypothesis.schema.json": [
         "hypothesis_id", "event_id", "failure_category", "rule_id", "statement",
         "supporting_evidence", "contradicting_evidence", "confidence",
@@ -183,6 +186,18 @@ require(host_approval["properties"]["trust_store_generation"].get("minimum") == 
         "host approval must bind a non-negative owner trust-store generation")
 require(host_approval["properties"]["action_type"].get("pattern") == "^[A-Z][A-Z0-9_]{1,63}$",
         "host approval action type must be a canonical identifier")
+
+lineage_schema = schemas["qdas-evidence-lineage-record.schema.json"]
+require(lineage_schema.get("additionalProperties") is False,
+        "QDAS lineage records must reject unknown top-level fields")
+require(set(lineage_schema["properties"]["kind"].get("enum", [])) == {
+    "REPAIR_PLAN", "HUMAN_REVIEW", "PATCH", "REVERIFICATION", "REGRESSION", "FINAL_VERDICT",
+}, "QDAS evidence lineage vocabulary mismatch")
+require(lineage_schema["properties"]["previous_digest"].get("pattern") == "^[0-9a-f]{64}$" and
+        lineage_schema["properties"]["record_digest"].get("pattern") == "^[0-9a-f]{64}$",
+        "QDAS lineage records must be digest chained")
+require(lineage_schema.get("$comment", "").find("unauthenticated assertion") >= 0,
+        "QDAS lineage schema must disclose that human review is not authenticated")
 
 qdas_event = schemas["qdas-execution-event.schema.json"]
 require(qdas_event.get("additionalProperties") is False,
