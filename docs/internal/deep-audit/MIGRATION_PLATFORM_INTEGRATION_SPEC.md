@@ -45,6 +45,8 @@ The current branch contains typed migration identity and transitions, evidence-s
 - A non-interactive process without an authenticated approval service remains propose-only. A caller-supplied reviewer string is attribution metadata only.
 - Local interactive approval proves control of the current host session, not a legal identity or protection from malicious code already running as the same OS user.
 
+The current implementation provides `qyrenith_engine.approval` for the signed local challenge and replay ledger, plus `migration_step_approval_scope`, `create_migration_step_approval_request`, and `validate_migration_step_approval` for one-step migration binding. The latter rechecks the live workspace against the captured snapshot and binds the command and sandbox-profile digests. It is a pre-execution gate, not a worker executor; the caller must still prove that the named sandbox profile is actually enforced. Migration dispatch and QDAS repair execution have not yet been wired to this gate.
+
 ### 7.3 Enforcement and execution gate
 - Trust and approval are necessary but not sufficient for execution. The executor MUST enforce path, process, environment, secret, network, time, memory, and output restrictions at the OS boundary.
 - The default execution policy is deny. If the requested sandbox profile cannot be enforced on the current OS, the worker/repair action is not launched.
