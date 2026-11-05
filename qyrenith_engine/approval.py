@@ -161,6 +161,8 @@ class HostApproval:
     nonce: str
     approved_by: str
     host_principal: str
+    trust_store_id: str
+    trust_store_generation: int
     signature: str
 
     def unsigned_dict(self) -> dict[str, Any]:
@@ -177,6 +179,8 @@ class HostApproval:
             "nonce": self.nonce,
             "approved_by": self.approved_by,
             "host_principal": self.host_principal,
+            "trust_store_id": self.trust_store_id,
+            "trust_store_generation": self.trust_store_generation,
         }
 
     def to_dict(self) -> dict[str, Any]:
@@ -202,6 +206,10 @@ class HostApproval:
                 raise ValueError(f"{field} must be a lowercase SHA-256 digest")
         if not isinstance(self.nonce, str) or not _NONCE.fullmatch(self.nonce):
             raise ValueError("approval nonce must be 48 lowercase hex characters")
+        if not isinstance(self.trust_store_id, str) or not re.fullmatch(r"[0-9a-f]{32}", self.trust_store_id):
+            raise ValueError("trust_store_id must be a UUID hex value")
+        if type(self.trust_store_generation) is not int or self.trust_store_generation < 0:
+            raise ValueError("trust_store_generation must be a non-negative integer")
         for field, value in (
             ("approved_by", self.approved_by),
             ("host_principal", self.host_principal),
@@ -245,7 +253,8 @@ class HostApproval:
         expected_fields = {
             "schema", "approval_id", "request_id", "action_type", "request_digest",
             "scope_digest", "issued_at", "approved_at", "expires_at", "nonce",
-            "approved_by", "host_principal", "signature",
+            "approved_by", "host_principal", "trust_store_id",
+            "trust_store_generation", "signature",
         }
         if not isinstance(document, dict) or set(document) != expected_fields:
             raise HostApprovalError("host approval has missing or unexpected fields")
@@ -334,6 +343,7 @@ def approve_host_request(
     supplied = source.readline().rstrip("\r\n")
     if not hmac.compare_digest(supplied, challenge):
         raise HostApprovalError("host approval challenge was not confirmed")
+    trust_store.decisions()
     principal = getpass.getuser() or "local-user"
     unsigned = {
         "schema": 1,
@@ -348,6 +358,8 @@ def approve_host_request(
         "nonce": request.nonce,
         "approved_by": principal,
         "host_principal": principal,
+        "trust_store_id": trust_store.store_id,
+        "trust_store_generation": trust_store.generation,
     }
     signature = trust_store.sign_host_payload(unsigned)
     return HostApproval(**{key: value for key, value in unsigned.items() if key != "schema"}, signature=signature)
@@ -382,12 +394,19 @@ def validate_host_approval(
     nonce_digest = "sha256:" + hashlib.sha256(approval.nonce.encode("ascii")).hexdigest()
     if trust_store.is_nonce_consumed(nonce_digest):
         raise HostApprovalError("host approval nonce has already been consumed")
+    trust_store.decisions()
+    if (
+        approval.trust_store_id != trust_store.store_id
+        or approval.trust_store_generation != trust_store.generation
+    ):
+        raise HostApprovalError("owner trust store changed after host approval was issued")
     if consume:
         try:
             trust_store.consume_nonce(
                 nonce_digest, reviewed_by=approval.host_principal,
                 reviewed_at=current,
                 rationale="Single-use host approval consumed at action boundary",
+                expected_generation=approval.trust_store_generation,
             )
         except TrustStoreError as exc:
             raise HostApprovalError("host approval nonce replay was blocked") from exc
