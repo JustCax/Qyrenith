@@ -63,6 +63,45 @@ def _event_record(
     return record
 
 
+def _new_lineage_index() -> dict[str, Any]:
+    return {
+        "records": {},
+        "plans": {},
+        "reviews": {},
+        "patches": {},
+        "patches_by_plan": {},
+        "reverification": {},
+        "regression": {},
+        "verdicts": set(),
+    }
+
+
+def _index_lineage_record(index: dict[str, Any], record: dict[str, Any]) -> None:
+    kind = record["kind"]
+    payload = record["payload"]
+    index["records"][record["record_digest"]] = record
+    if kind == "REPAIR_PLAN":
+        index["plans"][payload["plan_digest"]] = record
+    elif kind == "HUMAN_REVIEW":
+        index["reviews"][payload["plan_digest"]] = record
+    elif kind == "PATCH":
+        index["patches"][record["record_digest"]] = record
+        index["patches_by_plan"][payload["plan_digest"]] = record
+    elif kind == "REVERIFICATION":
+        index["reverification"][payload["patch_record_digest"]] = record
+    elif kind == "REGRESSION":
+        index["regression"][payload["patch_record_digest"]] = record
+    elif kind == "FINAL_VERDICT":
+        index["verdicts"].add(payload["plan_digest"])
+
+
+def _build_lineage_index(records: list[dict[str, Any]]) -> dict[str, Any]:
+    index = _new_lineage_index()
+    for record in records:
+        _index_lineage_record(index, record)
+    return index
+
+
 class QdasEvidenceLineage:
     """Append-only repair lifecycle evidence, anchored to the execution event ledger."""
 
@@ -110,7 +149,7 @@ class QdasEvidenceLineage:
     def _validate_payload(
         kind: str,
         payload: dict[str, Any],
-        earlier: list[dict[str, Any]],
+        lineage_index: dict[str, Any],
         event_index: dict[tuple[str, str], dict[str, Any]],
     ) -> None:
         if kind == "REPAIR_PLAN":
@@ -136,7 +175,7 @@ class QdasEvidenceLineage:
             supplied = _digest(payload["plan_digest"], "plan_digest")
             if plan.plan_digest != supplied:
                 raise ValueError("repair plan digest does not match its canonical document")
-            if any(item["kind"] == "REPAIR_PLAN" and item["payload"]["plan_digest"] == supplied for item in earlier):
+            if supplied in lineage_index["plans"]:
                 raise ValueError("repair plan is already recorded")
             return
         if kind == "HUMAN_REVIEW":
@@ -164,9 +203,9 @@ class QdasEvidenceLineage:
                 raise ValueError("this API cannot authenticate human identity or approval")
             if payload["note"] is not None:
                 _text(payload["note"], "note", 1024)
-            if not any(item["kind"] == "REPAIR_PLAN" and item["payload"]["plan_digest"] == plan_digest for item in earlier):
+            if plan_digest not in lineage_index["plans"]:
                 raise ValueError("human review references an unknown repair plan")
-            if any(item["kind"] == "HUMAN_REVIEW" and item["payload"]["plan_digest"] == plan_digest for item in earlier):
+            if plan_digest in lineage_index["reviews"]:
                 raise ValueError("repair plan already has a review decision")
             return
         if kind == "PATCH":
@@ -175,10 +214,10 @@ class QdasEvidenceLineage:
                 raise ValueError("patch evidence fields are invalid")
             plan_digest = _digest(payload["plan_digest"], "plan_digest")
             review_digest = _digest(payload["review_record_digest"], "review_record_digest")
-            review = next((item for item in earlier if item["record_digest"] == review_digest and item["kind"] == "HUMAN_REVIEW"), None)
-            if review is None or review["payload"]["plan_digest"] != plan_digest or review["payload"]["decision"] != "APPROVE":
+            review = lineage_index["reviews"].get(plan_digest)
+            if review is None or review["record_digest"] != review_digest or review["payload"]["decision"] != "APPROVE":
                 raise ValueError("patch evidence requires a prior approving review for the same plan")
-            plan_entry = next((item for item in earlier if item["kind"] == "REPAIR_PLAN" and item["payload"]["plan_digest"] == plan_digest), None)
+            plan_entry = lineage_index["plans"].get(plan_digest)
             if plan_entry is None:
                 raise ValueError("patch evidence references an unknown repair plan")
             source_event = _event_record(
@@ -213,7 +252,7 @@ class QdasEvidenceLineage:
                 raise ValueError("patch changed paths exceed the approved repair plan")
             if payload["patch_applied"] is not True:
                 raise ValueError("PATCH evidence must describe an observed applied patch")
-            if any(item["kind"] == "PATCH" and item["payload"]["plan_digest"] == plan_digest for item in earlier):
+            if plan_digest in lineage_index["patches_by_plan"]:
                 raise ValueError("repair plan already has patch evidence")
             return
         if kind in {"REVERIFICATION", "REGRESSION"}:
@@ -221,7 +260,7 @@ class QdasEvidenceLineage:
             if set(payload) != required:
                 raise ValueError(kind.lower() + " evidence fields are invalid")
             patch_digest = _digest(payload["patch_record_digest"], "patch_record_digest")
-            patch = next((item for item in earlier if item["record_digest"] == patch_digest and item["kind"] == "PATCH"), None)
+            patch = lineage_index["patches"].get(patch_digest)
             if patch is None:
                 raise ValueError(kind.lower() + " evidence requires a prior patch record")
             event_id = _digest(payload["event_id"], "event_id", 32)
@@ -238,7 +277,7 @@ class QdasEvidenceLineage:
             supplied_scope_digest = _digest(payload["scope_digest"], "scope_digest")
             if supplied_scope_digest != _execution_scope_digest(event):
                 raise ValueError(kind.lower() + " scope digest does not match the referenced execution event")
-            if any(item["kind"] == kind and item["payload"]["patch_record_digest"] == patch_digest for item in earlier):
+            if patch_digest in lineage_index["reverification" if kind == "REVERIFICATION" else "regression"]:
                 raise ValueError(kind.lower() + " evidence is already recorded for this patch")
             return
         if kind == "FINAL_VERDICT":
@@ -253,7 +292,9 @@ class QdasEvidenceLineage:
                 ("regression_record_digest", "REGRESSION"),
             ):
                 digest = _digest(payload[field], field)
-                refs[field] = next((item for item in earlier if item["record_digest"] == digest and item["kind"] == expected_kind), None)
+                refs[field] = lineage_index["records"].get(digest)
+                if refs[field] is not None and refs[field]["kind"] != expected_kind:
+                    refs[field] = None
                 if refs[field] is None:
                     raise ValueError("final verdict references missing " + expected_kind.lower() + " evidence")
             if refs["patch_record_digest"]["payload"]["plan_digest"] != plan_digest:
@@ -265,11 +306,11 @@ class QdasEvidenceLineage:
             if payload["verdict"] not in {"PASS", "FAIL", "INCONCLUSIVE"}:
                 raise ValueError("final verdict must be PASS, FAIL, or INCONCLUSIVE")
             if payload["verdict"] == "PASS":
-                review = next((item for item in earlier if item["kind"] == "HUMAN_REVIEW" and item["payload"]["plan_digest"] == plan_digest), None)
+                review = lineage_index["reviews"].get(plan_digest)
                 if review is None or review["payload"]["decision"] != "APPROVE":
                     raise ValueError("PASS verdict requires an approving review record")
             _text(payload["rationale"], "rationale", 2048)
-            if any(item["kind"] == "FINAL_VERDICT" and item["payload"]["plan_digest"] == plan_digest for item in earlier):
+            if plan_digest in lineage_index["verdicts"]:
                 raise ValueError("repair plan already has a final verdict")
             return
         raise ValueError("unsupported QDAS evidence kind")
@@ -313,6 +354,7 @@ class QdasEvidenceLineage:
         if raw and not raw.endswith(b"\n"):
             raise QdasLineageError("QDAS lineage ledger has an incomplete trailing record")
         records: list[dict[str, Any]] = []
+        lineage_index = _new_lineage_index()
         previous = _GENESIS
         for sequence, line in enumerate(raw.splitlines(keepends=True), 1):
             if sequence > _MAX_RECORDS or len(line) > 128 * 1024:
@@ -328,10 +370,11 @@ class QdasEvidenceLineage:
                 digest = hashlib.sha256(_canonical({key: value for key, value in record.items() if key != "record_digest"})).hexdigest()
                 if digest != record["record_digest"] or _canonical(record) + b"\n" != line:
                     raise ValueError("lineage digest or canonical encoding mismatch")
-                self._validate_payload(record["kind"], record["payload"], records, event_index)
+                self._validate_payload(record["kind"], record["payload"], lineage_index, event_index)
             except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError, KeyError, QdasLedgerError, QdasLineageError) as exc:
                 raise QdasLineageError("QDAS lineage record " + str(sequence) + " is invalid") from exc
             records.append(record)
+            _index_lineage_record(lineage_index, record)
             previous = digest
         return tuple(records)
 
@@ -345,7 +388,8 @@ class QdasEvidenceLineage:
             records = list(self._verify_unlocked(event_index))
             if len(records) >= _MAX_RECORDS:
                 raise QdasLineageError("QDAS lineage ledger reached its record limit")
-            self._validate_payload(kind, payload, records, event_index)
+            lineage_index = _build_lineage_index(records)
+            self._validate_payload(kind, payload, lineage_index, event_index)
             previous = records[-1]["record_digest"] if records else _GENESIS
             record = {
                 "schema": 1,
