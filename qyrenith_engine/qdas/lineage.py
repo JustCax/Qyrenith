@@ -225,7 +225,7 @@ class QdasEvidenceLineage:
             if patch is None:
                 raise ValueError(kind.lower() + " evidence requires a prior patch record")
             event_id = _digest(payload["event_id"], "event_id", 32)
-            event_record = _event_record(event_ledger, event_id, _digest(payload["event_record_digest"], "event_record_digest"))
+            event_record = _event_record(event_index, event_id, _digest(payload["event_record_digest"], "event_record_digest"))
             event = event_record["event"]
             if event["execution_status"] != "PASS":
                 raise ValueError(kind.lower() + " evidence must reference a passing execution event")
