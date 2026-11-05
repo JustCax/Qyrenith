@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qyrenith.dev/schemas/qdas-evidence-lineage-record.schema.json",
+  "title": "Qyrenith QDAS Repair Evidence Lineage Record",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "sequence",
+    "previous_digest",
+    "kind",
+    "payload",
+    "record_digest"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100000
+    },
+    "previous_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "kind": {
+      "enum": [
+        "REPAIR_PLAN",
+        "HUMAN_REVIEW",
+        "PATCH",
+        "REVERIFICATION",
+        "REGRESSION",
+        "FINAL_VERDICT"
+      ]
+    },
+    "payload": {
+      "type": "object"
+    },
+    "record_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "$comment": "The runtime validator enforces kind-specific payload contracts, cross-record references, and event-ledger digest anchoring. Human review is an unauthenticated assertion and is not execution authorization."
+}
