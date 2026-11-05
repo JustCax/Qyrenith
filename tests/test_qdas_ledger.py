@@ -1,6 +1,7 @@
 import json
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from qyrenith_engine.qdas import (
@@ -52,6 +53,21 @@ class QdasEventLedgerTests(unittest.TestCase):
         self.assertEqual(second_record["previous_digest"], first_record["record_digest"])
         self.assertEqual(records[-1]["event"]["event_id"], second.event_id)
         self.assertIsNone(records[-1]["classification"])
+
+    def test_concurrent_appends_preserve_one_contiguous_hash_chain(self):
+        def append_one(_):
+            item = event()
+            ledger = QdasEventLedger(self.path)
+            return ledger.append(item, classify_failure(item))
+
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            written = list(pool.map(append_one, range(24)))
+        records = self.ledger.verify()
+        self.assertEqual(len(records), 24)
+        self.assertEqual(sorted(item["sequence"] for item in written), list(range(1, 25)))
+        self.assertEqual([item["sequence"] for item in records], list(range(1, 25)))
+        for previous, current in zip(records, records[1:]):
+            self.assertEqual(current["previous_digest"], previous["record_digest"])
 
     def test_rejects_duplicate_event(self):
         item = event()
