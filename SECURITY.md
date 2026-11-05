@@ -13,7 +13,7 @@ If you find a security issue in Qyrenith, report it privately to the repository 
 
 ## Owner trust store API
 
-The 1.2.0 branch introduces an owner-scoped trust-decision store through `qyrenith_engine.trust_store.OwnerTrustStore`. By default it stores trust state in the current user's Qyrenith configuration directory, outside the managed project. It records append-only TRUST and REVOKE decisions for exact SHA-256 digests of knowledge catalogs, worker manifests, worker qualifications, and execution policies. POSIX storage uses owner-only permissions; the Windows default path is constrained to the current user profile and rejects reparse-point paths.
+The 1.2.0 branch introduces an owner-scoped trust-decision store through `qyrenith_engine.trust_store.OwnerTrustStore`. By default it stores trust state in the current user's Qyrenith configuration directory, outside the managed project. It records append-only TRUST and REVOKE decisions for exact SHA-256 digests of knowledge catalogs, worker manifests, worker qualifications, and execution policies. POSIX storage uses owner-only permissions; Windows storage is constrained to the current user profile and rejects reparse-point paths, but currently relies on inherited profile ACLs rather than independently inspecting the DACL.
 
 The store authenticates its canonical contents with a local HMAC key and detects accidental or repository-local tampering. Use the interactive CLI for owner decisions:
 
