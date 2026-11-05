@@ -214,8 +214,11 @@ def cmdrun(
     qdas_event_kind: Optional[str] = None,
 ) -> Tuple[int, str]:
     """Run one bounded command and optionally ingest its existing report into QDAS."""
+    revision = None
+    if qdas_event_kind is not None:
+        _clear_sha256_cache()
+        revision = source_fingerprint(cwd)
     started_at = dt.datetime.now(dt.timezone.utc)
-    revision = source_fingerprint(cwd) if qdas_event_kind is not None else None
     report = run_bounded_process(
         cmd,
         cwd,
@@ -3748,8 +3751,9 @@ def cmd_bounded_check(args):
     if os.name == "nt":
         argv = [token[1:-1] if len(token) >= 2 and token[0] == token[-1] and token[0] in "\\\"'" else token for token in argv]
     root = root_path(args.project)
-    started_at = dt.datetime.now(dt.timezone.utc)
+    _clear_sha256_cache()
     revision = source_fingerprint(root)
+    started_at = dt.datetime.now(dt.timezone.utc)
     try:
         result = run_bounded_process(argv, root, timeout=args.timeout, output_limit=args.output_limit)
     except (OSError, ValueError) as exc:
