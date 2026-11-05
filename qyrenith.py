@@ -3755,6 +3755,8 @@ def cmd_qdas(args):
         die("PREFLIGHT_FAILURE", "QDAS state path is not a safe directory")
     qdas_dir = state_dir / "qdas"
     ledger_path = qdas_dir / "events.jsonl"
+    if qdas_dir.is_symlink():
+        die("PREFLIGHT_FAILURE", "QDAS directory must not be a symbolic link")
     if ledger_path.is_symlink():
         die("PREFLIGHT_FAILURE", "QDAS ledger path must not be a symbolic link")
     if not qdas_dir.is_dir() or not ledger_path.exists():
