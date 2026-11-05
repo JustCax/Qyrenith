@@ -1,3 +1,5 @@
+import hashlib
+import json
 import unittest
 from datetime import datetime, timedelta, timezone
 
@@ -84,8 +86,8 @@ class QdasRepairPlanTests(unittest.TestCase):
             type(plan).from_document(altered)
         altered = plan.to_document()
         altered["plan_id"] = "0" * 32
-        altered["plan_digest"] = __import__("hashlib").sha256(
-            __import__("json").dumps(
+        altered["plan_digest"] = hashlib.sha256(
+            json.dumps(
                 {key: value for key, value in altered.items() if key != "plan_digest"},
                 sort_keys=True, separators=(",", ":"), ensure_ascii=False,
             ).encode("utf-8")
