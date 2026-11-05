@@ -115,6 +115,7 @@ schemas/migration-workspace-descriptor.schema.json
 schemas/migration-transition.schema.json
 schemas/migration-worker-manifest.schema.json
 schemas/migration-worker-qualification.schema.json
+schemas/owner-trust-store.schema.json
 schemas/migration-worker-assessment.schema.json
 schemas/migration-authorization.schema.json
 schemas/migration-authorization-policy.schema.json
