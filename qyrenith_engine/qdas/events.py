@@ -213,15 +213,16 @@ class ExecutionEvent:
         for field in ("timed_out", "output_limited", "output_incomplete", "input_incomplete", "unsupported_state"):
             if type(getattr(self, field)) is not bool:
                 raise ValueError(f"{field} must be a boolean")
-        if self.execution_status == "PASS" and (
-            self.exit_code != 0 or self.timed_out or self.output_limited
-            or self.output_incomplete or self.input_incomplete or self.unsupported_state
-        ):
-            raise ValueError("PASS event contradicts its exit code or execution flags")
+        blocking_flags = (
+            self.timed_out, self.output_limited, self.output_incomplete,
+            self.input_incomplete, self.unsupported_state,
+        )
+        if any(blocking_flags) and self.execution_status != "BLOCKED":
+            raise ValueError("execution with incomplete or unsupported state must be BLOCKED")
+        if self.execution_status == "PASS" and self.exit_code != 0:
+            raise ValueError("PASS event must have a zero exit code")
         if self.exit_code == 0 and self.execution_status == "FAIL":
             raise ValueError("FAIL event cannot have a zero exit code")
-        if any((self.timed_out, self.output_limited, self.output_incomplete, self.input_incomplete)) and self.execution_status == "PASS":
-            raise ValueError("incomplete execution cannot be marked PASS")
 
     def to_dict(self) -> dict[str, Any]:
         return {
