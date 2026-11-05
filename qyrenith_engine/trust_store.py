@@ -31,8 +31,9 @@ _KINDS = {
     "WORKER_MANIFEST",
     "WORKER_QUALIFICATION",
     "EXECUTION_POLICY",
+    "APPROVAL_NONCE",
 }
-_DECISIONS = {"TRUST", "REVOKE"}
+_DECISIONS = {"TRUST", "REVOKE", "CONSUME"}
 
 
 class TrustStoreError(RuntimeError):
@@ -197,8 +198,11 @@ class TrustDecision:
             raise ValueError("unsupported trust subject kind")
         if not isinstance(self.subject_digest, str) or not _DIGEST.fullmatch(self.subject_digest):
             raise ValueError("subject_digest must use sha256:<64 lowercase hex>")
-        if self.decision not in _DECISIONS:
-            raise ValueError("trust decision must be TRUST or REVOKE")
+        if self.subject_kind == "APPROVAL_NONCE":
+            if self.decision != "CONSUME" or self.expires_at is not None:
+                raise ValueError("approval nonce events must use CONSUME without expiry")
+        elif self.decision not in {"TRUST", "REVOKE"}:
+            raise ValueError("trust decisions must use TRUST or REVOKE")
         for field, value in (("reviewed_by", self.reviewed_by), ("rationale", self.rationale)):
             if not isinstance(value, str) or not value.strip() or len(value) > _MAX_TEXT:
                 raise ValueError(f"{field} must be non-empty bounded text")
@@ -207,8 +211,8 @@ class TrustDecision:
             expiry = _parse_timestamp(self.expires_at, "expires_at")
             if expiry <= _parse_timestamp(self.reviewed_at, "reviewed_at"):
                 raise ValueError("trust decision expiry must follow review time")
-        if self.decision == "REVOKE" and self.expires_at is not None:
-            raise ValueError("revocation events cannot expire")
+        if self.decision in {"REVOKE", "CONSUME"} and self.expires_at is not None:
+            raise ValueError("revocation and nonce-consumption events cannot expire")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -458,8 +462,11 @@ class OwnerTrustStore:
             raise ValueError("unsupported trust subject kind")
         if not isinstance(subject_digest, str) or not _DIGEST.fullmatch(subject_digest):
             raise ValueError("subject_digest must use sha256:<64 lowercase hex>")
-        if decision not in _DECISIONS:
-            raise ValueError("decision must be TRUST or REVOKE")
+        if subject_kind == "APPROVAL_NONCE":
+            if decision != "CONSUME":
+                raise ValueError("approval nonce events must use CONSUME")
+        elif decision not in {"TRUST", "REVOKE"}:
+            raise ValueError("trust decisions must use TRUST or REVOKE")
         instant = datetime.now(timezone.utc) if reviewed_at is None else reviewed_at
         reviewed_text = _timestamp(instant, "reviewed_at")
         expiry_text = _timestamp(expires_at, "expires_at") if expires_at is not None else None
@@ -467,6 +474,12 @@ class OwnerTrustStore:
             current = self._reload_locked()
             if current["generation"] >= _MAX_EVENTS:
                 raise TrustStoreError("trust store reached its event limit")
+            if subject_kind == "APPROVAL_NONCE" and any(
+                item["subject_kind"] == "APPROVAL_NONCE"
+                and item["subject_digest"] == subject_digest
+                for item in current["events"]
+            ):
+                raise TrustStoreError("approval nonce has already been consumed")
             event = TrustDecision(
                 sequence=current["generation"] + 1,
                 event_id=uuid.uuid4().hex,
@@ -520,6 +533,43 @@ class OwnerTrustStore:
             subject_kind, subject_digest, "REVOKE", reviewed_by=reviewed_by,
             reviewed_at=reviewed_at, rationale=rationale,
         )
+
+    def consume_nonce(
+        self,
+        nonce_digest: str,
+        *,
+        reviewed_by: str,
+        reviewed_at: datetime | None = None,
+        rationale: str = "One-time host approval consumed",
+    ) -> TrustDecision:
+        """Atomically record a single-use approval nonce; duplicate use fails closed."""
+        return self.append_decision(
+            "APPROVAL_NONCE", nonce_digest, "CONSUME",
+            reviewed_by=reviewed_by, reviewed_at=reviewed_at,
+            rationale=rationale,
+        )
+
+    def is_nonce_consumed(self, nonce_digest: str) -> bool:
+        if not isinstance(nonce_digest, str) or not _DIGEST.fullmatch(nonce_digest):
+            return False
+        return any(
+            event.subject_kind == "APPROVAL_NONCE"
+            and event.subject_digest == nonce_digest
+            and event.decision == "CONSUME"
+            for event in self.decisions()
+        )
+
+    def sign_host_payload(self, payload: dict[str, Any]) -> str:
+        """Create an integrity MAC for a host-approved canonical payload."""
+        if not isinstance(payload, dict):
+            raise TypeError("host approval payload must be an object")
+        return hmac.new(self._key, _canonical(payload), hashlib.sha256).hexdigest()
+
+    def verify_host_payload(self, payload: dict[str, Any], signature: str) -> bool:
+        if not isinstance(payload, dict) or not isinstance(signature, str):
+            return False
+        expected = self.sign_host_payload(payload)
+        return hmac.compare_digest(expected, signature)
 
     def is_trusted(
         self, subject_kind: str, subject_digest: str, *, now: datetime | None = None
