@@ -233,11 +233,22 @@ class OwnerTrustStore:
     def open(
         cls, path: str | Path | None = None, *, create: bool = False
     ) -> "OwnerTrustStore":
+        using_default_path = path is None
         target = Path(path) if path is not None else default_trust_store_path()
         target = target.expanduser().absolute()
         if not target.name or target.name in {".", ".."}:
             raise TrustStoreError("trust-store filename is invalid")
         _ensure_private_directory(target.parent, create=create)
+        if os.name == "nt" and using_default_path:
+            profile = Path.home().resolve(strict=True)
+            profile_store_root = target.parent.parent.resolve(strict=True)
+            try:
+                profile_store_root.relative_to(profile)
+            except ValueError as exc:
+                raise TrustStoreError(
+                    "default Windows trust store must remain inside the current user profile"
+                ) from exc
+            _reject_reparse_or_symlink(profile_store_root, directory=True)
         key_path = target.with_name(target.name + ".key")
         store_exists = target.exists() or target.is_symlink()
         key_exists = key_path.exists() or key_path.is_symlink()
