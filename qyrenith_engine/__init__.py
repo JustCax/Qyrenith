@@ -3,6 +3,7 @@ from .analysis import analyze_project, build_change_impact, compare_baselines
 from .approval import (HostApproval, HostApprovalError, HostApprovalRequest, approve_host_request, create_host_approval_request, validate_host_approval)
 from .boundary import inspect_project_boundary
 from .execution import run_bounded_process, run_bounded_worker
+from .qdas import (ExecutionEvent, FailureClassification, QdasEventLedger, QdasLedgerError, classify_failure, create_execution_event, verify_qdas_ledger)
 from .trust_store import OwnerTrustStore, TrustDecision, TrustStoreError, default_trust_store_path
 from .migration import (
     MigrationAuthorization, MigrationAuthorizationPolicy, MigrationStepGrant, authorize_migration,
@@ -30,6 +31,8 @@ __all__ = [
     "HostApproval", "HostApprovalError", "HostApprovalRequest",
     "approve_host_request", "create_host_approval_request", "validate_host_approval",
     "inspect_project_boundary", "run_bounded_process", "run_bounded_worker",
+    "ExecutionEvent", "FailureClassification", "QdasEventLedger", "QdasLedgerError",
+    "classify_failure", "create_execution_event", "verify_qdas_ledger",
     "OwnerTrustStore", "TrustDecision", "TrustStoreError", "default_trust_store_path",
     "AssuranceLedger", "AssuranceLedgerError", "LedgerLockedError", "verify_assurance_chain",
     "MigrationAuthorization", "MigrationAuthorizationPolicy", "MigrationStepGrant", "authorize_migration",
