@@ -21,6 +21,17 @@ def manifest_files():
 
 
 class TestReleaseContents(unittest.TestCase):
+    def test_120_manifest_excludes_older_versioned_release_notes(self):
+        version = (ROOT / "VERSION.txt").read_text(encoding="utf-8").strip()
+        current = tuple(int(part) for part in version.split("."))
+        if current < (1, 2, 0):
+            self.skipTest("the 1.2.0 release artifact policy activates at version 1.2.0")
+        selected = {
+            name for name in manifest_files()
+            if re.fullmatch(r"RELEASE_NOTES_[0-9]+\\.[0-9]+\\.[0-9]+\\.md", Path(name).name)
+        }
+        self.assertEqual(selected, {f"RELEASE_NOTES_{version}.md"})
+
     def test_manifest_paths_are_present_and_safe(self):
         expected = manifest_files()
         self.assertIn("PUBLIC_FILES.txt", expected)
