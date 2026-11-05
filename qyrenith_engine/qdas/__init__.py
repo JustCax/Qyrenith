@@ -13,6 +13,7 @@ from .events import (
     redact_output,
 )
 from .ledger import QdasEventLedger, QdasLedgerError, verify_qdas_ledger
+from .lineage import QdasEvidenceLineage, QdasLineageError
 
 __all__ = [
     "QdasCaptureResult",
@@ -26,6 +27,8 @@ __all__ = [
     "ExecutionEvent",
     "FailureClassification",
     "QdasEventLedger",
+    "QdasEvidenceLineage",
+    "QdasLineageError",
     "QdasLedgerError",
     "classify_failure",
     "create_execution_event",
