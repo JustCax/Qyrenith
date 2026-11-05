@@ -37,7 +37,7 @@ def make_event(status, kind, stderr="", offset=0, revision=None):
     return create_execution_event(
         {
             "status": status,
-            "exit_code": 1 if status == "FAIL" else 0,
+            "exit_code": 1 if status == "FAIL" else None if status == "ERROR" else 0,
             "duration_seconds": 1,
             "stdout": "",
             "stderr": stderr,
@@ -337,6 +337,47 @@ class QdasEvidenceLineageTests(unittest.TestCase):
         verdict_payload["verdict"] = "FAIL"
         verdict_payload["rationale"] = "The rebuild failed after the patch was applied."
         verdict = self.lineage.append("FINAL_VERDICT", verdict_payload)
+        self.assertEqual(self.lineage.verify()[-1]["record_digest"], verdict["record_digest"])
+
+    def test_blocked_or_errored_verification_produces_inconclusive_verdict(self):
+        _, review = self._approved_plan()
+        patch = self.lineage.append("PATCH", {
+            "plan_digest": self.plan.plan_digest,
+            "review_record_digest": review["record_digest"],
+            "base_revision": "revision-0",
+            "resulting_revision": "revision-after",
+            "diff_digest": hashlib.sha256(b"diff").hexdigest(),
+            "changed_paths": ["src/module.py"],
+            "patch_applied": True,
+        })
+        errored = make_event("ERROR", "BUILD", "runner unavailable", 1, revision="revision-after")
+        error_record = self.events.append(
+            errored,
+            classify_failure(errored),
+            diagnose_failure(errored, stdout="", stderr="runner unavailable"),
+        )
+        reverification = self.lineage.append("REVERIFICATION", {
+            "patch_record_digest": patch["record_digest"],
+            "event_id": errored.event_id,
+            "event_record_digest": error_record["record_digest"],
+            "scope_digest": event_scope_digest(errored),
+        })
+        regression = make_event("PASS", "TEST", offset=2, revision="revision-after")
+        regression_record = self.events.append(regression, None)
+        regression_evidence = self.lineage.append("REGRESSION", {
+            "patch_record_digest": patch["record_digest"],
+            "event_id": regression.event_id,
+            "event_record_digest": regression_record["record_digest"],
+            "scope_digest": event_scope_digest(regression),
+        })
+        verdict = self.lineage.append("FINAL_VERDICT", {
+            "plan_digest": self.plan.plan_digest,
+            "patch_record_digest": patch["record_digest"],
+            "reverification_record_digest": reverification["record_digest"],
+            "regression_record_digest": regression_evidence["record_digest"],
+            "verdict": "INCONCLUSIVE",
+            "rationale": "The rebuild runner errored, so the patch cannot be accepted.",
+        })
         self.assertEqual(self.lineage.verify()[-1]["record_digest"], verdict["record_digest"])
 
     def test_rejects_symlinked_lineage_parent(self):
