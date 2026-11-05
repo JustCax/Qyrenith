@@ -124,6 +124,7 @@ class TestReleaseContents(unittest.TestCase):
                 "qyrenith_engine/boundary.py",
                 "qyrenith_engine/execution.py",
                 "qyrenith_engine/trust_store.py",
+                "qyrenith_engine/trust_cli.py",
                 "qyrenith_engine/migration/__init__.py",
                 "qyrenith_engine/migration/assurance.py",
                 "qyrenith_engine/migration/authorization.py",
