@@ -117,6 +117,19 @@ class QdasEventLedgerTests(unittest.TestCase):
         with self.assertRaisesRegex(QdasLedgerError, "symbolic links"):
             QdasEventLedger(alias).verify()
 
+    def test_rejects_symlinked_qyrenith_project_root(self):
+        target = Path(self.temporary.name) / "real-project"
+        target.mkdir()
+        alias = Path(self.temporary.name) / "project-alias"
+        try:
+            alias.symlink_to(target, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            self.skipTest("directory symbolic links are unavailable")
+        redirected = QdasEventLedger(alias / ".qyrenith" / "qdas" / "events.jsonl")
+        item = event()
+        with self.assertRaisesRegex(QdasLedgerError, "ancestor paths"):
+            redirected.append(item, classify_failure(item))
+
     def test_rejects_symlinked_ancestor_directory(self):
         target = Path(self.temporary.name) / "real-parent"
         target.mkdir()
