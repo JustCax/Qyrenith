@@ -7,7 +7,7 @@ import re
 import uuid
 from typing import Any
 
-from .events import ExecutionEvent, _canonical, digest_output, redact_output
+from .events import ExecutionEvent, _canonical, classify_failure, digest_output, redact_output
 
 _MAX_STREAM_BYTES = 8 * 1024 * 1024
 _MAX_LINES = 200_000
@@ -251,7 +251,7 @@ def diagnose_failure(
         hypotheses.append(FailureHypothesis(
             hypothesis_id=identity,
             event_id=event.event_id,
-            failure_category=rule_id,
+            failure_category=classify_failure(event).category,
             rule_id=rule_id,
             statement=statement + " " + next_action,
             supporting_evidence=evidence,
@@ -282,7 +282,7 @@ def diagnose_failure(
     return (FailureHypothesis(
         hypothesis_id=fallback_id,
         event_id=event.event_id,
-        failure_category="UNKNOWN_FAILURE",
+        failure_category=classify_failure(event).category,
         rule_id="QDAS-ROOT-UNKNOWN-001",
         statement="The native diagnostic rules did not recognize the available failure output.",
         supporting_evidence=(fallback_observation,),
