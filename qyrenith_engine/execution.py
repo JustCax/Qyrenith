@@ -1,7 +1,10 @@
 """Shared bounded subprocess execution; this is not an operating-system sandbox."""
 from __future__ import annotations
 
+import hashlib
+import json
 import os
+import re
 import signal
 import subprocess
 import threading
@@ -60,6 +63,24 @@ def _environment(
             raise ValueError("environment override is not allowlisted: %s" % key)
         result[key] = value
     return result
+
+
+def _environment_digest(environment: Mapping[str, str]) -> str:
+    """Fingerprint non-secret effective environment values without returning them."""
+    sensitive = re.compile(
+        r"(?:TOKEN|SECRET|PASSWORD|PASSWD|API[_-]?KEY|ACCESS[_-]?KEY|"
+        r"PRIVATE[_-]?KEY|CREDENTIAL|AUTHORIZATION|COOKIE)",
+        re.IGNORECASE,
+    )
+    safe = {
+        key: value for key, value in environment.items()
+        if not sensitive.search(key)
+    }
+    encoded = json.dumps(
+        safe, ensure_ascii=True, sort_keys=True, separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _decode_output(data: bytearray) -> str:
@@ -131,6 +152,7 @@ def _run_process(
             "timed_out": False,
             "duration_seconds": round(time.monotonic() - started, 3),
             "shell": False,
+            "environment_digest": _environment_digest(env),
         }
 
     buffers = {"stdout": bytearray(), "stderr": bytearray()}
@@ -260,6 +282,7 @@ def _run_process(
             "POSIX process-group cleanup and bounded capture; not an OS sandbox. "
             "Child code retains the invoking user's OS permissions."
         ),
+        "environment_digest": _environment_digest(env),
     }
 
 
@@ -298,6 +321,7 @@ def run_bounded_process(
         "timed_out": report["timed_out"],
         "shell": False,
         "containment": report.get("containment", "Process-level controls only; not an OS sandbox."),
+        "environment_digest": report.get("environment_digest", _environment_digest(env)),
         **({"error": report["error"]} if "error" in report else {}),
     }
 
