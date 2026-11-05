@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from qyrenith_engine.qdas import QdasEventLedger, capture_process_event
+from qyrenith_engine.qdas import QdasEventLedger, QdasLedgerError, capture_process_event
 
 
 class QdasProcessCaptureTests(unittest.TestCase):
@@ -67,7 +67,7 @@ class QdasProcessCaptureTests(unittest.TestCase):
             json.dumps(document, ensure_ascii=True, sort_keys=True, separators=(",", ":")) + "\\n",
             encoding="utf-8",
         )
-        with self.assertRaisesRegex(Exception, "invalid evidence-linked hypothesis"):
+        with self.assertRaisesRegex(QdasLedgerError, "invalid evidence-linked hypothesis"):
             self.ledger.verify()
 
     def test_timeout_is_captured_as_blocked_not_pass(self):
