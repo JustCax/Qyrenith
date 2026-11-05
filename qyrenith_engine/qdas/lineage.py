@@ -141,8 +141,20 @@ class QdasEvidenceLineage:
             review = next((item for item in earlier if item["record_digest"] == review_digest and item["kind"] == "HUMAN_REVIEW"), None)
             if review is None or review["payload"]["plan_digest"] != plan_digest or review["payload"]["decision"] != "APPROVE":
                 raise ValueError("patch evidence requires a prior approving review for the same plan")
+            plan_entry = next((item for item in earlier if item["kind"] == "REPAIR_PLAN" and item["payload"]["plan_digest"] == plan_digest), None)
+            if plan_entry is None:
+                raise ValueError("patch evidence references an unknown repair plan")
+            source_event = _event_record(
+                event_ledger,
+                plan_entry["payload"]["event_id"],
+                plan_entry["payload"]["event_record_digest"],
+            )["event"]
             for name in ("base_revision", "resulting_revision"):
                 _text(payload[name], name, 256)
+            if payload["base_revision"] != source_event["project_revision"]:
+                raise ValueError("patch base revision does not match the repair plan source event")
+            if payload["resulting_revision"] == payload["base_revision"]:
+                raise ValueError("patch resulting revision must differ from its base revision")
             _digest(payload["diff_digest"], "diff_digest")
             paths = payload["changed_paths"]
             if not isinstance(paths, list) or not 1 <= len(paths) <= 256:
@@ -159,6 +171,9 @@ class QdasEvidenceLineage:
                     raise ValueError("changed_paths must use canonical safe project-relative paths")
             if paths != sorted(set(paths)):
                 raise ValueError("changed_paths must be unique and sorted")
+            planned_paths = set(plan_entry["payload"]["plan_document"]["affected_paths"])
+            if not set(paths).issubset(planned_paths):
+                raise ValueError("patch changed paths exceed the approved repair plan")
             if payload["patch_applied"] is not True:
                 raise ValueError("PATCH evidence must describe an observed applied patch")
             if any(item["kind"] == "PATCH" and item["payload"]["plan_digest"] == plan_digest for item in earlier):
@@ -177,9 +192,12 @@ class QdasEvidenceLineage:
             event = event_record["event"]
             if event["execution_status"] != "PASS":
                 raise ValueError(kind.lower() + " evidence must reference a passing execution event")
-            expected_kind = "TEST" if kind == "REGRESSION" else None
-            if expected_kind and event["event_kind"] != expected_kind:
-                raise ValueError("regression evidence must reference a TEST event")
+            allowed_kinds = {"TEST"} if kind == "REGRESSION" else {"BUILD", "VERIFICATION"}
+            if event["event_kind"] not in allowed_kinds:
+                raise ValueError(kind.lower() + " evidence references an execution event of the wrong kind")
+            patch_revision = patch["payload"]["resulting_revision"]
+            if event["project_revision"] != patch_revision:
+                raise ValueError(kind.lower() + " event revision does not match the observed patch revision")
             _digest(payload["scope_digest"], "scope_digest")
             if any(item["kind"] == kind and item["payload"]["patch_record_digest"] == patch_digest for item in earlier):
                 raise ValueError(kind.lower() + " evidence is already recorded for this patch")
