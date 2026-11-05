@@ -83,7 +83,7 @@ class QdasCliLifecycleIntegrationTests(unittest.TestCase):
         argv = ["python", "-c", "pass"]
         process_report = self.report(argv)
         state = self.root / ".qyrenith"
-        state.symlink_to(self.root.parent, target_is_directory=True)
+        state.write_text("not a directory", encoding="utf-8")
         with patch.object(QYRENITH, "run_bounded_process", return_value=process_report):
             with self.assertRaises(QYRENITH.QyrenithError):
                 QYRENITH.cmdrun(argv, self.root, qdas_event_kind="BUILD")
