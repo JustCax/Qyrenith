@@ -15,7 +15,8 @@ from .knowledge import KnowledgeCatalog, strict_object_pairs
 from .planner import RoutePlan
 from ..trust_store import OwnerTrustStore
 from ..approval import HostApproval, HostApprovalRequest, create_host_approval_request, validate_host_approval
-from .workspace import WorkspaceDescriptor
+from .snapshot import ProjectSnapshot
+from .workspace import WorkspaceDescriptor, verify_workspace_baseline
 from .worker import (
     MigrationWorkerRegistry,
     RouteWorkerAssessment,
@@ -729,6 +730,7 @@ def migration_step_approval_scope(
     plan: RoutePlan,
     grant: MigrationStepGrant,
     workspace: WorkspaceDescriptor,
+    snapshot: ProjectSnapshot,
     *,
     command_digest: str,
     sandbox_profile_id: str,
@@ -741,12 +743,24 @@ def migration_step_approval_scope(
         raise TypeError("grant must be a MigrationStepGrant")
     if not isinstance(workspace, WorkspaceDescriptor):
         raise TypeError("workspace must be a WorkspaceDescriptor")
+    if not isinstance(snapshot, ProjectSnapshot):
+        raise TypeError("snapshot must be a ProjectSnapshot")
     if authorization.route_plan_digest != plan.plan_digest:
         raise ValueError("authorization does not match the exact route plan")
     if grant not in authorization.grants:
         raise ValueError("step grant is not part of the exact authorization")
-    if grant.transition_id not in {item.transition_id for item in plan.transitions}:
+    transition = next(
+        (item for item in plan.transitions if item.transition_id == grant.transition_id), None
+    )
+    if transition is None:
         raise ValueError("step grant transition is not present in the route plan")
+    if workspace.target != transition.target:
+        raise ValueError("workspace target does not match the authorized migration transition")
+    if workspace.source_snapshot_digest != snapshot.snapshot_digest:
+        raise ValueError("workspace baseline digest does not match the supplied project snapshot")
+    baseline = verify_workspace_baseline(workspace, snapshot)
+    if not baseline.matches:
+        raise ValueError("workspace no longer matches the authorized source snapshot")
     if (
         not isinstance(command_digest, str)
         or not re.fullmatch(r"(?:sha256:)?[0-9a-f]{64}", command_digest)
@@ -771,7 +785,7 @@ def migration_step_approval_scope(
         "qualification_digest": grant.qualification_digest,
         "permissions": [item.value for item in grant.permissions],
         "resource_limits": grant.limits.to_dict(),
-        "source_snapshot_digest": workspace.source_snapshot_digest,
+        "source_snapshot_digest": snapshot.snapshot_digest,
         "workspace_id": workspace.workspace_id,
         "workspace_descriptor_digest": workspace.descriptor_digest,
         "workspace_path": workspace.workspace_path,
@@ -788,6 +802,7 @@ def create_migration_step_approval_request(
     plan: RoutePlan,
     grant: MigrationStepGrant,
     workspace: WorkspaceDescriptor,
+    snapshot: ProjectSnapshot,
     *,
     command_digest: str,
     sandbox_profile_id: str,
@@ -797,7 +812,7 @@ def create_migration_step_approval_request(
 ) -> HostApprovalRequest:
     """Create a one-time host approval request bound to one worker, workspace, command, and sandbox profile."""
     scope = migration_step_approval_scope(
-        authorization, plan, grant, workspace,
+        authorization, plan, grant, workspace, snapshot,
         command_digest=command_digest,
         sandbox_profile_id=sandbox_profile_id,
         sandbox_profile_digest=sandbox_profile_digest,
@@ -815,6 +830,7 @@ def validate_migration_step_approval(
     policy: MigrationAuthorizationPolicy,
     grant: MigrationStepGrant,
     workspace: WorkspaceDescriptor,
+    snapshot: ProjectSnapshot,
     approval: HostApproval,
     *,
     trust_store: OwnerTrustStore,
