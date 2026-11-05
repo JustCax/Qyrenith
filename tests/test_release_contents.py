@@ -1,5 +1,6 @@
 """Verify public release archives and Python source distributions."""
 import importlib.util
+import re
 import subprocess
 import sys
 import tarfile
