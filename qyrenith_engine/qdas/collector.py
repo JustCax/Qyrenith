@@ -61,7 +61,7 @@ def record_execution_report(
     stdout = report.get("stdout", report.get("output", ""))
     stderr = report.get("stderr", "")
     hypotheses = diagnose_failure(event, stdout=stdout, stderr=stderr)
-    record = ledger.append(event, classification)
+    record = ledger.append(event, classification, hypotheses)
     return QdasCaptureResult(
         report=dict(report),
         event=event,
