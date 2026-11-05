@@ -200,8 +200,8 @@ require(qdas_event["properties"]["argv"].get("maxItems") == 256,
 require(qdas_event["properties"]["stdout_bytes"].get("maximum") == 8388608 and
         qdas_event["properties"]["stderr_bytes"].get("maximum") == 8388608,
         "QDAS event output capture must be bounded")
-require(len(qdas_event.get("allOf", [])) == 1,
-        "QDAS event schema must prevent false PASS results")
+require(len(qdas_event.get("allOf", [])) == 4,
+        "QDAS event schema must enforce PASS, FAIL, ERROR, and BLOCKED invariants")
 pass_event_rule = qdas_event["allOf"][0].get("then", {}).get("properties", {})
 require(pass_event_rule.get("exit_code", {}).get("const") == 0 and
         pass_event_rule.get("timed_out", {}).get("const") is False and
@@ -222,8 +222,16 @@ require(set(qdas_ledger["$defs"]["classification"]["properties"]["category"].get
     "INFRASTRUCTURE_FAILURE", "TIMEOUT", "RESOURCE_LIMIT", "ANALYZER_FAILURE",
     "UNSUPPORTED_STATE", "UNKNOWN_FAILURE",
 }, "QDAS failure taxonomy mismatch")
-require(len(qdas_ledger.get("allOf", [])) == 2,
-        "QDAS ledger must enforce event/classification state consistency")
+require(len(qdas_ledger.get("allOf", [])) == 4,
+        "QDAS ledger must enforce event/classification and persisted-diagnosis consistency")
+require(qdas_ledger["properties"].get("hypotheses", {}).get("maxItems") == 8,
+        "QDAS ledger diagnosis history must be bounded")
+require(qdas_ledger["properties"].get("hypotheses", {}).get("items", {}).get("$ref") == "#/$defs/hypothesis",
+        "QDAS ledger must use the declared hypothesis contract")
+require(qdas_ledger["$defs"]["hypothesis"]["properties"]["state"].get("const") == "UNCONFIRMED",
+        "persisted QDAS hypotheses must remain unconfirmed")
+require(qdas_ledger["$defs"]["hypothesis"]["properties"]["supporting_evidence"].get("minItems") == 1,
+        "persisted QDAS hypotheses must cite supporting evidence")
 
 qdas_hypothesis = schemas["qdas-failure-hypothesis.schema.json"]
 require(qdas_hypothesis.get("additionalProperties") is False,
