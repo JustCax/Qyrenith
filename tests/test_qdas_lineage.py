@@ -219,6 +219,21 @@ class QdasEvidenceLineageTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "cannot authenticate"):
             self.lineage.append("HUMAN_REVIEW", payload)
 
+    def test_review_timestamp_must_be_canonical_utc(self):
+        self._record_plan()
+        for timestamp in ("2026-11-05T08:10:00", "2026-11-05T09:10:00+01:00", "not-a-time"):
+            with self.subTest(timestamp=timestamp):
+                payload = {
+                    "plan_digest": self.plan.plan_digest,
+                    "decision": "REJECT",
+                    "reviewer_id": "owner",
+                    "reviewed_at": timestamp,
+                    "note": None,
+                    "authentication_state": "UNAUTHENTICATED_ASSERTION",
+                }
+                with self.assertRaisesRegex(ValueError, "canonical UTC"):
+                    self.lineage.append("HUMAN_REVIEW", payload)
+
     def test_patch_requires_prior_approval(self):
         self._record_plan()
         with self.assertRaisesRegex(ValueError, "prior approving review"):
