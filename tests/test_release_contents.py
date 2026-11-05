@@ -130,6 +130,8 @@ class TestReleaseContents(unittest.TestCase):
                 "qyrenith_engine/qdas/__init__.py",
                 "qyrenith_engine/qdas/events.py",
                 "qyrenith_engine/qdas/collector.py",
+                "qyrenith_engine/qdas/diagnosis.py",
+                "qyrenith_engine/qdas/repair.py",
                 "qyrenith_engine/qdas/ledger.py",
                 "qyrenith_engine/migration/assurance.py",
                 "qyrenith_engine/migration/authorization.py",
