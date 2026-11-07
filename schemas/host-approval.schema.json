@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qyrenith.dev/schemas/host-approval.schema.json",
+  "title": "Qyrenith Local Host Approval",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "approval_id",
+    "request_id",
+    "action_type",
+    "request_digest",
+    "scope_digest",
+    "issued_at",
+    "approved_at",
+    "expires_at",
+    "nonce",
+    "approved_by",
+    "host_principal",
+    "trust_store_id",
+    "trust_store_generation",
+    "signature"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "approval_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "request_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "action_type": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{1,63}$"
+    },
+    "request_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "scope_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "approved_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "nonce": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{48}$"
+    },
+    "approved_by": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "host_principal": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "trust_store_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "trust_store_generation": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}

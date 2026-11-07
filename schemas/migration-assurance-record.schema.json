@@ -1,0 +1,266 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "schemas/migration-assurance-record.schema.json",
+  "title": "Qyrenith Migration Step Assurance Record",
+  "type": "object",
+  "required": [
+    "schema",
+    "sequence",
+    "run_id",
+    "step_id",
+    "transition_id",
+    "source_identity",
+    "target_identity",
+    "plan_digest",
+    "pre_state_digest",
+    "worker_id",
+    "worker_version",
+    "worker_manifest_digest",
+    "worker_qualification_id",
+    "worker_qualification_digest",
+    "worker_status",
+    "changed_files",
+    "diff_digest",
+    "evidence_ids",
+    "verdict",
+    "post_state_digest",
+    "artifact_digest",
+    "commit_id",
+    "recovery_reference",
+    "created_at",
+    "previous_digest",
+    "record_digest"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "step_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "transition_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "source_identity": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8192
+    },
+    "target_identity": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8192
+    },
+    "plan_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "pre_state_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "worker_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "worker_status": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "enum": [
+        "WORKED",
+        "NO_CHANGE",
+        "BLOCKED",
+        "FAILED"
+      ]
+    },
+    "changed_files": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 4096
+      },
+      "uniqueItems": true,
+      "maxItems": 100000
+    },
+    "diff_digest": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256
+      },
+      "uniqueItems": true,
+      "maxItems": 10000
+    },
+    "verdict": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "BLOCKED",
+        "UNKNOWN",
+        "NOT_RUN",
+        "UNSUPPORTED",
+        "ERROR"
+      ]
+    },
+    "post_state_digest": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "artifact_digest": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "commit_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
+    },
+    "recovery_reference": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 8192
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "maxLength": 64
+    },
+    "previous_digest": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "record_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "worker_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "worker_manifest_digest": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "worker_qualification_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "worker_qualification_digest": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "verdict": {
+            "const": "PASS"
+          }
+        },
+        "required": [
+          "verdict"
+        ]
+      },
+      "then": {
+        "required": [
+          "changed_files",
+          "diff_digest",
+          "post_state_digest",
+          "evidence_ids",
+          "commit_id",
+          "worker_manifest_digest",
+          "worker_qualification_id",
+          "worker_qualification_digest"
+        ],
+        "properties": {
+          "changed_files": {
+            "type": "array",
+            "minItems": 1
+          },
+          "diff_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "post_state_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "evidence_ids": {
+            "type": "array",
+            "minItems": 1
+          },
+          "commit_id": {
+            "type": "string",
+            "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
+          },
+          "worker_manifest_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "worker_qualification_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "worker_qualification_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "worker_status": {
+            "const": "WORKED"
+          }
+        }
+      }
+    }
+  ]
+}
