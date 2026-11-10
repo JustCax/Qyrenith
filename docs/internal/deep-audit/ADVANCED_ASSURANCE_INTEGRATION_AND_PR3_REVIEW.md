@@ -17,14 +17,14 @@ Do not merge PR #3 independently into `main`. Keep it draft until the owner revi
 
 ## 2. Repository and branch facts
 
-Current repository and PR facts:
+Repository and PR state observed on 2026-11-10 after the AA-01 decision-design documentation commit:
 
-- `main`: `2cc0a0c3d34bb056ee8aeb2f16529fe608a7536a`.
-- 1.2.0 branch head at the start of this review update: `d2c17194b101e2bf2cf5309e266c54600621ac93`. The PR #3 integration-review updates are recorded in commits `9892536c180ac5823c53b5624e8e0f23ba39a7e8`, `bdab5dd8ca7a7557f817f9ef5e0657868dbde84a`, and `329e9642dd2461e4ef3ed6ee4d9887aba698e9f6`.
-- PR #9 is open/draft. At the start of this review update, its comparison against `main` was 659 commits ahead and 1 behind, across 123 changed files, with the old pre-workflow-removal commit as merge base. GitHub reports it mergeable, but that is not an independent review of a very large change set.
-- PR #3 is open/draft. Its current comparison is 14 commits ahead and 11 behind `main`, across 13 changed paths, with merge base `647398246bc6bc15fdf8fe6038af1bec35710806`. The 13 paths comprise eleven AA-01 documentation/ADR/provenance files and the removal of two legacy workflow files; no implementation code is included.
-- The PR #3 branch originally retained two legacy workflow definitions. Both were removed together in commit `ee303d8da317330947e54f4e56e43e91cc66dfbd`; the branch now has an empty `.github/workflows/` directory. Current `main`, PR #3, and PR #9 trees all contain no workflow definitions.
-- The latest observed Actions run predates these November 10 commits (latest listed run: 2026-11-09 13:15:35 UTC). No new Actions run was observed after the PR #3 cleanup or documentation correction commits. Historical runs do not verify these revisions.
+- `main` HEAD: `2cc0a0c3d34bb056ee8aeb2f16529fe608a7536a`. This review did not modify `main`.
+- 1.2.0 branch HEAD: `61df2885d0721c8318ad418dd0d0590698d4096b`.
+- PR #9 is the release PR from `feature/1.2.0-universal-migration-core` to `main`. It remains open/draft and unmerged. Its current comparison is 662 commits ahead and 1 behind `main`, across 124 changed files. The large diff requires a separate release review; GitHub's mergeable flag is not an independent quality review.
+- PR #3 remains open/draft and unmerged, with head `0ee2edb9fe136bba729483e56d5c450421fa6e80`, targeting `main`. Its current comparison is 14 commits ahead and 11 behind `main`, across 13 paths: eleven AA-01 documentation/ADR/provenance files and two workflow deletions. It contains no implementation code. Do not merge it into `main`; any accepted content is integrated into the 1.2.0 branch only.
+- The `.github/workflows/` trees on `main`, the 1.2.0 branch, and PR #3 are empty. No workflow file was added by this documentation update.
+- The latest observed Actions runs were created on 2026-11-09 13:15:35 UTC, before the November 10 documentation commits. No newer run was observed. GitHub Actions were disabled by the owner for billing reasons; no CI was run for these commits. Historical runs do not verify the current heads.
 
 ## 3. Mapping AA to the existing Qyrenith architecture
 
