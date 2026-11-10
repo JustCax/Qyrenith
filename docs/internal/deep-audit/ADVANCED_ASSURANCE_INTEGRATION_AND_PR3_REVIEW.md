@@ -90,7 +90,7 @@ PR #3's acceptance matrix now leaves seven decisions open:
 
 The PR #3 audit also corrected the requirement lifecycle so that `SPECIFIED` is distinct from `IMPLEMENTED`, and `DEFERRED` is a disposition rather than the automatic state after `VERIFIED`. The architecture now distinguishes per-check outcomes, aggregate assurance decisions, and reproducibility outcomes. Reproducibility is explicitly cross-cutting and does not introduce a second execution engine. Three reproducibility-specific threat scenarios were added.
 
-These seven questions must be resolved or explicitly deferred before AA-01 can be marked accepted. The proposed ADRs should be reviewed alongside them, not accepted independently.
+These seven questions must be resolved or explicitly deferred before AA-01 can be marked accepted. The proposed ADRs should be reviewed alongside them, not accepted independently. ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md expands each question into alternatives, recommended defaults, safety consequences, and acceptance conditions. Its recommendations remain proposals until the owner explicitly approves them.
 
 ## 7. Reproducibility and optimization integration
 
@@ -107,11 +107,11 @@ Recommended disposition:
 1. Keep PR #3 open and draft; do not merge it independently into `main`.
 2. Review the requirement and architecture crosswalk in this document.
 3. Resolve or explicitly defer the seven AA-01 open decisions and compare each proposed ADR against the existing master architecture and migration authorization/evidence schemas.
-4. If accepted, retain the stable AA requirement IDs and proposed ADR content, but integrate them into the 1.2.0 branch as reviewed documents. Preserve PR #3 as the historical review source until the owner decides whether to close it.
+4. If accepted, retain the stable AA requirement IDs and proposed ADR content, but integrate them into the 1.2.0 branch as reviewed documents. Prefer reviewed, selective integration over blindly merging the entire divergent PR branch. Preserve PR #3 as the historical review source until the owner decides whether to close it.
 5. Update the 1.2.0 plan and traceability matrix in the same change.
 6. Only then design implementation slices. AA-02 checker contract/runtime and AA-03 project model/planning must not bypass the Phase 1 migration safety gate or Phase 2 QDAS-first integration sequence.
 
-No branch retargeting, rebase, merge, close, release or publication is authorized by this proposal.
+PR #9 is the release PR for the 1.2.0 branch and remains open/draft against main; it is not an internal integration target. PR #3 remains a separate source/review PR. Any accepted PR #3 content is integrated into the 1.2.0 branch only. No PR merge, branch retargeting, rebase, close, release or publication is authorized by this proposal.
 
 ## 9. Verification and repository safety
 
