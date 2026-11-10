@@ -1,6 +1,6 @@
 # Advanced Assurance AA-01 — Owner Decision Design Proposal
 
-**Status:** PROPOSED — OWNER DECISIONS REQUIRED  
+**Status:** OWNER-APPROVED DECISION BASELINE — DESIGN ONLY  
 **Target release:** Qyrenith 1.2.0  
 **Scope:** Design analysis for the seven unresolved AA-01 decisions  
 **Implementation status:** Design only; no runtime, schema, or test implementation is authorized by this document  
@@ -8,9 +8,11 @@
 
 ## 1. Purpose and decision discipline
 
-This document turns the seven open AA-01 questions into explicit alternatives, recommended defaults, consequences, and acceptance conditions. It is a decision aid, not an accepted architecture record.
+This document records the alternatives, consequences, and acceptance conditions for the seven AA-01 owner decisions. The owner approved all seven decision directions on 2026-11-10. The accepted decisions are binding design constraints for the 1.2.0 documentation and subsequent implementation planning; this document does not claim runtime implementation or verification.
 
-No recommendation below becomes binding until the owner approves it and the relevant accepted specifications, ADRs, traceability rows, schemas, and acceptance tests are reconciled. A decision may be accepted, deferred with an explicit release consequence, or rejected. Silence is not approval.
+The owner also approved extensibility and supportability as a first-class architectural requirement. The dedicated `EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md` defines that requirement family.
+
+Approval is deliberately scoped: it does not automatically accept all 70 proposed PR #3 AA requirements, the four proposed AA ADRs, every diagnostic domain, every proposed product pillar, or any implementation. Those remain subject to their own reconciliation and approval gates. Physical evidence-storage backend selection and final verification-profile inventories remain explicitly deferred pending comparison/catalog evidence.
 
 AA remains a cross-cutting assurance contract. It must reuse the five existing planes and the QDAS, migration, evidence, and reproducible-lab foundations. It must not create a parallel execution engine, a second evidence ledger, or a separate verdict authority.
 
@@ -52,7 +54,7 @@ INCONCLUSIVE is added to the seven-state proposal because the master architectur
 
 Define a versioned mapping table for every legacy state; test every mapping and ambiguous case; prove round-trip preservation of the raw legacy value; and verify that no conversion can upgrade missing or weaker evidence into PASS.
 
-**Recommendation:** Accept the eight-state model, subject to a final review of every legacy state actually present in the 1.1.0 and 1.2.0 codebase.
+**Owner decision (2026-11-10): ACCEPTED.** The eight-state model and no-false-PASS rules are approved. The exhaustive legacy mapping table remains an implementation prerequisite and must be based on actual 1.1.0/1.2.0 legacy values; ambiguous values remain UNKNOWN with raw-value preservation.
 
 ## 3. Decision 2 — Persistent evidence storage
 
@@ -95,7 +97,7 @@ A storage backend may use a transactional database internally only if the journa
 
 Run fault-injection tests at every write boundary; test concurrent writers, partial writes, disk-full conditions, corruption, restore, export/import, redaction, and schema upgrades. Compare candidate backends using the same acceptance suite before selecting one.
 
-**Recommendation:** Approve the logical architecture, not a concrete storage backend yet. Reuse QDAS's ledger and avoid a second evidence authority. Choose the physical backend only after a measured portability, atomicity, privacy, and recovery comparison.
+**Owner decision (2026-11-10): ACCEPTED.** The one-logical-evidence-system architecture is approved. QDAS remains the canonical journal authority, with content-addressed artifacts and a rebuildable non-authoritative index. A physical backend is deliberately NOT SELECTED until measured portability, atomicity, privacy, concurrency, and recovery comparisons are complete.
 
 ## 4. Decision 3 — Process isolation and host enforcement
 
@@ -129,7 +131,7 @@ Define platform-specific isolation providers behind one Qyrenith-owned capabilit
 
 For every supported OS, test filesystem escape, symlink traversal, child-process escape, environment/secret leakage, network egress, resource exhaustion, cleanup, and boundary teardown. Evidence must demonstrate enforcement rather than merely report configuration.
 
-**Recommendation:** Make OS-enforced isolation a supported, capability-discovered feature where it can be independently tested. Elsewhere, retain propose-only behavior. Do not treat isolation as an optional external prerequisite that users must infer.
+**Owner decision (2026-11-10): ACCEPTED.** RVL L0–L5 remains the only canonical isolation scale. Platform-specific enforcement is capability-discovered and must be independently tested. No silent downgrade is permitted; unsupported enforcement keeps side-effecting work PROPOSE_ONLY/BLOCKED/UNSUPPORTED.
 
 ## 5. Decision 4 — Verification profiles
 
@@ -168,7 +170,7 @@ These names must not be advertised as complete until the exact inventory, depend
 
 For every profile version, generate a machine-readable inventory and test that every mandatory check is either executed or produces a visible non-pass outcome. Verify that exclusions and unsupported coverage appear in reports and affect the aggregate decision.
 
-**Recommendation:** Defer profile acceptance and naming. First build the checker catalog and resource model; then approve profiles as data-backed manifests.
+**Owner decision (2026-11-10): ACCEPTED.** Verification profiles must be immutable, versioned manifests with exact check IDs/versions, scope, prerequisites, exclusions, evidence requirements, isolation policy, network policy, and resource budgets. Baseline/Standard/Deep Audit remain candidate names only; final profiles are deferred until the checker catalog and resource model exist.
 
 ## 6. Decision 5 — Network-enabled providers
 
@@ -190,7 +192,7 @@ External providers can improve coverage but introduce remote data trust, egress,
 
 Test denied egress, DNS rebinding/redirect behavior, endpoint allowlist bypass, response-size exhaustion, secret leakage, provider substitution, stale results, and deterministic replay with captured fixtures.
 
-**Recommendation:** Keep the first 1.2.0 release network-disabled by default and ship no network-dependent mandatory check. Revisit optional providers only after the local assurance pipeline is stable and the owner approves a specific provider threat model.
+**Owner decision (2026-11-10): ACCEPTED.** Network access is disabled by default at every layer. No network-dependent mandatory check is permitted in the first 1.2.0 release. Any later provider requires a separate explicit owner-approved threat model and per-run authorization.
 
 ## 7. Decision 6 — Aggregate project-level assurance decision
 
@@ -232,7 +234,7 @@ Keep old workflow status labels as presentation/compatibility fields only. Do no
 
 Test every precedence combination, conflicting checks, mandatory/optional scope, missing evidence, expired evidence, partial coverage, unsupported checks, and replay of the same decision inputs. Prove no path produces ASSURED with an unmet mandatory condition.
 
-**Recommendation:** Adopt a separate aggregate decision vocabulary and prohibit a universal green status from being inferred from per-check PASS results. Final names and precedence require owner approval.
+**Owner decision (2026-11-10): ACCEPTED.** The separate aggregate states ASSURED, NOT_ASSURED, BLOCKED, INCONCLUSIVE, and PARTIAL are approved with the safety and precedence rules in this document. ASSURED is impossible when any mandatory condition, evidence, or coverage requirement is unmet.
 
 ## 8. Decision 7 — Reproducibility outcome vocabulary
 
@@ -269,7 +271,7 @@ Do not use one undifferentiated percentage. Each dimension reports its own scope
 
 Test deterministic matches, material mismatches, environment drift, dependency drift, missing artifacts, stale manifests, nondeterministic timestamps/paths, normalization mistakes, and independent replay. Prove that an environment mismatch is not mislabeled as a source-code failure.
 
-**Recommendation:** Accept a distinct reproducibility outcome family and reuse the existing RVL execution engine and cross-environment contract. Keep portability and reproducibility as separate reported dimensions.
+**Owner decision (2026-11-10): ACCEPTED.** The separate reproducibility states REPRODUCIBLE, NON_REPRODUCIBLE, INCONCLUSIVE, BLOCKED, NOT_RUN, and UNSUPPORTED are approved. RVL remains the sole execution/replay engine; reproducibility dimensions remain separately reported.
 
 ## 9. Cross-decision invariants
 

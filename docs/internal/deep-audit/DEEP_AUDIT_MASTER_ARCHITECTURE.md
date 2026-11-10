@@ -70,7 +70,15 @@ Module interfaces MUST be versioned and capability-discovered. Unsupported langu
 
 All core analyzers are newly implemented as native Qyrenith components. External tools may be invoked only through explicit optional adapters and approved execution policy; they are not required runtime dependencies. Research may compare concepts and published behavior, but implementation must be independently designed and written. No third-party source code or proprietary rule corpus may be copied.
 
-## 7. Global invariants
+## 7. Extensibility and supportability
+
+Extensibility is a first-class architectural requirement, not a later convenience. Qyrenith MUST support controlled addition of language frontends, domain packs, diagnostic/checker modules, knowledge packs, build/test integrations, optional external providers, isolation providers, and report/evidence integrations without creating parallel control, execution, evidence, or verdict authorities.
+
+All extensions MUST use versioned contracts, exact multidimensional support scopes, capability negotiation, provenance, explicit qualification, conformance evidence, resource limits, and least-privilege permissions. Discovery and installation MUST NOT imply qualification, authorization, or support. Extensions MUST NOT override central policy, approval, evidence-integrity, or verdict rules. Unsupported or partially supported scope MUST remain visible and MUST NOT be reported as a successful zero-finding result.
+
+The canonical support vocabulary and qualification lifecycle are specified in `EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md` and `LANGUAGE_AND_DOMAIN_ADAPTER_SPEC.md`. The extension system maps onto the existing five planes; it is not a sixth plane or a separate plugin runtime authority.
+
+## 8. Global invariants
 
 1. Deterministic inputs produce deterministic normalized outputs where the underlying observation is deterministic.
 2. Every finding has a stable identity, source location or object reference, severity, rationale, and evidence lineage.
@@ -83,21 +91,21 @@ All core analyzers are newly implemented as native Qyrenith components. External
 9. A repair is valid only if the original failure is resolved and the unchanged baseline checks still pass.
 10. Qyrenith cannot be the sole authority verifying its own implementation.
 
-## 8. Integration and dependency order
+## 9. Integration and dependency order
 
 QDAS depends on the evidence model, reproducible lab, execution boundary, root-cause analysis, and policy controls. Other modules expose stable capability contracts to QDAS. The static, dynamic, formal, fuzz, security, knowledge, adapter, maturity, and meta-audit modules remain independently testable.
 
 The implementation plan is the source of truth for sequencing and release gates. Changes to accepted architecture require a documented decision record and owner approval before implementation.
 
-## 9. Release gate
+## 10. Release gate
 
 The 1.2.0 release is blocked until every accepted requirement is either implemented and verified or explicitly removed by an owner-approved scope change. A documented limitation is not a substitute for a promised feature. CI must pass on the current head across the supported platform/Python matrix, public package contents must be checked, and a clean external verification run must be retained.
 
-## 10. Requirement map
+## 11. Requirement map
 
 - DA-01: this master architecture.
 - DA-02..DA-13: the corresponding capability specifications.
 - DA-14: implementation and acceptance plan, including migration-platform integration and integrated reporting/orchestration acceptance.
 - QDAS-01..QDAS-22: the dedicated QDAS specification and cross-module integration requirements.
 
-The specification index lists all seventeen normative documents plus the navigation README. The fourteen capability modules implemented after QDAS are enumerated in the implementation plan.
+The specification index lists all eighteen normative documents plus the navigation README. The fourteen capability modules implemented after QDAS are enumerated in the implementation plan.
