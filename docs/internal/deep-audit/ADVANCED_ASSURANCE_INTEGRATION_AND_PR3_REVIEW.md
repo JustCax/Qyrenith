@@ -3,7 +3,7 @@
 **Status:** INTEGRATION PROPOSAL — OWNER REVIEW REQUIRED  
 **Source PR:** [#3 — Advanced Assurance AA-01](https://github.com/JustCax/Qyrenith/pull/3)  
 **Source branch:** `feature/advanced-assurance-aa01-mainline`  
-**Reviewed source head:** `ab576838e53dae045d2d739fa410068a961ff13f`  
+**Reviewed source head after PR #3 audit corrections:** `96cd17cc867d57075744073e1158b16f60b86bb9`  
 **Target integration branch:** `feature/1.2.0-universal-migration-core`  
 **Scope:** Documentation and architecture reconciliation only. No implementation or merge authorization is implied.
 
@@ -17,15 +17,14 @@ Do not merge PR #3 independently into `main`. Keep it draft until the owner revi
 
 ## 2. Repository and branch facts
 
-At review time:
+Current repository and PR facts:
 
 - `main`: `2cc0a0c3d34bb056ee8aeb2f16529fe608a7536a`.
-- 1.2.0 branch: `945011e1f7f58d99fcbf93f2c52099629fda78d0`.
-- PR #9 is open/draft. Its comparison against current `main` reports 655 commits ahead and 1 behind, with the old pre-workflow-removal commit as merge base. GitHub currently reports it mergeable, but that is not an independent review of a very large change set.
-- PR #3 is open/draft. Its branch is 11 commits ahead and 11 behind current `main`, with merge base `647398246bc6bc15fdf8fe6038af1bec35710806`. Its reviewed comparison contains eleven documentation/ADR/provenance files and no implementation code.
-- Neither active branch contains workflow definitions. No new Actions run was observed during this review. Historical runs belong to older commits.
-
-The PR #3 branch is materially stale relative to current `main`; its current base SHA is not the current main head. This is a branch synchronization issue, not proof of a content conflict. A fresh compare/review is required after any future branch update.
+- 1.2.0 branch: `d2c17194b101e2bf2cf5309e266c54600621ac93`.
+- PR #9 is open/draft. Its current comparison against `main` is 656 commits ahead and 1 behind, across 123 changed files, with the old pre-workflow-removal commit as merge base. GitHub reports it mergeable, but that is not an independent review of a very large change set.
+- PR #3 is open/draft. Its current comparison is 13 commits ahead and 11 behind `main`, across 13 changed paths, with merge base `647398246bc6bc15fdf8fe6038af1bec35710806`. The 13 paths comprise eleven AA-01 documentation/ADR/provenance files and the removal of two legacy workflow files; no implementation code is included.
+- The PR #3 branch originally retained two legacy workflow definitions. Both were removed together in commit `ee303d8da317330947e54f4e56e43e91cc66dfbd`; the branch now has an empty `.github/workflows/` directory. Current `main`, PR #3, and PR #9 trees all contain no workflow definitions.
+- The latest observed Actions run predates these November 10 commits (latest listed run: 2026-11-09 13:15:35 UTC). No new Actions run was observed after the PR #3 cleanup or documentation correction commits. Historical runs do not verify these revisions.
 
 ## 3. Mapping AA to the existing Qyrenith architecture
 
@@ -46,7 +45,7 @@ The five planes in `DEEP_AUDIT_MASTER_ARCHITECTURE.md` remain canonical. AA's lo
 
 ## 4. Requirement-family integration
 
-PR #3 defines 70 stable AA requirement IDs across ten groups. They are now represented in the 1.2.0 traceability matrix as `PROPOSED`, retaining their original statements and linking them to proposed owners, acceptance tests and evidence.
+PR #3 defines 70 stable AA requirement IDs across eleven groups, including the four `AA-REQ-REL` release requirements. They are represented in the 1.2.0 traceability matrix as `PROPOSED`, retaining their original statements and linking them to proposed owners, acceptance tests and evidence. The PR #3 acceptance matrix now maps all 70 IDs individually to an architecture owner, relevant threat references, and a reserved test ID; these are planned test identifiers, not existing test implementations or evidence.
 
 | Requirement group | Count | Primary owner | Existing overlap / integration |
 |---|---:|---|---|
@@ -79,15 +78,19 @@ No ADR status is changed in this integration pass.
 
 ## 6. AA-01 open decisions that still require owner input
 
-PR #3's acceptance matrix explicitly leaves these decisions open:
+PR #3's acceptance matrix now leaves seven decisions open:
 
-1. Confirm the seven-state vocabulary and the mapping from legacy workflow states.
+1. Confirm the seven per-check outcome states and the mapping from legacy workflow states.
 2. Select persistent evidence storage only after consistency, atomicity, portability and privacy comparison.
 3. Decide whether stronger process isolation is a supported OS-specific feature or an external prerequisite.
 4. Approve verification profiles only after exact check inventories and resource policies exist.
 5. Decide whether any network-enabled provider belongs in the first Advanced Assurance release; default remains disabled.
+6. Define the aggregate project-level assurance decision separately from the seven per-check outcome states, including legacy workflow-state compatibility.
+7. Confirm the reproducibility outcome vocabulary and its relationship to per-check outcomes, using the cross-environment/reproducibility specification as the detailed contract.
 
-These questions must be resolved before AA-01 can be marked accepted. The proposed ADRs should be reviewed alongside them, not accepted independently.
+The PR #3 audit also corrected the requirement lifecycle so that `SPECIFIED` is distinct from `IMPLEMENTED`, and `DEFERRED` is a disposition rather than the automatic state after `VERIFIED`. The architecture now distinguishes per-check outcomes, aggregate assurance decisions, and reproducibility outcomes. Reproducibility is explicitly cross-cutting and does not introduce a second execution engine. Three reproducibility-specific threat scenarios were added.
+
+These seven questions must be resolved or explicitly deferred before AA-01 can be marked accepted. The proposed ADRs should be reviewed alongside them, not accepted independently.
 
 ## 7. Reproducibility and optimization integration
 
@@ -103,7 +106,7 @@ Recommended disposition:
 
 1. Keep PR #3 open and draft; do not merge it independently into `main`.
 2. Review the requirement and architecture crosswalk in this document.
-3. Resolve the five AA-01 open decisions and compare each proposed ADR against the existing master architecture and migration authorization/evidence schemas.
+3. Resolve or explicitly defer the seven AA-01 open decisions and compare each proposed ADR against the existing master architecture and migration authorization/evidence schemas.
 4. If accepted, retain the stable AA requirement IDs and proposed ADR content, but integrate them into the 1.2.0 branch as reviewed documents. Preserve PR #3 as the historical review source until the owner decides whether to close it.
 5. Update the 1.2.0 plan and traceability matrix in the same change.
 6. Only then design implementation slices. AA-02 checker contract/runtime and AA-03 project model/planning must not bypass the Phase 1 migration safety gate or Phase 2 QDAS-first integration sequence.
@@ -112,14 +115,15 @@ No branch retargeting, rebase, merge, close, release or publication is authorize
 
 ## 9. Verification and repository safety
 
-- This is documentation-only. No Python source, schema, test or workflow file is changed.
+- The AA-01 specification corrections are documentation-only. No Python source, schema, or test files were changed.
+- Two legacy workflow files were removed from the PR #3 branch as a separate repository-safety cleanup; the workflow directories on `main`, PR #3, and PR #9 are now empty.
 - The owner has disabled GitHub Actions for billing reasons. Do not restore workflows or initiate CI without explicit approval.
-- Verify the workflow directory remains empty before and after any future commit.
-- Historical Actions runs do not verify this revision.
+- No new Actions run was observed after the November 10 branch commits. Historical Actions runs do not verify these revisions.
+- The PR #3 acceptance matrix no longer requires CI for its documentation-only review gate; it requires a recorded independent documentation validation instead.
 - Use the owner-approved local/external verification route for document lint, link checking and requirement-ID consistency; retain exact revision and command output.
 - Do not describe PR #3 or any proposed AA component as implemented or verified.
 
 ## 10. Sources reviewed
 
-- PR #3 source documents at `ab576838e53dae045d2d739fa410068a961ff13f`: `ADVANCED_ASSURANCE_PROGRAM.md`, `ADVANCED_ASSURANCE_ARCHITECTURE.md`, `ADVANCED_ASSURANCE_REQUIREMENTS.md`, `ADVANCED_ASSURANCE_ACCEPTANCE_MATRIX.md`, `ADVANCED_ASSURANCE_THREAT_MODEL.md`, `ADVANCED_ASSURANCE_TEST_STRATEGY.md`, `COMPONENT_PROVENANCE_REGISTER.md`, and four proposed `ADR-AA-00x` records.
+- PR #3 source documents at `96cd17cc867d57075744073e1158b16f60b86bb9`: `ADVANCED_ASSURANCE_PROGRAM.md`, `ADVANCED_ASSURANCE_ARCHITECTURE.md`, `ADVANCED_ASSURANCE_REQUIREMENTS.md`, `ADVANCED_ASSURANCE_ACCEPTANCE_MATRIX.md`, `ADVANCED_ASSURANCE_THREAT_MODEL.md`, `ADVANCED_ASSURANCE_TEST_STRATEGY.md`, `COMPONENT_PROVENANCE_REGISTER.md`, and four proposed `ADR-AA-00x` records.
 - 1.2.0 branch documents at `945011e1f7f58d99fcbf93f2c52099629fda78d0`: `DEEP_AUDIT_MASTER_ARCHITECTURE.md`, `QYRENITH_1_2_0_IMPLEMENTATION_AND_ACCEPTANCE_PLAN.md`, `REQUIREMENT_TRACEABILITY_MATRIX.md`, `EVIDENCE_AND_CONFIDENCE_MODEL.md`, `REPRODUCIBLE_VERIFICATION_LAB_SPEC.md`, `ROOT_CAUSE_AND_CROSS_MODULE_ANALYSIS_SPEC.md`, `META_AUDIT_AND_BENCHMARK_SPEC.md`, `LANGUAGE_AND_DOMAIN_ADAPTER_SPEC.md`, and the six-pillar/27-domain expansion documents.
