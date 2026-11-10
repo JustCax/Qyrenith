@@ -31,6 +31,7 @@ This directory contains eighteen normative engineering specifications for the 1.
 | [Language and domain adapters](LANGUAGE_AND_DOMAIN_ADAPTER_SPEC.md) | Native frontends, adapter contracts, capability qualification |
 | [Extensibility and supportability](EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md) | Versioned extension ecosystem, qualification, exact support scope, lifecycle, compatibility and trust |
 | [Checker catalog and profile design](CHECKER_CATALOG_AND_PROFILE_DESIGN.md) | Deterministic check identity, exact support scope, immutable profile manifests, resource budgets and aggregate assurance gates |
+| [Checker catalog and resource model](CHECKER_CATALOG_AND_RESOURCE_MODEL.md) | Focused checker lifecycle, hard/expected resource budgets, scheduling, and profile tier constraints |
 | [Audit maturity and coverage](AUDIT_MATURITY_AND_COVERAGE_MODEL.md) | Multidimensional support and honest maturity |
 | [Integrated reporting and orchestration](INTEGRATED_REPORTING_AND_ORCHESTRATION_SPEC.md) | Dependency scheduling, verdicts, coverage, report exports |
 | [Implementation and acceptance plan](QYRENITH_1_2_0_IMPLEMENTATION_AND_ACCEPTANCE_PLAN.md) | Phase gates, traceability, definition of done |
@@ -72,6 +73,7 @@ These proposals extend and map onto the existing five-plane architecture; they d
 | [AA-01 owner decision design](ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md) | Owner-approved decisions and their semantics, consequences, and acceptance conditions |
 | [AA-01 owner decision record](AA01_OWNER_DECISION_RECORD.md) | Explicit approval scope, accepted decisions, deferred details, and governance boundaries |
 | [AA requirement reconciliation](AA_REQUIREMENT_RECONCILIATION.md) | Row-group review of all 70 proposed PR #3 AA requirements, overlap, wording conflicts and owner disposition gates |
+| [AA ADR reconciliation review](AA_ADR_RECONCILIATION_REVIEW.md) | Four reconciled ADR proposals, architecture invariants, and remaining owner acceptance gates |
 | [AA ADR reconciliation review](AA_ADR_RECONCILIATION_REVIEW.md) | Four proposed AA ADRs reconciled against the canonical architecture; owner acceptance remains required |
 | [Legacy outcome and state inventory](LEGACY_OUTCOME_AND_STATE_INVENTORY.md) | Source-observed legacy status vocabularies and provisional, non-approved mapping rules |
 | [Evidence-store backend evaluation](EVIDENCE_STORE_BACKEND_EVALUATION_PLAN.md) | Common fault-injection and portability criteria; no physical backend selected |
