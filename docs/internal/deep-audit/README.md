@@ -69,6 +69,7 @@ These proposals extend and map onto the existing five-plane architecture; they d
 | [Optimization and repair intelligence](OPTIMIZATION_AND_REPAIR_INTELLIGENCE_SPEC.md) | Controlled optimization experiments, multi-objective decisions and safe repair |
 | [Research and standards alignment](RESEARCH_AND_STANDARDS_ALIGNMENT.md) | Primary research sources and interoperability consequences |
 | [Advanced Assurance integration and PR #3 review](ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md) | AA-01 crosswalk, requirement mapping, proposed ADR reconciliation and PR disposition |
+| [AA-01 owner decision design proposal](ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md) | Alternatives, recommended defaults, semantics, and acceptance conditions for seven unresolved AA-01 decisions |
 
 The six pillars are a product-level grouping, not a replacement for control, analysis, execution, knowledge and evidence planes. The 27 domains are a target envelope; delivery remains dependency- and acceptance-gated.
 
