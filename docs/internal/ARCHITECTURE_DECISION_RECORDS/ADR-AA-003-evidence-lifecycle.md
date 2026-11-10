@@ -1,72 +1,78 @@
-# ADR-AA-003: Immutable Evidence Lifecycle Under the Canonical QDAS Journal
+# ADR-AA-003: One Logical Evidence System with Immutable Lifecycle
 
-**Status:** RECONCILED PROPOSAL — OWNER ACCEPTANCE REQUIRED  
-**Revision date:** 2026-11-10  
-**Scope:** QDAS event journal, evidence artifacts, lineage, retention, and assurance decisions  
-**Implementation status:** NOT STARTED
+**Status:** PROPOSED — reconciled with owner-approved AA-01 decision directions; ADR acceptance pending  
+**Original proposal date:** 2026-11-04  
+**Reconciliation date:** 2026-11-10  
+**Scope:** QDAS evidence journal, immutable artifacts, provenance, integrity, freshness, retention, and reporting
 
 ## Context
 
-Evidence can be incomplete, corrected, invalidated by changed inputs, or superseded by newer observations. Rewriting accepted evidence in place destroys the ability to reconstruct earlier decisions. At the same time, a digest or local hash chain proves neither that an observation was truthful nor that its producer was authentic.
+Evidence may be incomplete, corrected, invalidated by changed inputs, superseded by newer observations, or retained for audit. Rewriting historical evidence makes prior decisions difficult to reconstruct. Multiple independent ledgers create competing sources of truth.
 
-Qyrenith already designates QDAS as the canonical event-journal authority and defines an evidence lineage model. AA must reuse those contracts rather than create another ledger.
+A digest detects a mismatch relative to a trusted digest; it does not establish that an observation was truthful or its producer qualified. The owner-approved AA-D2 direction requires one logical evidence system, while physical backend selection remains deferred pending comparative evaluation.
 
-## Proposed decision
+## Decision proposal
 
-Qyrenith uses one logical evidence system:
+Qyrenith MUST expose one logical evidence system with three cooperating roles:
 
-1. **Canonical QDAS event journal:** the sole authoritative ordered record for events, evidence references, lifecycle transitions, invalidations, and decision lineage.
-2. **Content-addressed immutable artifact store:** stores larger payloads such as logs, reports, manifests, and test artifacts under cryptographic content digests. The journal binds each artifact's digest, media type, size, scope, provenance, and retention classification.
-3. **Optional rebuildable query index:** derived from validated journal/artifact records, non-authoritative, and safe to delete/rebuild without changing the historical record.
-4. **Optional future external trust anchor:** signed checkpoints or external anchoring may be considered only after a separate owner-approved identity/key-management and threat-model design.
+1. **Canonical QDAS event journal:** the authoritative ordered record of lifecycle events, evidence acceptance, invalidation, supersession, qualification, authorization, and decision references.
+2. **Content-addressed immutable artifact store:** stores immutable raw and normalized evidence artifacts by digest, with media/schema identity, provenance, size bounds, and retention metadata.
+3. **Optional rebuildable query index:** accelerates lookup but is non-authoritative, rebuildable from the journal/artifacts, and cannot independently establish evidence existence or validity.
 
-Accepted evidence is logically immutable. Corrections, invalidations, supersession, and replacement are new records/events referencing prior records; accepted history is not silently overwritten.
+These are logical roles, not a mandate for three independent services/databases. There MUST NOT be a second evidence ledger, independent verdict store, or competing evidence authority.
 
-Every evidence record MUST bind, as applicable, project/snapshot identity, producer/checker identity and version, plan/profile and policy versions, exact scope, relevant inputs, environment/toolchain, observation time, normalized outcome, raw observation reference, provenance, parent lineage, integrity metadata, and freshness/retention information.
+Accepted evidence is logically immutable. Corrections, invalidations, revocations, and replacements use new events/artifacts referencing prior identities; accepted records are not silently rewritten. Records bind to relevant project snapshot/scope, producer/checker identity and version, extension digest/qualification where applicable, plan/profile, policy/evaluator versions, relevant inputs, environment, observation time, result semantics, and integrity metadata.
 
-## Integrity, authenticity, and truth
+Persistence MUST provide an atomic acceptance boundary. Interrupted/partial writes remain incomplete and cannot satisfy policy. The storage contract defines stable identifiers, deduplication, ordering, concurrency, crash recovery, integrity validation, export/restore, retention, privacy, and secure deletion.
 
-These are separate claims:
-- **Integrity:** retained bytes match the recorded digest and structural contract.
-- **Authenticity:** the producer identity and origin are established under an explicit trust model.
-- **Truth/validity:** the observation is sufficiently supported by independent evidence and the declared oracle.
+The physical backend is DEFERRED. Candidates must be compared against common measurable criteria:
+- atomicity and durability;
+- crash/interruption recovery and fault injection;
+- concurrent writer/reader semantics and ordering;
+- portability across supported OS/filesystems;
+- privacy, access control, retention, and secure deletion;
+- export, backup, restore, and disaster recovery;
+- performance and bounded resource use;
+- corruption detection and rebuild/recovery procedures.
 
-A digest or local hash chain may detect accidental or partial modification relative to retained trusted metadata. It does not authenticate the writer and does not protect against an actor able to replace the entire unanchored store.
-
-## Atomicity and recovery
-
-A logical event and its required artifact references must become visible atomically or remain explicitly incomplete. Interrupted writes, partial artifacts, missing parents, duplicate IDs, sequence gaps, conflicting records, or failed digest validation MUST NOT be accepted as complete evidence.
-
-The storage design must support bounded crash recovery, concurrency semantics, canonical serialization, schema evolution, export/restore, privacy, redaction, and retention. Backend selection is deliberately deferred until candidate backends are measured against the same fault-injection and portability suite.
+A future external trust anchor/signature mechanism requires a separate key-management and threat-model decision. Content addressing does not imply publisher identity or observation truth.
 
 ## Alternatives considered
 
-1. **Mutable latest-result row:** rejected; historical decisions lose their original basis.
-2. **Unstructured append-only log as the only representation:** rejected; structured contracts, artifact references, and validation are still required.
-3. **Hash-only integrity model:** rejected; digest equality does not establish source authenticity or observation truth.
-4. **Separate AA evidence database/ledger:** rejected; it creates a second authority and inconsistent histories.
-5. **Immediate backend selection:** deferred; no backend is accepted without comparative recovery, atomicity, concurrency, portability, and privacy evidence.
+1. Mutable latest-result rows as the sole history — rejected because previous decisions lose their original support.
+2. Append-only unstructured text log as the whole model — rejected because typed validation, provenance, bounded artifacts, and rebuildable queries are required.
+3. Hash-only evidence — rejected because it does not prove producer identity, truth, or authorization.
+4. Multiple independent ledgers — rejected because they create competing authority and inconsistent lifecycle state.
+5. Immediate backend selection — deferred until common evaluation and fault-injection evidence exist.
 
 ## Consequences
 
-- QDAS remains the single evidence authority.
-- Evidence lifecycle operations are append-only and lineage-preserving.
-- Large artifacts can be stored separately without becoming a second source of truth.
-- Query indexes can be rebuilt without changing canonical history.
-- Retention and redaction must be explicit and auditable.
-- Physical backend choice remains open pending measured comparison.
+- QDAS owns canonical journal/evidence lifecycle integration.
+- RVL and other modules emit evidence into the shared contract; they do not create independent stores.
+- Query indexes and reports are derived views and cannot overrule validated journal/artifact records.
+- Freshness/invalidation bind to relevant project snapshot, profile, checker/provider version, policy, evaluator, and environment inputs.
+- Retention, privacy, export/restore, and secure deletion require explicit policy; immutability does not mean retaining sensitive raw data forever.
+- Backend selection remains open until comparison and fault-injection plans are complete.
 
-## Acceptance criteria
+## Verification requirements
 
-- Interrupted persistence cannot produce a valid complete evidence record.
-- Tampering, digest mismatch, duplicate/reordered events, missing parents, and incomplete artifacts fail closed.
-- Superseded or invalidated evidence remains traceable and cannot silently satisfy a fresh profile.
-- Evidence freshness is evaluated against exact project, tool, policy, and profile identities.
-- Export/restore and schema migration preserve lineage and canonical meaning.
-- Redaction prevents secret persistence while retaining an auditable redaction event.
-- Rebuilding the optional index cannot alter canonical decisions.
-- Tests distinguish integrity, authenticity, and independent verification.
+- Interrupted writes cannot appear as complete accepted evidence.
+- Tampered artifacts fail integrity validation and cannot satisfy mandatory policy.
+- Superseded, expired, revoked, or invalidated evidence remains traceable and cannot silently satisfy a fresh run.
+- The query index can be deleted/rebuilt without changing authoritative decisions.
+- Concurrency, ordering, duplicate submission, crash recovery, export/restore, and retention are tested against the selected backend.
+- No module, extension, report exporter, or provider introduces another evidence authority.
+- Raw observations and normalized records retain provenance and schema identity.
+- Sensitive-data retention, redaction, export, and deletion behavior are tested.
+- Backend choice remains unaccepted until comparative evidence is reviewed.
 
-## Deferred
+## Related contracts
 
-The physical storage backend, external trust anchor, exact retention/deletion policy, schema/API/CLI names, and concurrency implementation remain undecided. This proposal does not claim that any of them is implemented.
+- `AA01_OWNER_DECISION_RECORD.md`
+- `ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md`
+- `QYRENITH_DEVELOPMENT_ASSURANCE_SYSTEM_SPEC.md`
+- `EVIDENCE_AND_CONFIDENCE_MODEL.md`
+- `REPRODUCIBLE_VERIFICATION_LAB_SPEC.md`
+- `REQUIREMENT_TRACEABILITY_MATRIX.md`
+
+This proposal records the logical evidence architecture only; it selects no physical backend and claims no completed persistence implementation.
