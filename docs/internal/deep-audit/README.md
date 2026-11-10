@@ -55,3 +55,30 @@ This directory contains the normative engineering specifications for the 1.2.0 d
 ## Global completion rule
 
 Every requirement must map to implementation, positive test, negative/adversarial test, evidence artifact, and an explicit status. Documentation alone never satisfies an implementation requirement. Missing mandatory evidence is a blocker, not a pass.
+
+## Universal software intelligence expansion
+
+These proposals extend and map onto the existing five-plane architecture; they do not silently amend accepted architecture or claim implementation.
+
+| Document | Scope |
+|---|---|
+| [Universal software intelligence architecture](UNIVERSAL_SOFTWARE_INTELLIGENCE_ARCHITECTURE.md) | Six capability pillars mapped onto existing planes; Deep Audit, Targeted Analysis and Continuous Assurance |
+| [Diagnostic intelligence expansion](DIAGNOSTIC_INTELLIGENCE_EXPANSION_SPEC.md) | 27 diagnostic domains and 81 proposed requirements |
+| [Diagnostic capability coverage matrix](DIAGNOSTIC_CAPABILITY_COVERAGE_MATRIX.md) | Initial inventory-level capability map and evidence gaps |
+| [Reproducibility and cross-environment assurance](REPRODUCIBILITY_AND_CROSS_ENVIRONMENT_ASSURANCE_SPEC.md) | Reproducibility classes, manifests, independent replay and environment matrices |
+| [Optimization and repair intelligence](OPTIMIZATION_AND_REPAIR_INTELLIGENCE_SPEC.md) | Controlled optimization experiments, multi-objective decisions and safe repair |
+| [Research and standards alignment](RESEARCH_AND_STANDARDS_ALIGNMENT.md) | Primary research sources and interoperability consequences |
+
+The six pillars are a product-level grouping, not a replacement for control, analysis, execution, knowledge and evidence planes. The 27 domains are a target envelope; delivery remains dependency- and acceptance-gated.
+
+## Additional requirement families
+
+- **DI-001..DI-081:** proposed diagnostic requirements, three per domain.
+- **RCA-01..RCA-12:** proposed reproducibility requirements.
+- **OI-01..OI-10:** proposed optimization requirements.
+
+RCA and OI requirements must be added to the authoritative traceability matrix before implementation begins.
+
+## CI-disabled verification constraint
+
+GitHub Actions workflow files are intentionally absent from the active 1.2.0 branch at this update. Do not restore or trigger Actions without explicit owner approval. This does not waive release verification: required test/platform evidence must be produced through an approved independent local or external process and retained with exact revision, toolchain, environment and artifact digests. Historical Actions runs are not evidence for a newer commit.

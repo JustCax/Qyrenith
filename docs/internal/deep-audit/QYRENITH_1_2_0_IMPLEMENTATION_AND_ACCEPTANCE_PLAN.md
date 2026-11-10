@@ -107,3 +107,41 @@ Any failing required CI job, unresolved critical/high security defect, false PAS
 ## 7. Governance
 
 Work occurs on `feature/1.2.0-universal-migration-core`. Do not merge to main, tag, publish to PyPI, or create a public release without explicit owner approval. Changes to this plan or architecture require a decision record and updated traceability.
+
+## 8. Expanded capability envelope — proposed extension
+
+The 27 diagnostic domains in `DIAGNOSTIC_INTELLIGENCE_EXPANSION_SPEC.md` define the target capability envelope. They are grouped into shared engines and domain packs, not 27 isolated packages or a promise that all domains are complete in 1.2.0.
+
+The six product pillars map onto the existing five planes in `UNIVERSAL_SOFTWARE_INTELLIGENCE_ARCHITECTURE.md`. The current master remains canonical unless the owner approves a decision record changing it.
+
+### 8.1 Planning artifacts
+- `DIAGNOSTIC_CAPABILITY_COVERAGE_MATRIX.md`: initial inventory, not verification.
+- `REPRODUCIBILITY_AND_CROSS_ENVIRONMENT_ASSURANCE_SPEC.md`: extends the existing lab/evidence model.
+- `OPTIMIZATION_AND_REPAIR_INTELLIGENCE_SPEC.md`: controlled optimization and repair.
+- `RESEARCH_AND_STANDARDS_ALIGNMENT.md`: source register and interoperability consequences.
+- DI-001..DI-081: proposed requirements in the authoritative matrix.
+- RCA-01..RCA-12 and OI-01..OI-10: add to the authoritative matrix before implementation.
+
+### 8.2 Delivery interpretation
+The 27 domains are the full target envelope, not a promise that all are complete in 1.2.0. Identify shared foundations and end-to-end vertical slices with executable tests/evidence. Other domains remain explicitly PARTIAL, UNSUPPORTED, BLOCKED or deferred. No support claim may be inferred from a registry or document.
+
+The existing Phase 1 migration safety gate and Phase 2 QDAS-first order remain unchanged. Reuse the fourteen existing modules and contracts; do not create a parallel architecture.
+
+## 9. Verification while GitHub Actions are disabled
+
+The owner disabled GitHub Actions to avoid usage/billing. Workflow definitions have been removed from the active branches and must not be restored or triggered without explicit approval.
+
+This changes the verification execution method, not the quality bar:
+- release verification remains mandatory;
+- use an owner-approved independent local or external runner;
+- record exact commit, command, OS/architecture, runtime/toolchain, dependencies, timestamp, exit result and artifact digests;
+- retain positive, negative, regression and adversarial evidence;
+- execute supported platform matrix cells explicitly; unexecuted cells remain NOT_RUN;
+- independently review security, packaging and release contents;
+- historical Actions runs are not evidence for a newer commit.
+
+If equivalent independent verification is unavailable, release readiness remains BLOCKED. Do not lower acceptance criteria because Actions are disabled.
+
+## 10. Proposal governance
+
+The six-pillar grouping, 27-domain envelope, reproducibility extension and optimization specification are proposals pending owner review. They do not automatically amend accepted architecture or remove requirements. Before implementation, review overlaps with existing modules, add RCA/OI IDs to the matrix, approve exact 1.2.0 vertical slices and record architecture decisions.
