@@ -1,66 +1,72 @@
 # ADR-AA-001: Separate Observation, Evidence Validation, and Assurance Authority
 
-**Status:** RECONCILED PROPOSAL — OWNER ACCEPTANCE REQUIRED  
-**Revision date:** 2026-11-10  
-**Scope:** Cross-cutting Advanced Assurance authority model for Qyrenith 1.2.0  
-**Implementation status:** NOT STARTED
+**Status:** PROPOSED — reconciled with owner-approved AA-01 decision directions; ADR acceptance pending  
+**Original proposal date:** 2026-11-04  
+**Reconciliation date:** 2026-11-10  
+**Scope:** Cross-cutting assurance authority across the canonical five planes
 
 ## Context
 
-A checker, worker, adapter, or external provider produces observations within a declared scope. Its output may be incorrect, compromised, stale, incomplete, or outside that scope. Allowing the producer to validate its own evidence or issue the final project decision would create a self-certifying path.
+A checker, worker, native analyzer, or external provider emits observations. Its output may be incorrect, compromised, stale, incomplete, misconfigured, or outside its declared scope. Allowing the producer to validate its own observation, qualify itself, authorize its own actions, or issue the final assurance verdict creates a self-certification path.
 
-Qyrenith already defines five canonical planes, QDAS as the canonical development-assurance system, RVL as the only execution/replay engine, and a central trust and policy model. Advanced Assurance must strengthen those boundaries rather than create a parallel authority stack.
+Qyrenith already defines five canonical planes and distinguishes discovery, qualification, authorization, execution, and verification. Advanced Assurance (AA) must use those authorities rather than create a parallel subsystem.
 
-## Proposed decision
+## Decision proposal
 
-Separate the following responsibilities through explicit, versioned contracts:
+Separate these responsibilities and preserve one authority for each:
 
-1. **Observation producer:** checker, analyzer, worker, adapter, or provider emits raw observations and bounded execution metadata. It cannot declare its own output trusted or issue a final assurance verdict.
-2. **Evidence validation:** validates identity, scope, schema, provenance, integrity, freshness, lineage, and required oracle/evidence conditions. Validation does not itself mean that the subject passed.
-3. **Policy and outcome evaluation:** maps validated observations to the canonical per-check outcome vocabulary and evaluates the aggregate project-assurance contract using the exact profile, scope, mandatory inventory, coverage, and evidence state.
-4. **Reporting:** renders the already-recorded decision and its supporting limitations. It cannot silently recalculate or upgrade a decision.
-5. **Independent verification:** supplies independently collected evidence where a requirement demands it; it is not replaced by a worker's self-attestation or by Qyrenith merely repeating its own claim.
+1. **Observation producers** (checkers, analyzers, workers, adapters and providers) emit bounded observations, raw-output references, execution metadata, and limitations. They cannot decide whether their own output is trusted.
+2. **Evidence validation** independently checks identity, schema, scope, provenance, completeness, integrity, freshness, and required evidence.
+3. **Qualification** evaluates extension/provider conformance. Discovery, installation, registration, and publisher claims do not equal qualification.
+4. **Authorization** evaluates a human-approved grant for an exact project snapshot, plan, action, scope, permissions, and limits. A provider cannot authorize itself.
+5. **Policy/verdict evaluation** evaluates validated evidence against the selected immutable policy/profile and produces authoritative per-check and aggregate decisions.
+6. **Reporting** renders the recorded decision and its evidence/coverage references; it does not recalculate or upgrade the verdict.
 
-The canonical per-check outcomes are `PASS`, `FAIL`, `BLOCKED`, `INCONCLUSIVE`, `UNKNOWN`, `NOT_RUN`, `UNSUPPORTED`, and `ERROR`. Aggregate project assurance remains a separate vocabulary: `ASSURED`, `NOT_ASSURED`, `BLOCKED`, `INCONCLUSIVE`, and `PARTIAL`. Reproducibility outcomes and extension support classifications remain separate again. No conversion may upgrade missing, stale, ambiguous, unsupported, blocked, inconclusive, not-run, or error evidence to PASS or ASSURED.
+These vocabularies remain separate and MUST NOT be collapsed:
 
-The central authority is implemented within the existing Control and Evidence planes and their shared contracts. This ADR does not create a sixth plane, a second evidence ledger, a second execution engine, or a separate verdict authority.
+- Per-check: `PASS`, `FAIL`, `BLOCKED`, `INCONCLUSIVE`, `UNKNOWN`, `NOT_RUN`, `UNSUPPORTED`, `ERROR`.
+- Aggregate assurance: `ASSURED`, `NOT_ASSURED`, `BLOCKED`, `INCONCLUSIVE`, `PARTIAL`.
+- Reproducibility: `REPRODUCIBLE`, `NON_REPRODUCIBLE`, `INCONCLUSIVE`, `BLOCKED`, `NOT_RUN`, `UNSUPPORTED`.
+- Extension support: `NATIVE_SUPPORTED`, `QUALIFIED_PROVIDER`, `EXPERIMENTAL`, `PARTIAL`, `UNSUPPORTED`.
 
-## Authority constraints
+No missing, stale, ambiguous, blocked, inconclusive, unknown, not-run, unsupported, or error state may be promoted to `PASS`. Support classifications are not check results. `ASSURED` requires every mandatory condition and evidence gate; PASS counts alone are insufficient. Infrastructure `ERROR` is not automatically a subject-level `FAIL`.
 
-- An observation producer MUST NOT self-qualify, self-authorize, rewrite accepted evidence, or issue the aggregate verdict.
-- Evidence validation MUST preserve raw producer output and provenance and MUST distinguish integrity from authenticity and truth.
-- Policy evaluation MUST use only validated evidence and a versioned policy/profile identity.
-- Aggregate `ASSURED` MUST be impossible if any mandatory check, coverage, evidence, freshness, or trust requirement is unmet.
-- A report MUST render the recorded decision, including unsupported and unevaluated scope.
-- Extension providers MUST use these same authorities and MUST NOT replace or bypass them.
-- A Qyrenith self-check MUST NOT be presented as independent verification of Qyrenith itself.
+This is a cross-cutting contract implemented through the existing five planes. It creates no sixth plane, second policy engine, evidence authority, execution engine, or verdict authority. QDAS remains the development-assurance lifecycle; RVL remains the sole canonical execution/replay engine.
 
 ## Alternatives considered
 
-1. **Checker-owned final status:** rejected; it allows self-certification.
-2. **One monolithic verification function:** rejected; it obscures authority boundaries and makes independent testing difficult.
-3. **External orchestrator as final authority:** rejected as the canonical model; it would move Qyrenith's final policy decision outside its deterministic control plane. Independent external verification remains valid as evidence.
-4. **A separate AA verdict service:** rejected; it would duplicate the canonical Control-plane authority.
+1. Checker-owned final status — rejected because producers could self-approve malformed or out-of-scope output.
+2. One monolithic verifier — rejected because observation, evidence trust, authorization, and policy would not be independently auditable.
+3. External orchestrator as final authority — rejected because it moves deterministic decision authority outside Qyrenith's canonical model.
+4. One shared status enum for every layer — rejected because support, per-check, aggregate, reproducibility, and infrastructure states have different meanings.
 
 ## Consequences
 
-- Checker contracts must return observations, not final project assurance.
-- Evidence validation, policy evaluation, and reporting require separate conformance tests.
-- Legacy status fields require a loss-preserving compatibility mapping.
-- QDAS and RVL remain reusable canonical components; AA is a contract across them, not a replacement.
-- More explicit evidence and policy metadata is required, but false-green paths become testable.
+- Every observation is attributable to a producer identity/version and exact scope.
+- Evidence validation, qualification, authorization, and verdict evaluation require versioned contracts and independent tests.
+- Legacy conversion preserves raw values and provenance; exhaustive mappings derive from actual legacy values. Ambiguous values remain `UNKNOWN`.
+- QDAS's canonical event journal and artifact store remain the evidence authority.
+- Policy decisions bind to project snapshot, profile, requested/evaluated scope, mandatory inventory, coverage, evidence integrity/freshness, policy version, and evaluator version.
+- Extensions cannot self-qualify, self-authorize, rewrite evidence, or issue final verdicts.
 
-## Acceptance criteria
+## Verification requirements
 
-- Forged or malformed checker output cannot select a final decision.
-- A producer cannot self-qualify or self-authorize.
-- Policy evaluation rejects invalid, stale, out-of-scope, or incomplete evidence.
-- All eight per-check outcomes and five aggregate states remain type-distinct.
-- No missing or unsupported mandatory check can yield `ASSURED`.
-- Reports reproduce the recorded decision without recalculating it.
-- Extension conformance tests prove that providers cannot bypass central authority.
-- Independent verification claims identify the independent actor, environment, scope, and retained evidence.
+- Forged checker output cannot select a final per-check or aggregate outcome.
+- Malformed, stale, incomplete, out-of-scope, or integrity-invalid evidence cannot satisfy a mandatory gate.
+- An extension cannot self-qualify, self-authorize, modify policy, rewrite accepted evidence, or forge a verdict.
+- Reports reproduce the stored decision and reference its evidence/coverage records.
+- Exhaustive state tests prove non-positive and uncertain states never become `PASS`.
+- Aggregate tests prove unmet mandatory conditions prevent `ASSURED`.
+- Reproducibility and support classifications cannot be coerced into per-check outcomes.
 
-## Deferred
+## Related contracts
 
-Exact schemas, package/API/CLI names, evaluator implementation boundaries, and the final test inventory remain implementation-planning work. This proposal does not accept all AA-01 requirements or PR #3 as a whole.
+- `DEEP_AUDIT_MASTER_ARCHITECTURE.md`
+- `AA01_OWNER_DECISION_RECORD.md`
+- `ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md`
+- `EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md`
+- `EVIDENCE_AND_CONFIDENCE_MODEL.md`
+- `QYRENITH_DEVELOPMENT_ASSURANCE_SYSTEM_SPEC.md`
+- `REPRODUCIBLE_VERIFICATION_LAB_SPEC.md`
+
+This proposal does not accept all PR #3 requirements or independently authorize implementation.
