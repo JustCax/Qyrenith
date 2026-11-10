@@ -71,6 +71,7 @@ These proposals extend and map onto the existing five-plane architecture; they d
 | [Advanced Assurance integration and PR #3 review](ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md) | AA-01 crosswalk, requirement mapping, ADR reconciliation and PR disposition |
 | [AA-01 owner decision design](ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md) | Owner-approved decisions and their semantics, consequences, and acceptance conditions |
 | [AA-01 owner decision record](AA01_OWNER_DECISION_RECORD.md) | Explicit approval scope, accepted decisions, deferred details, and governance boundaries |
+| [AA requirement reconciliation](AA_REQUIREMENT_RECONCILIATION.md) | Row-group review of all 70 proposed PR #3 AA requirements, overlap, wording conflicts and owner disposition gates |
 | [AA ADR reconciliation review](AA_ADR_RECONCILIATION_REVIEW.md) | Four proposed AA ADRs reconciled against the canonical architecture; owner acceptance remains required |
 | [Legacy outcome and state inventory](LEGACY_OUTCOME_AND_STATE_INVENTORY.md) | Source-observed legacy status vocabularies and provisional, non-approved mapping rules |
 | [Evidence-store backend evaluation](EVIDENCE_STORE_BACKEND_EVALUATION_PLAN.md) | Common fault-injection and portability criteria; no physical backend selected |
