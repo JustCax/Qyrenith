@@ -118,6 +118,7 @@ The six product pillars map onto the existing five planes in `UNIVERSAL_SOFTWARE
 - `DIAGNOSTIC_CAPABILITY_COVERAGE_MATRIX.md`: initial inventory, not verification.
 - `REPRODUCIBILITY_AND_CROSS_ENVIRONMENT_ASSURANCE_SPEC.md`: extends the existing lab/evidence model.
 - `OPTIMIZATION_AND_REPAIR_INTELLIGENCE_SPEC.md`: controlled optimization and repair.
+- `ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md`: crosswalk for the separate AA-01 draft and PR #3 disposition.
 - `RESEARCH_AND_STANDARDS_ALIGNMENT.md`: source register and interoperability consequences.
 - DI-001..DI-081: proposed requirements in the authoritative matrix.
 - RCA-01..RCA-12 and OI-01..OI-10: add to the authoritative matrix before implementation.
@@ -126,6 +127,19 @@ The six product pillars map onto the existing five planes in `UNIVERSAL_SOFTWARE
 The 27 domains are the full target envelope, not a promise that all are complete in 1.2.0. Identify shared foundations and end-to-end vertical slices with executable tests/evidence. Other domains remain explicitly PARTIAL, UNSUPPORTED, BLOCKED or deferred. No support claim may be inferred from a registry or document.
 
 The existing Phase 1 migration safety gate and Phase 2 QDAS-first order remain unchanged. Reuse the fourteen existing modules and contracts; do not create a parallel architecture.
+
+### 8.3 Advanced Assurance integration
+
+The separate AA-01 draft is a cross-cutting assurance contract, not a fifteenth capability module or a replacement for QDAS. Its project discovery/model, verification planner, authorization gate, checker registry/runtime, evidence validator/store, policy evaluator, reporting layer and provider boundary map onto the existing five planes and fourteen post-QDAS capability modules.
+
+The PR #3 draft contributes 70 proposed AA requirement IDs. They are tracked in `REQUIREMENT_TRACEABILITY_MATRIX.md` as `PROPOSED`; this does not accept PR #3, its four proposed ADRs, or its architecture. See `ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md` for the full mapping, overlap rules, unresolved AA-01 decisions and safe PR disposition.
+
+Before implementation:
+- resolve the five AA-01 open review questions;
+- reconcile ADR-AA-001..004 with existing trust, migration authorization, QDAS ledger/lineage and native-engine policies;
+- approve the exact requirement baseline and acceptance methods;
+- preserve Phase 1 migration hardening and Phase 2 QDAS-first order;
+- define implementation slices against the existing module contracts rather than creating a parallel runtime.
 
 ## 9. Verification while GitHub Actions are disabled
 

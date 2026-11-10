@@ -68,6 +68,7 @@ These proposals extend and map onto the existing five-plane architecture; they d
 | [Reproducibility and cross-environment assurance](REPRODUCIBILITY_AND_CROSS_ENVIRONMENT_ASSURANCE_SPEC.md) | Reproducibility classes, manifests, independent replay and environment matrices |
 | [Optimization and repair intelligence](OPTIMIZATION_AND_REPAIR_INTELLIGENCE_SPEC.md) | Controlled optimization experiments, multi-objective decisions and safe repair |
 | [Research and standards alignment](RESEARCH_AND_STANDARDS_ALIGNMENT.md) | Primary research sources and interoperability consequences |
+| [Advanced Assurance integration and PR #3 review](ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md) | AA-01 crosswalk, requirement mapping, proposed ADR reconciliation and PR disposition |
 
 The six pillars are a product-level grouping, not a replacement for control, analysis, execution, knowledge and evidence planes. The 27 domains are a target envelope; delivery remains dependency- and acceptance-gated.
 
@@ -76,8 +77,9 @@ The six pillars are a product-level grouping, not a replacement for control, ana
 - **DI-001..DI-081:** proposed diagnostic requirements, three per domain.
 - **RCA-01..RCA-12:** proposed reproducibility requirements.
 - **OI-01..OI-10:** proposed optimization requirements.
+- **AA-REQ-*** (70 IDs): proposed cross-cutting Advanced Assurance requirements from PR #3.
 
-RCA and OI requirements must be added to the authoritative traceability matrix before implementation begins.
+RCA, OI and AA requirement families are present in the authoritative traceability matrix with `PROPOSED` status. They must not be implemented as accepted release scope until owner approval.
 
 ## CI-disabled verification constraint
 
