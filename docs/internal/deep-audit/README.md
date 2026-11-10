@@ -1,6 +1,6 @@
 # Qyrenith 1.2.0 Deep Audit Specifications
 
-This directory contains the normative engineering specifications for the 1.2.0 deep-audit and development-assurance work. All documents are internal design/implementation material; they are not a claim that the described capabilities are already implemented.
+This directory contains eighteen normative engineering specifications for the 1.2.0 deep-audit and development-assurance work, plus navigation, decision, and traceability records. All documents are internal design/implementation material; they are not a claim that the described capabilities are already implemented.
 
 ## Required delivery order
 
@@ -8,7 +8,7 @@ This directory contains the normative engineering specifications for the 1.2.0 d
 2. **Existing work completion:** audit and finish the migration-platform foundation and known 1.1.0/1.2.0 regression issues.
 3. **QDAS first:** implement and independently validate the Qyrenith Development Assurance System.
 4. **Fourteen remaining capability modules:** implement with QDAS-assisted capture, planning, testing, auditing, and evidence recording.
-5. **Integrated acceptance:** external CI, package verification, independent review, and owner approval.
+5. **Integrated acceptance:** required platform verification through CI or an owner-approved independent local/external runner, package verification, independent review, and owner approval.
 
 ## Specification index
 
