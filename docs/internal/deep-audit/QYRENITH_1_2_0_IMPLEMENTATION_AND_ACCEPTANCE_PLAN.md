@@ -132,6 +132,7 @@ The six product pillars map onto the existing five planes in `UNIVERSAL_SOFTWARE
 - `LEGACY_STATE_INVENTORY_AND_MAPPING.md`: source-based inventory and conservative mapping proposal; exhaustive historical fixture mapping remains a prerequisite.
 - `EVIDENCE_STORE_BACKEND_EVALUATION.md`: common backend comparison and fault-injection protocol; no physical backend is selected until evidence is reviewed.
 - `CHECKER_CATALOG_AND_PROFILE_DESIGN.md`: check identity, support resolution, immutable profile manifests, resource budgets, and aggregate assurance rules; final profile inventories remain deferred.
+- `AA_REQUIREMENT_RECONCILIATION.md`: review of all 70 proposed PR #3 AA requirements; owner disposition remains pending and IDs remain PROPOSED.
 - `EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md`: owner-approved first-class extension ecosystem, qualification, exact support scope, lifecycle, and compatibility contract.
 - `RESEARCH_AND_STANDARDS_ALIGNMENT.md`: source register and interoperability consequences.
 - DI-001..DI-081: proposed requirements in the authoritative matrix.
@@ -151,6 +152,7 @@ The PR #3 draft contributes 70 proposed AA requirement IDs across eleven groups,
 Before implementation:
 - implement the approved AA-01 decision directions from ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md only after reconciling the required contracts;
 - obtain explicit owner disposition for the four reconciled ADR-AA-001..004 drafts; keep their status PROPOSED until individually accepted or rejected;
+- obtain owner disposition for the 70 proposed AA requirement IDs after reviewing the reconciliation; do not treat the seven accepted AA-01 decision directions as blanket acceptance of these requirements;
 - approve the exact requirement baseline and acceptance methods, including the distinction between SPECIFIED, IMPLEMENTED and VERIFIED;
 - complete the repository-wide and historical-fixture legacy state inventory; resolve the `INCONCLUSIVE` schema gap and the analyzer `UNKNOWN`/execution `ERROR` semantic mismatch before finalizing compatibility implementation;
 - complete the evidence backend comparison using the common atomicity, crash recovery, concurrency, portability, privacy, retention, export/restore, and fault-injection protocol; obtain owner approval for the selected backend;
