@@ -54,6 +54,18 @@ This is a bounded source review, not a claim that no other persistence code exis
 
 **Risks/questions:** coordination between durable artifact creation and database commit; WAL/sidecar backup and restore; locking and filesystem behavior across supported platforms; database corruption/recovery; schema migration; orphan artifact cleanup; not all filesystems provide equivalent durability guarantees.
 
+### Candidate D — JSONL canonical journal + SQLite derived query index + filesystem CAS
+
+- The JSONL journal remains the sole authoritative ordered history.
+- Artifacts remain immutable content-addressed files.
+- SQLite stores only a rebuildable projection keyed to journal sequence and digest; it can be deleted and reconstructed.
+
+**Strengths:** preserves the inspectable append-only journal while enabling indexed queries; index failures do not block authoritative evidence acceptance if the consumer can fall back to journal replay.
+
+**Risks/questions:** index lag and rebuild cost; projection consistency; risk that callers accidentally trust the index as authoritative; schema evolution and cache invalidation.
+
+This candidate is valid only when the database is demonstrably non-authoritative and all query results can be traced back to canonical journal/artifact identities.
+
 ### Candidate C — SQLite journal and artifacts in one database
 
 - Event journal, metadata, and artifact blobs share one transactional database.
@@ -63,11 +75,9 @@ This is a bounded source review, not a claim that no other persistence code exis
 
 **Risks/questions:** large blobs may increase database size and backup/restore costs; streaming and partial artifact access; write amplification; WAL growth/checkpoint behavior; retention and secure deletion; single-database portability and recovery characteristics.
 
-### Candidate D — Keep current JSONL journals and add a CAS artifact store without unification
+### Prohibited anti-pattern — Multiple independent authoritative journals
 
-**Status:** NOT ACCEPTABLE as the final architecture.
-
-It may be used only as a temporary migration bridge if one journal is explicitly designated canonical and all other records are imported/referenced through that authority. Permanently maintaining QDAS and migration ledgers as independent authorities would violate AA-D2.
+Maintaining QDAS and migration assurance ledgers as permanently independent evidence authorities is NOT ACCEPTABLE. A temporary migration bridge is permissible only when one canonical journal is explicitly designated and all legacy records are imported or referenced through that authority with raw provenance preserved.
 
 ## 4. Mandatory comparison dimensions
 
