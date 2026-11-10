@@ -7,6 +7,8 @@
 ## 2. Mandatory sequence
 
 ### Phase 0 — Documentation baseline
+- Reconcile all four AA-01 ADRs against the accepted seven owner decision directions, five-plane architecture, QDAS/RVL authority, migration authorization, and extensibility contract; obtain explicit owner acceptance before treating them as accepted architecture.
+- Complete requirement-to-ADR traceability and close deferred design prerequisites (legacy-state inventory, checker catalog/resource model, evidence-backend comparison, host approval/isolation matrix, and extension contract boundaries).
 - Create and cross-link all eighteen normative specifications and the specification index.
 - Maintain `REQUIREMENT_TRACEABILITY_MATRIX.md` as the authoritative requirement-to-implementation/test/evidence/dependency/status map.
 - Resolve contradictions with existing public/internal docs.
