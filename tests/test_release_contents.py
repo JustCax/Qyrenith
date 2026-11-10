@@ -1,9 +1,11 @@
 """Verify public release archives and Python source distributions."""
 import importlib.util
+import re
 import subprocess
 import sys
 import tarfile
 import tempfile
+from unittest import mock
 import unittest
 import zipfile
 from pathlib import Path
@@ -20,6 +22,17 @@ def manifest_files():
 
 
 class TestReleaseContents(unittest.TestCase):
+    def test_120_manifest_excludes_older_versioned_release_notes(self):
+        version = (ROOT / "VERSION.txt").read_text(encoding="utf-8").strip()
+        current = tuple(int(part) for part in version.split("."))
+        if current < (1, 2, 0):
+            self.skipTest("the 1.2.0 release artifact policy activates at version 1.2.0")
+        selected = {
+            name for name in manifest_files()
+            if re.fullmatch(r"RELEASE_NOTES_[0-9]+\.[0-9]+\.[0-9]+\.md", Path(name).name)
+        }
+        self.assertEqual(selected, {f"RELEASE_NOTES_{version}.md"})
+
     def test_manifest_paths_are_present_and_safe(self):
         expected = manifest_files()
         self.assertIn("PUBLIC_FILES.txt", expected)
@@ -31,6 +44,18 @@ class TestReleaseContents(unittest.TestCase):
             self.assertNotIn("..", Path(name).parts)
             self.assertTrue(path.is_file(), name)
             self.assertFalse(path.is_symlink(), name)
+
+    def test_default_release_output_rejects_symlink(self):
+        spec = importlib.util.spec_from_file_location(
+            "qyrenith_release_script", ROOT / "scripts" / "release.py"
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        with tempfile.TemporaryDirectory() as directory:
+            module.ROOT = Path(directory)
+            with mock.patch.object(Path, "is_symlink", autospec=True, return_value=True):
+                with self.assertRaises(SystemExit):
+                    module.resolve_output_dir(None)
 
     def test_setuptools_manifest_matches_public_file_list(self):
         expected = manifest_files()
@@ -107,9 +132,29 @@ class TestReleaseContents(unittest.TestCase):
             self.assertEqual(modules, {
                 "qyrenith.py",
                 "qyrenith_engine/__init__.py",
+                "qyrenith_engine/approval.py",
                 "qyrenith_engine/analysis.py",
                 "qyrenith_engine/boundary.py",
                 "qyrenith_engine/execution.py",
+                "qyrenith_engine/trust_store.py",
+                "qyrenith_engine/trust_cli.py",
+                "qyrenith_engine/migration/__init__.py",
+                "qyrenith_engine/qdas/__init__.py",
+                "qyrenith_engine/qdas/events.py",
+                "qyrenith_engine/qdas/collector.py",
+                "qyrenith_engine/qdas/diagnosis.py",
+                "qyrenith_engine/qdas/repair.py",
+                "qyrenith_engine/qdas/ledger.py",
+                "qyrenith_engine/qdas/lineage.py",
+                "qyrenith_engine/migration/assurance.py",
+                "qyrenith_engine/migration/authorization.py",
+                "qyrenith_engine/migration/snapshot.py",
+                "qyrenith_engine/migration/workspace.py",
+                "qyrenith_engine/migration/preparation.py",
+                "qyrenith_engine/migration/knowledge.py",
+                "qyrenith_engine/migration/model.py",
+                "qyrenith_engine/migration/planner.py",
+                "qyrenith_engine/migration/worker.py",
             })
             entry_points = next(name for name in names if name.endswith(".dist-info/entry_points.txt"))
             with zipfile.ZipFile(wheel_path) as archive:
