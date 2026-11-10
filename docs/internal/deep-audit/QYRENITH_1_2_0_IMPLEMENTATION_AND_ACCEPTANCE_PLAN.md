@@ -129,6 +129,7 @@ The six product pillars map onto the existing five planes in `UNIVERSAL_SOFTWARE
 - `ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md`: crosswalk for the separate AA-01 draft, reconciled ADRs, and PR #3 disposition.
 - `ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md`: owner-approved seven-decision AA-01 design baseline; backend/profile details remain deferred where explicitly stated.
 - `ARCHITECTURE_DECISION_RECORDS/ADR-AA-001..004`: selectively reconciled ADR drafts; all four remain PROPOSED pending explicit owner acceptance.
+- `LEGACY_STATE_INVENTORY_AND_MAPPING.md`: source-based inventory and conservative mapping proposal; exhaustive historical fixture mapping remains a prerequisite.
 - `EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md`: owner-approved first-class extension ecosystem, qualification, exact support scope, lifecycle, and compatibility contract.
 - `RESEARCH_AND_STANDARDS_ALIGNMENT.md`: source register and interoperability consequences.
 - DI-001..DI-081: proposed requirements in the authoritative matrix.
@@ -149,6 +150,7 @@ Before implementation:
 - implement the approved AA-01 decision directions from ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md only after reconciling the required contracts;
 - obtain explicit owner disposition for the four reconciled ADR-AA-001..004 drafts; keep their status PROPOSED until individually accepted or rejected;
 - approve the exact requirement baseline and acceptance methods, including the distinction between SPECIFIED, IMPLEMENTED and VERIFIED;
+- complete the repository-wide and historical-fixture legacy state inventory; resolve the `INCONCLUSIVE` schema gap and the analyzer `UNKNOWN`/execution `ERROR` semantic mismatch before finalizing compatibility implementation;
 - preserve Phase 1 migration hardening and Phase 2 QDAS-first order;
 - define implementation slices against the existing module contracts rather than creating a parallel runtime;
 - keep per-check outcomes, aggregate assurance decisions, reproducibility outcomes, and extension support classifications as separate vocabularies;
