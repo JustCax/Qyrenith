@@ -3,7 +3,7 @@
 **Status:** INTEGRATION PROPOSAL — OWNER REVIEW REQUIRED  
 **Source PR:** [#3 — Advanced Assurance AA-01](https://github.com/JustCax/Qyrenith/pull/3)  
 **Source branch:** `feature/advanced-assurance-aa01-mainline`  
-**Reviewed source head after PR #3 audit corrections:** `96cd17cc867d57075744073e1158b16f60b86bb9`  
+**Reviewed source head after PR #3 audit corrections:** `0ee2edb9fe136bba729483e56d5c450421fa6e80`  
 **Target integration branch:** `feature/1.2.0-universal-migration-core`  
 **Scope:** Documentation and architecture reconciliation only. No implementation or merge authorization is implied.
 
@@ -20,9 +20,9 @@ Do not merge PR #3 independently into `main`. Keep it draft until the owner revi
 Current repository and PR facts:
 
 - `main`: `2cc0a0c3d34bb056ee8aeb2f16529fe608a7536a`.
-- 1.2.0 branch head at the start of this review update: `d2c17194b101e2bf2cf5309e266c54600621ac93`. The PR #3 integration-review correction is recorded in commit `9892536c180ac5823c53b5624e8e0f23ba39a7e8`.
-- PR #9 is open/draft. Its current comparison against `main` is 657 commits ahead and 1 behind, across 123 changed files, with the old pre-workflow-removal commit as merge base. GitHub reports it mergeable, but that is not an independent review of a very large change set.
-- PR #3 is open/draft. Its current comparison is 13 commits ahead and 11 behind `main`, across 13 changed paths, with merge base `647398246bc6bc15fdf8fe6038af1bec35710806`. The 13 paths comprise eleven AA-01 documentation/ADR/provenance files and the removal of two legacy workflow files; no implementation code is included.
+- 1.2.0 branch head at the start of this review update: `d2c17194b101e2bf2cf5309e266c54600621ac93`. The PR #3 integration-review updates are recorded in commits `9892536c180ac5823c53b5624e8e0f23ba39a7e8`, `bdab5dd8ca7a7557f817f9ef5e0657868dbde84a`, and `329e9642dd2461e4ef3ed6ee4d9887aba698e9f6`.
+- PR #9 is open/draft. At the start of this review update, its comparison against `main` was 659 commits ahead and 1 behind, across 123 changed files, with the old pre-workflow-removal commit as merge base. GitHub reports it mergeable, but that is not an independent review of a very large change set.
+- PR #3 is open/draft. Its current comparison is 14 commits ahead and 11 behind `main`, across 13 changed paths, with merge base `647398246bc6bc15fdf8fe6038af1bec35710806`. The 13 paths comprise eleven AA-01 documentation/ADR/provenance files and the removal of two legacy workflow files; no implementation code is included.
 - The PR #3 branch originally retained two legacy workflow definitions. Both were removed together in commit `ee303d8da317330947e54f4e56e43e91cc66dfbd`; the branch now has an empty `.github/workflows/` directory. Current `main`, PR #3, and PR #9 trees all contain no workflow definitions.
 - The latest observed Actions run predates these November 10 commits (latest listed run: 2026-11-09 13:15:35 UTC). No new Actions run was observed after the PR #3 cleanup or documentation correction commits. Historical runs do not verify these revisions.
 
@@ -125,5 +125,5 @@ No branch retargeting, rebase, merge, close, release or publication is authorize
 
 ## 10. Sources reviewed
 
-- PR #3 source documents at `96cd17cc867d57075744073e1158b16f60b86bb9`: `ADVANCED_ASSURANCE_PROGRAM.md`, `ADVANCED_ASSURANCE_ARCHITECTURE.md`, `ADVANCED_ASSURANCE_REQUIREMENTS.md`, `ADVANCED_ASSURANCE_ACCEPTANCE_MATRIX.md`, `ADVANCED_ASSURANCE_THREAT_MODEL.md`, `ADVANCED_ASSURANCE_TEST_STRATEGY.md`, `COMPONENT_PROVENANCE_REGISTER.md`, and four proposed `ADR-AA-00x` records.
+- PR #3 source documents at `0ee2edb9fe136bba729483e56d5c450421fa6e80`: `ADVANCED_ASSURANCE_PROGRAM.md`, `ADVANCED_ASSURANCE_ARCHITECTURE.md`, `ADVANCED_ASSURANCE_REQUIREMENTS.md`, `ADVANCED_ASSURANCE_ACCEPTANCE_MATRIX.md`, `ADVANCED_ASSURANCE_THREAT_MODEL.md`, `ADVANCED_ASSURANCE_TEST_STRATEGY.md`, `COMPONENT_PROVENANCE_REGISTER.md`, and four proposed `ADR-AA-00x` records.
 - 1.2.0 branch documents reviewed at the pre-update head `d2c17194b101e2bf2cf5309e266c54600621ac93`: `DEEP_AUDIT_MASTER_ARCHITECTURE.md`, `QYRENITH_1_2_0_IMPLEMENTATION_AND_ACCEPTANCE_PLAN.md`, `REQUIREMENT_TRACEABILITY_MATRIX.md`, `EVIDENCE_AND_CONFIDENCE_MODEL.md`, `REPRODUCIBLE_VERIFICATION_LAB_SPEC.md`, `ROOT_CAUSE_AND_CROSS_MODULE_ANALYSIS_SPEC.md`, `META_AUDIT_AND_BENCHMARK_SPEC.md`, `LANGUAGE_AND_DOMAIN_ADAPTER_SPEC.md`, and the six-pillar/27-domain expansion documents.
