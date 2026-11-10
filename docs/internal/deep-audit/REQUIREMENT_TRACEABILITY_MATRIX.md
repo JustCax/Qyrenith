@@ -472,3 +472,52 @@ These requirements were approved as a first-class 1.2.0 architectural requiremen
 | EX-016 | Extension changes trigger impact analysis and requalification | QDAS extension lifecycle integration | Changed digest/API/dependency invalidates qualification and dependent evidence | Invalidation and requalification lineage | QDAS; evidence lifecycle; EX-005 | NOT_STARTED |
 
 The EX specification is the normative source for these requirements. No extension is considered supported merely because it is discoverable, installable, present in a catalog, or described in documentation.
+
+
+
+## AA implementation-prerequisite requirement proposals
+
+The following requirement families operationalize the seven accepted AA-01 decision directions and the planning work completed on 2026-11-10. They are **PROPOSED** pending owner review. Their presence in this matrix does not mean their detailed requirements or implementation have been accepted.
+
+### Legacy outcome conversion (OUT-001..OUT-008)
+
+| Requirement ID | Implementation target | Acceptance test target | Evidence artifact | Dependencies | Current status |
+|---|---|---|---|---|---|
+| OUT-001 | Versioned legacy status inventory and mapping registry | Every source field/schema version enumerated; unknown values retained | Inventory, mapping manifest, source-value fixture set | Legacy outcome inventory; AA-D1 | PROPOSED |
+| OUT-002 | Loss-preserving raw-value/provenance envelope | Round-trip conversion preserves raw value, source field, schema, and mapping version | Before/after conversion records and digest | OUT-001 | PROPOSED |
+| OUT-003 | Context-sensitive CLI exit conversion | SUCCESS/FAILED/STOPPED/PREFLIGHT/INTERNAL_ERROR cases map by cause, not string equality | CLI conversion test report | OUT-001; check contract | PROPOSED |
+| OUT-004 | Build/validation failure classification | Subject violation, runner failure, policy block, and missing oracle remain distinct | Build/validation fixtures with independent oracle | OUT-001; RVL | PROPOSED |
+| OUT-005 | Worker-claim separation | WORKED/NO_CHANGE/FAILED claims cannot directly create PASS | Forged and false worker-result fixtures | AA-D1; AA-001 | PROPOSED |
+| OUT-006 | Trust/planner/lifecycle state separation | VERIFIED/QUALIFIED/PLANNED/STALE and related states cannot become check outcomes | Type and conversion negative tests | OUT-001; EX-004 | PROPOSED |
+| OUT-007 | Eight-state per-check compatibility | INCONCLUSIVE is supported without widening process-event status semantics incorrectly | Schema, serializer, report, and consumer compatibility tests | OUT-001; QDAS; migration assurance | PROPOSED |
+| OUT-008 | No-false-PASS/ASSURED conversion invariant | Missing, stale, ambiguous, blocked, unsupported, not-run, inconclusive, or error inputs never upgrade to PASS/ASSURED | Exhaustive conversion property/adversarial report | OUT-001..OUT-007; aggregate evaluator | PROPOSED |
+
+### Evidence-store backend evaluation (EVD-001..EVD-008)
+
+| Requirement ID | Implementation target | Acceptance test target | Evidence artifact | Dependencies | Current status |
+|---|---|---|---|---|---|
+| EVD-001 | Shared backend conformance harness | Same workload and contract run against every candidate | Harness manifest and result bundle | Evidence backend evaluation plan | PROPOSED |
+| EVD-002 | Crash/atomicity recovery suite | Fault injection at every artifact/event commit boundary | Recovery matrix and fault logs | EVD-001; QDAS journal | PROPOSED |
+| EVD-003 | Concurrency and ordering suite | Competing readers/writers cannot lose, reorder, duplicate, or overwrite accepted events | Concurrency report and journal replay | EVD-001 | PROPOSED |
+| EVD-004 | Portability suite | Windows/Linux/macOS and supported Python cells retain equivalent canonical semantics | Platform result matrix | EVD-001 | PROPOSED |
+| EVD-005 | Privacy/retention/redaction suite | Secret redaction, expiry, supersession, deletion and bounded storage behave as specified | Redaction and retention evidence | EVD-001; privacy policy | PROPOSED |
+| EVD-006 | Export/restore and schema evolution | Clean-environment restore preserves digests, lineage, and decisions | Export archive, restore report, schema migration evidence | EVD-001 | PROPOSED |
+| EVD-007 | Derived-index authority boundary | Deleting/rebuilding index cannot change canonical journal or decisions | Rebuild equivalence report | EVD-001; QDAS | PROPOSED |
+| EVD-008 | Measured backend decision record | Candidate comparison reports latency, tail behavior, recovery, complexity, and limitations | Owner-reviewed backend ADR | EVD-001..EVD-007 | PROPOSED |
+
+### Checker catalog and resource model (CHK-001..CHK-010)
+
+| Requirement ID | Implementation target | Acceptance test target | Evidence artifact | Dependencies | Current status |
+|---|---|---|---|---|---|
+| CHK-001 | Versioned checker manifest and identity | Invalid schema, digest mismatch, or contract-version mismatch is rejected | Manifest validation report | Checker catalog specification | PROPOSED |
+| CHK-002 | Exact multidimensional support resolver | Unsupported version/feature tuples and implicit wildcards are rejected | Support resolution matrix | EX-003; LA-02 | PROPOSED |
+| CHK-003 | Non-executing discovery | Discovery never launches provider code or causes side effects | Discovery trace and negative test | EX-002; AA-D5 | PROPOSED |
+| CHK-004 | Independent checker qualification lifecycle | Qualification requires conformance evidence bound to exact digest/scope | Qualification record and suite digest | EX-005; EX-006 | PROPOSED |
+| CHK-005 | Deterministic provider resolution | Duplicate/conflicting providers produce explicit conflict, not install-order selection | Resolver trace and conflict report | EX-012 | PROPOSED |
+| CHK-006 | Immutable verification profile manifests | Any inventory/scope/budget/policy change creates a new digest/version | Profile manifest and mutation tests | AA-D4; checker catalog | PROPOSED |
+| CHK-007 | Per-check and aggregate resource budgets | CPU/time/memory/process/input/output/artifact/concurrency bounds are enforced | RVL resource telemetry and limit tests | RVL; AA-D4 | PROPOSED |
+| CHK-008 | Cancellation and partial-result semantics | Cancellation and resource exhaustion never become PASS; lineage remains intact | Cancellation and partial-output report | QDAS; RVL | PROPOSED |
+| CHK-009 | Coverage-aware aggregate evaluation | Mandatory missing/unsupported/stale checks prevent ASSURED | Aggregate decision truth-table and adversarial report | AA-D6; OUT-008 | PROPOSED |
+| CHK-010 | Profile conformance and reproducibility | Same profile digest and equivalent inputs reproduce the same inventory, schedule, and policy result | Profile replay record | AA-D7; RVL; EVD | PROPOSED |
+
+These proposed IDs are reserved for planning and must not be marked IMPLEMENTED, TESTED, or VERIFIED based on documents alone.
