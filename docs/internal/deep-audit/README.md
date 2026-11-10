@@ -32,6 +32,7 @@ This directory contains eighteen normative engineering specifications for the 1.
 | [Audit maturity and coverage](AUDIT_MATURITY_AND_COVERAGE_MODEL.md) | Multidimensional support and honest maturity |
 | [Integrated reporting and orchestration](INTEGRATED_REPORTING_AND_ORCHESTRATION_SPEC.md) | Dependency scheduling, verdicts, coverage, report exports |
 | [Implementation and acceptance plan](QYRENITH_1_2_0_IMPLEMENTATION_AND_ACCEPTANCE_PLAN.md) | Phase gates, traceability, definition of done |
+| [Legacy state inventory and mapping](LEGACY_STATE_INVENTORY_AND_MAPPING.md) | Source-observed legacy state vocabularies, conservative AA-01 mapping rules, and unresolved compatibility gaps |
 
 [Requirement Traceability Matrix](REQUIREMENT_TRACEABILITY_MATRIX.md) maps every stable requirement ID to its planned implementation target, acceptance tests, evidence artifact, dependencies, and conservative current status. It is the working status ledger and must be updated alongside implementation.
 
