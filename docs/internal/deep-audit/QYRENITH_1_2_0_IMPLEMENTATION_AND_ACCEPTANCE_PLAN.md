@@ -132,14 +132,15 @@ The existing Phase 1 migration safety gate and Phase 2 QDAS-first order remain u
 
 The separate AA-01 draft is a cross-cutting assurance contract, not a fifteenth capability module or a replacement for QDAS. Its project discovery/model, verification planner, authorization gate, checker registry/runtime, evidence validator/store, policy evaluator, reporting layer and provider boundary map onto the existing five planes and fourteen post-QDAS capability modules.
 
-The PR #3 draft contributes 70 proposed AA requirement IDs. They are tracked in `REQUIREMENT_TRACEABILITY_MATRIX.md` as `PROPOSED`; this does not accept PR #3, its four proposed ADRs, or its architecture. See `ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md` for the full mapping, overlap rules, unresolved AA-01 decisions and safe PR disposition.
+The PR #3 draft contributes 70 proposed AA requirement IDs across eleven groups, including 55 P0 requirements. They are tracked in `REQUIREMENT_TRACEABILITY_MATRIX.md` as `PROPOSED`; the corrected PR #3 acceptance matrix maps all 70 IDs to an architecture owner, threat references, and a reserved acceptance-test ID. These are planned test identifiers, not existing test code or verification evidence. This does not accept PR #3, its four proposed ADRs, or its architecture. See `ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md` for the full mapping, overlap rules, seven unresolved AA-01 decisions and safe PR disposition.
 
 Before implementation:
-- resolve the five AA-01 open review questions;
+- resolve or explicitly defer the seven AA-01 open review questions;
 - reconcile ADR-AA-001..004 with existing trust, migration authorization, QDAS ledger/lineage and native-engine policies;
-- approve the exact requirement baseline and acceptance methods;
+- approve the exact requirement baseline and acceptance methods, including the distinction between SPECIFIED, IMPLEMENTED and VERIFIED;
 - preserve Phase 1 migration hardening and Phase 2 QDAS-first order;
-- define implementation slices against the existing module contracts rather than creating a parallel runtime.
+- define implementation slices against the existing module contracts rather than creating a parallel runtime;
+- keep per-check outcome states, aggregate assurance decisions and reproducibility outcomes as separate vocabularies.
 
 ## 9. Verification while GitHub Actions are disabled
 
