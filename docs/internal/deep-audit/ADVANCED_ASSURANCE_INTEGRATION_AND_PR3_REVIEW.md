@@ -1,6 +1,6 @@
 # Advanced Assurance Integration and PR #3 Review — Qyrenith 1.2.0
 
-**Status:** INTEGRATION PROPOSAL — OWNER REVIEW REQUIRED  
+**Status:** INTEGRATION BASELINE — AA-01 OWNER DECISIONS RESOLVED; REMAINING AA/PR3 ITEMS OPEN  
 **Source PR:** [#3 — Advanced Assurance AA-01](https://github.com/JustCax/Qyrenith/pull/3)  
 **Source branch:** `feature/advanced-assurance-aa01-mainline`  
 **Reviewed source head after PR #3 audit corrections:** `0ee2edb9fe136bba729483e56d5c450421fa6e80`  
@@ -76,21 +76,21 @@ All four ADRs on PR #3 are still marked **Proposed for AA-01 acceptance**. They 
 
 No ADR status is changed in this integration pass.
 
-## 6. AA-01 open decisions that still require owner input
+## 6. AA-01 owner decisions — resolved on 2026-11-10
 
-PR #3's acceptance matrix now leaves seven decisions open:
+The owner approved all seven decision directions on 2026-11-10. The binding design decisions are recorded in `ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md`:
 
-1. Confirm the seven per-check outcome states and the mapping from legacy workflow states.
-2. Select persistent evidence storage only after consistency, atomicity, portability and privacy comparison.
-3. Decide whether stronger process isolation is a supported OS-specific feature or an external prerequisite.
-4. Approve verification profiles only after exact check inventories and resource policies exist.
-5. Decide whether any network-enabled provider belongs in the first Advanced Assurance release; default remains disabled.
-6. Define the aggregate project-level assurance decision separately from the seven per-check outcome states, including legacy workflow-state compatibility.
-7. Confirm the reproducibility outcome vocabulary and its relationship to per-check outcomes, using the cross-environment/reproducibility specification as the detailed contract.
+1. Eight per-check outcomes: PASS, FAIL, BLOCKED, INCONCLUSIVE, UNKNOWN, NOT_RUN, UNSUPPORTED, ERROR. No uncertain/non-positive state may become PASS.
+2. One logical evidence system: QDAS canonical event journal, content-addressed artifact store, rebuildable non-authoritative index. Physical backend selection remains deferred pending measured comparison.
+3. RVL L0–L5 is the only isolation scale; platform enforcement must be independently qualified, with no silent downgrade.
+4. Verification profiles are immutable, versioned manifests. Final profile names/inventories remain deferred until the checker catalog and resource model exist.
+5. Network disabled by default; no network-dependent mandatory check in the first 1.2.0 release.
+6. Separate aggregate assurance states: ASSURED, NOT_ASSURED, BLOCKED, INCONCLUSIVE, PARTIAL, with mandatory-coverage and evidence gates.
+7. Separate reproducibility states: REPRODUCIBLE, NON_REPRODUCIBLE, INCONCLUSIVE, BLOCKED, NOT_RUN, UNSUPPORTED; RVL remains the sole replay engine.
 
-The PR #3 audit also corrected the requirement lifecycle so that `SPECIFIED` is distinct from `IMPLEMENTED`, and `DEFERRED` is a disposition rather than the automatic state after `VERIFIED`. The architecture now distinguishes per-check outcomes, aggregate assurance decisions, and reproducibility outcomes. Reproducibility is explicitly cross-cutting and does not introduce a second execution engine. Three reproducibility-specific threat scenarios were added.
+The owner also approved extensibility and supportability as a first-class architectural requirement, specified in `EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md`.
 
-These seven questions must be resolved or explicitly deferred before AA-01 can be marked accepted. The proposed ADRs should be reviewed alongside them, not accepted independently. ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md expands each question into alternatives, recommended defaults, safety consequences, and acceptance conditions. Its recommendations remain proposals until the owner explicitly approves them.
+Decision approval does not mark the runtime implemented or verified. It does not automatically accept all 70 proposed AA requirements, the four proposed ADRs, or PR #3 as a whole. The physical evidence backend, final profile catalog, exhaustive legacy mapping table, ADR reconciliation, and implementation contracts remain explicit follow-up work.
 
 ## 7. Reproducibility and optimization integration
 
@@ -98,7 +98,7 @@ The RCA-01..RCA-12 requirements define reproducibility across build, tests, diag
 
 The OI-01..OI-10 requirements define measured optimization and safe repair. They extend QDAS, root-cause analysis, dynamic audit, formal verification, reproducibility and meta-audit; they do not authorize automatic code mutation.
 
-RCA, OI and AA requirement families are now listed in the traceability matrix as `PROPOSED`. They must be owner-approved before implementation is treated as release scope.
+RCA, OI and the 70 PR #3 AA requirement IDs remain `PROPOSED` in the traceability matrix unless separately accepted. The seven AA-01 decision directions are approved design constraints, not blanket acceptance of those requirement families.
 
 ## 8. PR #3 disposition and safe integration sequence
 
@@ -106,7 +106,7 @@ Recommended disposition:
 
 1. Keep PR #3 open and draft. It must not be merged into `main`; if its content is accepted, integrate it only into `feature/1.2.0-universal-migration-core`.
 2. Review the requirement and architecture crosswalk in this document.
-3. Resolve or explicitly defer the seven AA-01 open decisions and compare each proposed ADR against the existing master architecture and migration authorization/evidence schemas.
+3. The seven AA-01 decision directions are resolved; reconcile their consequences and compare each proposed ADR against the existing master architecture and migration authorization/evidence schemas.
 4. If accepted, retain the stable AA requirement IDs and proposed ADR content, but integrate them into the 1.2.0 branch as reviewed documents. Prefer reviewed, selective integration over blindly merging the entire divergent PR branch. Preserve PR #3 as the historical review source until the owner decides whether to close it.
 5. Update the 1.2.0 plan and traceability matrix in the same change.
 6. Only then design implementation slices. AA-02 checker contract/runtime and AA-03 project model/planning must not bypass the Phase 1 migration safety gate or Phase 2 QDAS-first integration sequence.
