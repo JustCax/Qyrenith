@@ -67,14 +67,14 @@ The AA requirements are platform-level contracts. They must not duplicate the do
 
 All four ADRs on PR #3 are still marked **Proposed for AA-01 acceptance**. They are not accepted architecture decisions merely because they are named ADRs.
 
-| Proposed ADR | Relationship to existing 1.2.0 architecture | Required action before acceptance |
+| ADR | Reconciliation result on 2026-11-10 | Remaining owner decision |
 |---|---|---|
-| ADR-AA-001 — authority separation | Consistent with the existing rule that workers/analyzers cannot self-qualify or issue final verdicts. | Cross-link to the master trust/authority model and policy evaluator; verify no duplicate authority model. |
-| ADR-AA-002 — explicit side-effect authorization | Consistent with migration authorization, host approval and controlled execution. | Reconcile action classes and exact-scope authorization with existing migration authorization schemas. |
-| ADR-AA-003 — evidence lifecycle | Consistent with QDAS append-only event ledger and evidence lineage. | Reconcile atomicity, supersession, invalidation and retention semantics with existing ledger/schema contracts. |
-| ADR-AA-004 — standard-library-first core | Consistent with the current native-engine / optional-provider policy. | Clarify whether this is already a binding constraint or a proposed restatement; avoid duplicate conflicting policy. |
+| ADR-AA-001 — authority separation | Rewritten to align observation, evidence validation, qualification, authorization, policy verdict and reporting authorities; keeps per-check, aggregate assurance, reproducibility and support vocabularies separate. | Owner acceptance of this ADR draft; no new authority or sixth plane is introduced. |
+| ADR-AA-002 — explicit side-effect authorization | Rewritten to bind authorization to exact snapshot/plan/action/scope; separates authorization from host-enforced RVL L0–L5 isolation; includes default-deny network and no network-dependent mandatory check in 1.2.0. | Owner acceptance of this ADR draft; platform-specific enforcement remains independently qualified. |
+| ADR-AA-003 — evidence lifecycle | Rewritten around one logical QDAS event journal, content-addressed immutable artifacts and optional rebuildable non-authoritative index; physical backend remains deferred pending comparison. | Owner acceptance of this ADR draft; backend selection remains a separate deferred decision. |
+| ADR-AA-004 — standard-library-first core | Rewritten to preserve native/stdlib-first core while making qualified extensions and optional providers first-class; adds dependency governance and offline-first constraints. | Owner acceptance of this ADR draft; no particular provider or mandatory dependency is approved. |
 
-No ADR status is changed in this integration pass.
+The four ADRs now exist as selectively reconciled drafts on the 1.2.0 branch under `docs/internal/ARCHITECTURE_DECISION_RECORDS/`. Their status remains **PROPOSED — ADR acceptance pending**. The owner's seven AA-01 decision directions constrain these drafts but do not automatically accept them, all 70 AA requirements, or PR #3 as a whole.
 
 ## 6. AA-01 owner decisions — resolved on 2026-11-10
 
