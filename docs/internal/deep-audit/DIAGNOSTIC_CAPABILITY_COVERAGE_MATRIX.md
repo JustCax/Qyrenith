@@ -24,33 +24,33 @@ Tests include migration/QDAS/approval/trust/recovery/release/performance and Nod
 
 | # | Domain | Initial status | Visible foundation | Current test references / fixtures |
 |---:|---|---|---|---|
-| 1 | Diagnostic Core | undefined | tests/test_qdas_events.py; tests/test_qdas_collector.py | PARTIAL |
-| 2 | Language Intelligence | undefined | tests/test_node_domain.py; tests/test_rust_domain.py | PARTIAL |
-| 3 | Security Intelligence | undefined | tests/test_verification_invariants.py; security regression fixtures | PARTIAL |
-| 4 | Dependency Intelligence | undefined | tests/test_intelligence.py; tests/test_migration_core_120.py | PARTIAL |
-| 5 | Architecture Intelligence | undefined | New architecture graph fixtures required | NOT_STARTED |
-| 6 | Testing Intelligence | undefined | tests/test_engine_110.py; tests/test_qdas_cli_integration.py; tests/test_performance.py | PARTIAL |
-| 7 | Runtime Intelligence | undefined | tests/test_dynamic_audit_qdas_120.py; tests/test_external_check.py | PARTIAL |
-| 8 | Repair Intelligence | undefined | tests/test_qdas_repair.py; tests/test_qdas_lineage.py; tests/test_host_approval.py | PARTIAL |
-| 9 | Reporting & Integrations | undefined | tests/test_client_entrypoints.py; tests/test_qdas_cli_integration.py | PARTIAL |
-| 10 | API & Protocol Intelligence | undefined | New protocol fixtures and contract tests required | NOT_STARTED |
-| 11 | Infrastructure & Environment Intelligence | undefined | tests/test_qdas_collector.py; tests/test_verification_invariants.py | PARTIAL |
-| 12 | Observability & Production Intelligence | undefined | New telemetry adapter and incident fixtures required | NOT_STARTED |
-| 13 | Database & Data Integrity Intelligence | undefined | New database fixture suites required | NOT_STARTED |
-| 14 | Reliability & Resilience Intelligence | undefined | tests/test_recovery_and_targets.py; tests/test_external_check.py | PARTIAL |
-| 15 | Compatibility & Portability Intelligence | undefined | tests/test_migration_core_120.py; tests/test_node_domain.py; tests/test_rust_domain.py | PARTIAL |
-| 16 | Build, Artifact & Release Intelligence | undefined | tests/test_release_contents.py; tests/test_version_consistency.py | PARTIAL |
-| 17 | Accessibility & UX Quality Intelligence | undefined | New UI fixtures and manual review protocol required | NOT_STARTED |
-| 18 | Privacy & Data Governance Intelligence | undefined | tests/test_qdas_collector.py; tests/test_qdas_events.py | PARTIAL |
-| 19 | Documentation & Specification Intelligence | undefined | New docs consistency fixtures required | NOT_STARTED |
-| 20 | Cost & Resource Efficiency Intelligence | undefined | tests/test_performance.py; tests/test_external_check.py | PARTIAL |
-| 21 | AI & Agent Code Assurance | undefined | tests/test_qdas_cli_integration.py; tests/test_qdas_self_verification.py | PARTIAL |
-| 22 | Universal Project Knowledge Graph | undefined | tests/test_qdas_lineage.py; tests/test_intelligence.py | PARTIAL |
-| 23 | Attack Surface & Threat Intelligence | undefined | tests/test_trust_store.py; tests/test_verification_invariants.py | PARTIAL |
-| 24 | Change Impact & Regression Prediction | undefined | tests/test_migration_snapshot_120.py; tests/test_migration_preparation_120.py | PARTIAL |
-| 25 | Continuous Assurance Engine | undefined | tests/test_qdas_ledger.py; tests/test_qdas_self_verification.py | PARTIAL |
-| 26 | Software Forensics & Root Cause Engine | undefined | tests/test_qdas_diagnosis.py; tests/test_qdas_lineage.py | PARTIAL |
-| 27 | Domain-Specific Diagnostic Packs | undefined | tests/test_node_domain.py; tests/test_rust_domain.py; tests/test_migration_benchmarks_120.py | PARTIAL |
+| 1 | Diagnostic Core | PARTIAL | qyrenith_engine/qdas/; qyrenith_engine/analysis.py | tests/test_qdas_events.py; tests/test_qdas_collector.py |
+| 2 | Language Intelligence | PARTIAL | Existing analysis entrypoints; Node/Rust domain test surfaces | tests/test_node_domain.py; tests/test_rust_domain.py |
+| 3 | Security Intelligence | PARTIAL | Trust/boundary primitives; deep native analyzer not established | tests/test_verification_invariants.py; security regression fixtures |
+| 4 | Dependency Intelligence | PARTIAL | qyrenith_engine/migration/knowledge.py; intelligence foundations | tests/test_intelligence.py; tests/test_migration_core_120.py |
+| 5 | Architecture Intelligence | NOT_STARTED | No dedicated architecture engine identified | New architecture graph fixtures required |
+| 6 | Testing Intelligence | PARTIAL | Existing test runner, QDAS and benchmark foundations | tests/test_engine_110.py; tests/test_qdas_cli_integration.py; tests/test_performance.py |
+| 7 | Runtime Intelligence | PARTIAL | qyrenith_engine/execution.py; dynamic_audit_qdas.py | tests/test_dynamic_audit_qdas_120.py; tests/test_external_check.py |
+| 8 | Repair Intelligence | PARTIAL | qyrenith_engine/qdas/repair.py; qyrenith_engine/qdas/lineage.py | tests/test_qdas_repair.py; tests/test_qdas_lineage.py; tests/test_host_approval.py |
+| 9 | Reporting & Integrations | PARTIAL | qyrenith.py; qyrenith_engine/analysis.py; QDAS CLI | tests/test_client_entrypoints.py; tests/test_qdas_cli_integration.py |
+| 10 | API & Protocol Intelligence | NOT_STARTED | No dedicated API/protocol analyzer identified | New protocol fixtures and contract tests required |
+| 11 | Infrastructure & Environment Intelligence | PARTIAL | Execution environment capture; existing config checks to verify | tests/test_qdas_collector.py; tests/test_verification_invariants.py |
+| 12 | Observability & Production Intelligence | NOT_STARTED | No production telemetry engine identified | New telemetry adapter and incident fixtures required |
+| 13 | Database & Data Integrity Intelligence | NOT_STARTED | No dedicated database analyzer identified | New database fixture suites required |
+| 14 | Reliability & Resilience Intelligence | PARTIAL | Timeout/resource/recovery primitives; no full resilience engine identified | tests/test_recovery_and_targets.py; tests/test_external_check.py |
+| 15 | Compatibility & Portability Intelligence | PARTIAL | Migration model, knowledge and planner | tests/test_migration_core_120.py; tests/test_node_domain.py; tests/test_rust_domain.py |
+| 16 | Build, Artifact & Release Intelligence | PARTIAL | Existing build/release verification and package checks; workflow files absent by owner request | tests/test_release_contents.py; tests/test_version_consistency.py |
+| 17 | Accessibility & UX Quality Intelligence | NOT_STARTED | No dedicated accessibility analyzer identified | New UI fixtures and manual review protocol required |
+| 18 | Privacy & Data Governance Intelligence | PARTIAL | Redaction and bounded evidence controls; no full privacy engine identified | tests/test_qdas_collector.py; tests/test_qdas_events.py |
+| 19 | Documentation & Specification Intelligence | NOT_STARTED | No dedicated docs/spec analyzer identified | New docs consistency fixtures required |
+| 20 | Cost & Resource Efficiency Intelligence | PARTIAL | Resource limits and performance benchmark foundations | tests/test_performance.py; tests/test_external_check.py |
+| 21 | AI & Agent Code Assurance | PARTIAL | Agent integration guidance and QDAS capture primitives | tests/test_qdas_cli_integration.py; tests/test_qdas_self_verification.py |
+| 22 | Universal Project Knowledge Graph | PARTIAL | Migration knowledge and QDAS evidence lineage; no unified graph engine identified | tests/test_qdas_lineage.py; tests/test_intelligence.py |
+| 23 | Attack Surface & Threat Intelligence | PARTIAL | Security/trust primitives; dedicated attack-surface graph not identified | tests/test_trust_store.py; tests/test_verification_invariants.py |
+| 24 | Change Impact & Regression Prediction | PARTIAL | Migration diff/snapshot and analysis foundations | tests/test_migration_snapshot_120.py; tests/test_migration_preparation_120.py |
+| 25 | Continuous Assurance Engine | PARTIAL | QDAS event ledger and CLI verification; no scheduler/monitor identified | tests/test_qdas_ledger.py; tests/test_qdas_self_verification.py |
+| 26 | Software Forensics & Root Cause Engine | PARTIAL | QDAS diagnosis/hypotheses and lineage foundations | tests/test_qdas_diagnosis.py; tests/test_qdas_lineage.py |
+| 27 | Domain-Specific Diagnostic Packs | PARTIAL | Minecraft/migration foundations and Node/Rust domain tests | tests/test_node_domain.py; tests/test_rust_domain.py; tests/test_migration_benchmarks_120.py |
 
 ## 4. Cross-cutting maturity gaps
 

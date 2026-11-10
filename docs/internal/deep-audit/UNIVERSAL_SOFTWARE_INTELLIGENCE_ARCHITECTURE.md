@@ -86,7 +86,32 @@ Optimize against declared objectives/constraints: latency, throughput, memory, C
 - Resource exhaustion, unsupported semantics and missing oracles are non-pass states.
 - Recovery is evidence-recorded and idempotent where possible.
 
-## 9. Capability catalog and release boundary
+## 9. Existing Qyrenith systems explicitly preserved
+
+The expansion MUST preserve the earlier Qyrenith design work and integrate it through the existing five planes. The following are not deprecated or replaced by the new capability catalog:
+
+- **Intent and Feature Contracts:** explicit desired behavior, constraints, acceptance conditions and owner-approved scope.
+- **Reality Map and Reality Diff:** observed project state and evidence-backed comparison between snapshots.
+- **Semantic Diff:** behavior- and meaning-aware change comparison beyond line-based diffs.
+- **Engineering Graph and Evidence Graph:** typed relationships between code, dependencies, tests, architecture, runtime, decisions and proof.
+- **Dependency, Version and Compatibility Intelligence:** exact versioned relationships and compatibility claims.
+- **Causal Analysis and Contradiction Resolution:** competing hypotheses, counterevidence, explicit conflict states and controlled causal validation.
+- **Verification Coverage:** denominators, exclusions, unsupported syntax, rules, paths, states, scenarios and oracles.
+- **Regression, Mutation and Counterfactual Testing:** tests for change safety, analyzer effectiveness and alternative outcomes.
+- **Runtime Analysis and Failure Injection:** bounded observation and controlled failure experiments.
+- **Engineering Memory:** scoped, versioned, provenance-backed engineering knowledge; not opaque, unreviewable memory and not automatic truth promotion.
+- **Proof-Carrying Changes and Certified Artifacts:** changes/artifacts accompanied by exact evidence, provenance and independent verification appropriate to the claim.
+- **Worker Orchestration and Qualification:** pinned worker identity, capability, permissions, conformance and trust/approval separation.
+- **Workspace and Installation Management:** safe setup, snapshots, workspace lifecycle and explicit isolation guarantees.
+- **Build, Validation and Recovery:** deterministic command capture, failure handling, rollback and recovery evidence.
+- **Transactional Git Safety:** exact-scope review of Git mutations, clean-state checks, rollback and no implicit commit/push.
+- **Deterministic Release:** reproducible package assembly, artifact manifests, provenance and release-content verification.
+- **CI/verification intelligence:** inspect workflow definitions, permission posture and retained status evidence; execution of GitHub Actions remains separately controlled by owner policy.
+
+These systems should be represented in the capability catalog and requirement graph where appropriate, but their existing contracts must not be duplicated or weakened. If a new specification overlaps one of them, the existing document remains the source of truth until an owner-approved change says otherwise.
+
+## 10. Capability catalog and release boundary
+
 
 The 27 domains are specified in `DIAGNOSTIC_INTELLIGENCE_EXPANSION_SPEC.md`; they are a target capability envelope, not 27 isolated products. Shared primitives include project inventory/snapshots, frontends, typed graphs, policy/execution contracts, common finding/report schemas, reproducible lab, independent oracles, versioned knowledge, adapter qualification, coverage and meta-audit.
 
