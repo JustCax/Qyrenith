@@ -99,7 +99,7 @@ The implementation plan is the source of truth for sequencing and release gates.
 
 ## 10. Release gate
 
-The 1.2.0 release is blocked until every accepted requirement is either implemented and verified or explicitly removed by an owner-approved scope change. A documented limitation is not a substitute for a promised feature. CI must pass on the current head across the supported platform/Python matrix, public package contents must be checked, and a clean external verification run must be retained.
+The 1.2.0 release is blocked until every accepted requirement is either implemented and verified or explicitly removed by an owner-approved scope change. A documented limitation is not a substitute for a promised feature. The required supported platform/Python matrix must pass through an owner-approved CI or equivalent independently controlled runner; while GitHub Actions are disabled, use the approved local/external route and retain exact evidence. Public package contents must be checked and a clean independent verification run retained.
 
 ## 11. Requirement map
 

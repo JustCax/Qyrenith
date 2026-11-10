@@ -13,7 +13,7 @@ Advanced Assurance (AA) is relevant to Qyrenith 1.2.0 and should be retained. It
 
 The correct integration is to treat AA as a **cross-cutting assurance architecture contract** implemented through the existing five planes and fourteen post-QDAS capability modules. QDAS remains the development-assurance lifecycle and integration mechanism. The 27 diagnostic domains remain analyzer/knowledge/execution capabilities. AA defines how checks are discovered, planned, authorized, executed, validated, evaluated and reported.
 
-Do not merge PR #3 independently into `main`. Keep it draft until the owner reviews AA-01 open questions and the integration mapping below. Do not merge PR #9 or PR #3 as part of this documentation pass.
+Do not merge PR #3 independently into `main`. Keep it draft as a separate source/review PR. The seven AA-01 decision directions are now owner-approved; the remaining requirement/ADR reconciliation and any selective 1.2.0-branch integration still require review. Do not merge PR #9 or PR #3 as part of this documentation pass.
 
 ## 2. Repository and branch facts
 
