@@ -76,7 +76,7 @@ Success requires measurable improvement in:
 1. Detection quality and controlled false-positive rates.
 2. Decision accuracy: reported states match collected evidence.
 3. Coverage transparency: checked, unchecked, unsupported, and excluded areas are visible.
-4. Reproducibility: equivalent declared inputs produce explainable, comparable results.
+4. Reproducibility: every claim names its reproducibility class and scope, binds identity-defining inputs to a versioned manifest, lists uncontrolled inputs, and uses a declared comparator/oracle for explainable comparison.
 5. Security: project code, workers, plugins, and external tools remain within explicit trust boundaries.
 6. Compatibility across declared operating systems, runtimes, project types, and tool versions.
 7. Maintainability: checkers can be added without destabilizing the core.
@@ -269,7 +269,7 @@ Initial profile candidates:
 | Release Candidate | Full pre-release gate | High |
 | Critical Assurance | Strictest supported policy and evidence requirements | Very high |
 
-Profiles are policy bundles, not marketing labels. Each publishes its exact check set, exclusions, resource limits, and acceptance rules.
+Profiles are policy bundles, not marketing labels. Each publishes its exact check set, exclusions, resource limits, permissions, platform support, and acceptance rules. All names in this table are provisional candidates only: no profile is accepted, implemented, or available until its complete inventory and policy are reviewed.
 
 ## 10. Extensibility and external integrations
 
