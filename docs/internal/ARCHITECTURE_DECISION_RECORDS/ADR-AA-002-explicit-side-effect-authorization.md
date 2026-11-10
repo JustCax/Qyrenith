@@ -1,77 +1,82 @@
-# ADR-AA-002: Explicit, Scope-Bound Authorization for Side Effects
+# ADR-AA-002: Explicit, Exact-Scope Authorization for Side Effects
 
-**Status:** RECONCILED PROPOSAL — OWNER ACCEPTANCE REQUIRED  
-**Revision date:** 2026-11-10  
-**Scope:** Discovery, planning, execution, providers, migration, repair, and release  
-**Implementation status:** NOT STARTED
+**Status:** PROPOSED — reconciled with owner-approved AA-01 decision directions; ADR acceptance pending  
+**Original proposal date:** 2026-11-04  
+**Reconciliation date:** 2026-11-10  
+**Scope:** Discovery, planning, process execution, filesystem mutation, providers, network, migration, repair, and release
 
 ## Context
 
-Qyrenith operations range from read-only metadata inspection to running project-controlled code, modifying files, installing tools, accessing credentials, using the network, or publishing artifacts. Treating all of these as generic verification conceals risk and user intent.
+Project inspection ranges from bounded local metadata reads to running project-controlled code, changing files, installing packages, accessing credentials, contacting remote services, invoking external providers, replaying mutations, or publishing artifacts. Treating these as ordinary verification hides their distinct risks.
 
-The existing architecture requires read-only discovery by default, explicit authorization for side effects, host-enforced execution boundaries, and the RVL L0–L5 isolation scale. The migration platform and QDAS repair path must remain propose-only until every required trust, approval, and isolation gate is enforceable.
+Qyrenith's migration authorization, host approval, RVL isolation, and five-plane architecture separate permission from containment. Authorization is not proof that a host-enforced boundary exists.
 
-## Proposed decision
+## Decision proposal
 
-Discovery is non-executing and read-only by default. Every side-effecting operation MUST be declared in a versioned plan and separately authorized for its exact scope, operation, target, and limits before execution.
+Read-only, bounded, non-executing discovery is the default. Every side-effecting operation MUST be declared in a versioned plan and receive explicit authorization for its exact scope before execution.
 
-At minimum, side-effect classes include:
-- project-controlled process or script execution;
-- filesystem creation, modification, or deletion;
+The action taxonomy MUST distinguish at minimum:
+- process execution, including project-controlled build/test scripts;
+- filesystem writes, deletes, renames, and workspace mutation;
 - package, tool, or dependency installation;
-- network access, remote retrieval, or protocol invocation;
+- network access and remote data retrieval;
 - credential or secret access;
-- migration, repair, or source transformation;
-- artifact signing, publication, deployment, or release.
+- external provider invocation where side effects are possible;
+- deployment, publication, release, or other externally visible mutation;
+- destructive or state-changing replay.
 
-Authorization MUST bind:
-- project identity and immutable snapshot/revision;
-- plan and profile identity/digest;
-- exact operation and target/resource scope;
-- requested capabilities and permitted paths/processes/endpoints;
-- required RVL isolation level and host capability evidence;
-- resource, time, output, and concurrency bounds;
-- approval identity, authority, timestamp, expiry, and revocation state.
+Authorization MUST bind to exact project identity/snapshot, plan digest/version, operation, target scope, requested capabilities, limits, and expiry/revocation context. A changed snapshot, plan, action, target, permission, or material limit requires re-evaluation and, where scope changed, a new authorization. Approval is not a blanket grant for later runs.
 
-A changed project snapshot, plan, target, operation, permission, or relevant provider identity invalidates the affected authorization and requires re-evaluation. A global allow-all switch, command-line confirmation flag, caller-provided identity string, or worker assertion is not authenticated human approval.
+Authorization and isolation are separate gates:
+- RVL L0–L5 is the only canonical isolation scale.
+- Platform host-enforced capabilities must be discovered and independently qualified; declarations alone are not proof.
+- No silent downgrade is permitted.
+- If a required boundary is unavailable, side-effecting work remains `PROPOSE_ONLY` or returns `BLOCKED`/`UNSUPPORTED`; it must not execute under a weaker unannounced boundary.
+- A workspace copy, CLI flag, caller-supplied string, or authorization record alone is not an OS sandbox or authenticated human approval.
 
-## Isolation and fail-closed behavior
-
-RVL L0–L5 is the only canonical isolation scale. A requested level must be independently shown to be enforced by the host for the exact platform/runtime combination. Configuration declarations, directory copies, command allowlists, containers without measured controls, or provider self-reports do not prove a stronger boundary.
-
-No silent downgrade is permitted. If the host cannot enforce the required boundary, the operation MUST remain `PROPOSE_ONLY` or return an explicit `BLOCKED`/`UNSUPPORTED` outcome. The system MUST NOT execute the operation under a weaker level and then report success.
-
-## Network policy
-
-Network access is disabled by default at every layer. The first 1.2.0 release MUST NOT require network-dependent mandatory checks. A later network-enabled provider requires a separate owner-approved threat model and explicit per-run approval, exact endpoint/operation allowlists, bounded I/O, timeout/response limits, provenance, secret/data-flow controls, and retained request/response metadata subject to redaction policy.
+Network policy is stricter:
+- Network access is disabled by default at every layer.
+- The first 1.2.0 release MUST NOT require network-dependent mandatory checks.
+- Any later network provider requires a separate owner-approved threat model, explicit per-run approval, endpoint/operation allowlists, bounded I/O, provenance, and auditable data-flow records.
+- Provider discovery/registration must not contact remote services unless separately authorized.
 
 ## Alternatives considered
 
-1. **Implicit execution after discovery:** rejected; project scripts and metadata are untrusted.
-2. **Global allow-all permission:** rejected; it removes operation-level scope and auditability.
-3. **Always block all execution:** rejected as a permanent design; controlled execution remains useful when explicitly authorized and host-enforced.
-4. **Treating a workspace copy as a sandbox:** rejected; a copy does not constrain processes, secrets, network, or host resources.
+1. Implicit execution after discovery — rejected because project-controlled scripts/providers are untrusted.
+2. Global allow-all permission — rejected because it hides operation-specific scope.
+3. Treat authorization as sandboxing — rejected because permission records do not enforce OS containment.
+4. Always block all execution — rejected as a universal rule; bounded builds/tests may run only with exact approval and independently enforced isolation.
+5. Network enabled by default — rejected because it introduces exfiltration, mutable inputs, and nondeterminism.
 
 ## Consequences
 
-- Plans and authorization records become explicit, versioned artifacts.
-- Human approval requires a trusted host channel; CLI flags alone cannot satisfy it.
-- Provider and extension permissions are centrally evaluated and least-privileged.
-- Unsupported host controls remain visible and block the affected operation.
-- Network-enabled functionality remains outside the mandatory first-release path.
-- Migration and repair execution remain disabled/propose-only until the complete safety gate is met.
+- Plans enumerate actions, capabilities, targets, and resource ceilings before execution.
+- Approval must use a trusted host channel; caller flags or self-asserted strings do not count.
+- Authorization is revalidated immediately before action.
+- Isolation qualification and authorization must both pass.
+- Denied, unavailable, stale, or insufficient permissions remain visible as non-PASS states.
+- Extensions use central policy and RVL boundaries and cannot obtain ambient authority.
+- Network-dependent optional functionality may remain unavailable offline; that is a disclosed support limitation, not a successful check.
 
-## Acceptance criteria
+## Verification requirements
 
-- Default discovery causes no project-controlled process execution, network access, or project mutation.
-- An undeclared operation cannot execute.
-- Scope, snapshot, plan, or provider changes invalidate affected approval.
-- Caller-supplied strings and CLI flags cannot impersonate authenticated approval.
-- Required isolation is independently measured for every supported platform cell.
-- Filesystem, process, environment, secret, network, and resource boundaries are adversarially tested.
-- Missing host enforcement produces propose-only/BLOCKED/UNSUPPORTED behavior, never a silent downgrade.
-- Network is denied by default and no network-dependent mandatory check is present in 1.2.0.
+- Default discovery performs no process execution, network access, credential access, or project mutation.
+- A plan cannot execute an undeclared action or exceed its exact authorization.
+- Changed snapshot, plan, action, target, or permission invalidates the prior grant as defined by the authorization contract.
+- Missing host enforcement prevents side-effecting execution.
+- No L0–L5 downgrade occurs silently.
+- Network-denial tests prove no traffic occurs by default, including during extension discovery.
+- Network use requires a fresh per-run grant, endpoint/operation allowlists, bounded I/O, and provenance.
+- Destructive/external replay requires fresh exact-scope authorization.
+- Publication cannot be triggered by an ordinary commit or unapproved tag.
 
-## Deferred
+## Related contracts
 
-Exact host approval protocol, OS-specific isolation-provider matrix, permission schema, and final API/CLI surfaces remain to be specified and tested. This proposal does not authorize implementation or execution.
+- `DEEP_AUDIT_MASTER_ARCHITECTURE.md`
+- `AA01_OWNER_DECISION_RECORD.md`
+- `MIGRATION_PLATFORM_INTEGRATION_SPEC.md`
+- `REPRODUCIBLE_VERIFICATION_LAB_SPEC.md`
+- `EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md`
+- `SECURITY_AND_SUPPLY_CHAIN_AUDIT_SPEC.md`
+
+This proposal does not authorize restoring GitHub Actions, publishing artifacts, or enabling network by default.
