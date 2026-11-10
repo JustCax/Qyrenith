@@ -199,20 +199,24 @@ Advanced Assurance MUST be additive unless a breaking change is explicitly accep
 
 The current supported Python baseline is Python 3.11+. The declared CI coverage for 1.1.0 is Python 3.11–3.14 on Ubuntu, Windows, and macOS. This is the current verified matrix, not an automatic promise for future releases.
 
-## 8. Requirement lifecycle
+## 8. Requirement lifecycle and specification status
 
-Each requirement moves through:
+The lifecycle distinguishes an approved specification from implemented product behavior:
 
-`PROPOSED → ACCEPTED → IMPLEMENTED → VERIFIED → DEFERRED`
+`PROPOSED → ACCEPTED → SPECIFIED → IMPLEMENTED → VERIFIED`
 
 - **PROPOSED:** written and awaiting architecture/owner review.
-- **ACCEPTED:** stable scope and acceptance method approved.
-- **IMPLEMENTED:** code or documentation exists.
-- **VERIFIED:** required evidence meets the acceptance method.
-- **DEFERRED:** intentionally postponed with impact, reason, and review trigger.
+- **ACCEPTED:** scope, priority, owner, and acceptance intent are approved.
+- **SPECIFIED:** the normative behavior, architecture ownership, limitations, and observable acceptance method are documented. This is a documentation milestone, not an implementation claim.
+- **IMPLEMENTED:** the required product behavior exists in the relevant code or controlled product artifact. Documentation alone MUST NOT qualify.
+- **VERIFIED:** independent, revision-bound evidence demonstrates that the implemented behavior satisfies the accepted requirement and its acceptance method.
+- **DEFERRED:** a disposition used when an accepted or specified requirement is intentionally postponed, with impact, reason, owner, and review trigger. It is not the automatic next state after VERIFIED.
 
-A requirement is not VERIFIED because a related file exists or a command exited zero.
+A deferred requirement may be reactivated through explicit review. If previously verified behavior is later removed, changed, or taken out of scope, preserve its historical evidence and record the new disposition; do not rewrite the historical verification result.
 
+Requirement lifecycle states, per-check outcome states, aggregate assurance decisions, and reproducibility outcomes are separate vocabularies. They MUST NOT be substituted for one another.
+
+A requirement is not IMPLEMENTED because a related document exists, and it is not VERIFIED because a command exited zero.
 ## 9. AA-01 acceptance
 
 AA-01 is accepted only when:

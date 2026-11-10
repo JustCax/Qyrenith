@@ -156,6 +156,31 @@ Responsibilities:
 
 An adapter is not trusted merely because it is installed or listed in a manifest.
 
+### 3.11 Reproducibility and Cross-Environment Assurance
+
+This is a cross-cutting assurance responsibility, not a second execution engine. It reuses the declared execution authority and binds each reproducibility claim to:
+- a named reproducibility class and exact scope;
+- a versioned manifest of source, inputs, tools, dependencies, policy, configuration, environment, and execution controls;
+- an explicit comparator or oracle;
+- raw and normalized output identities, with the normalization policy version;
+- uncontrolled or unavailable inputs;
+- independently identified attempts and environment-matrix cells where required.
+
+A repeat in the same mutable workspace is not independent reproduction. High-assurance claims require a clean workspace and a separately identified execution attempt. Unknown inputs remain visible; a manifest digest does not prove that the recorded environment was truthful. Replaying side-effecting operations requires fresh authorization.
+
+The detailed manifest schema, reproducibility classes, comparison rules, and acceptance corpus must be integrated with the Qyrenith reproducible-verification specification before implementation. This responsibility must not create a parallel runner or duplicate the existing reproducible lab.
+
+### 3.12 Release Assurance
+
+Responsibilities:
+- own the explicit release file manifest and source-revision binding;
+- qualify exact ZIP/TAR/sdist/wheel contents and reject unintended files or path escapes;
+- bind artifact digests and provenance to the exact source revision and build context;
+- enforce the explicit publication gate and prevent ordinary development events from publishing;
+- preserve release evidence and disclose signing/provenance capabilities and limitations.
+
+Release Assurance is a named architecture owner, not an assumption that the current release builder already satisfies every future AA requirement.
+
 ## 4. Dependency direction
 
 The logical dependency direction is:
@@ -227,12 +252,19 @@ The following logical objects require versioned schemas:
 | Policy | Versioned rules and mandatory gates | Policy owner |
 | Decision Record | Deterministic result of evaluating evidence under policy | Policy evaluator |
 | Report | Human/machine presentation of one decision record | Reporter |
+| Profile Definition | Exact check inventory, exclusions, permissions, limits, and result mapping | Profile / policy owner |
+| Exception Record | Scope, rationale, approver, affected rule, expiry/review, and audit reference | Policy owner |
+| Reproducibility Manifest | Identity-defining inputs, tools, dependencies, policy, environment, and uncontrolled inputs | Reproducibility assurance |
+| Reproducibility Result | Class, scope, comparator, outcome, mismatches, and evidence references | Reproducibility assurance |
+| Release Manifest | Exact source revision and intended artifact inventory | Release Assurance |
 
 No object may carry authority beyond its declared owner. In particular, checker output is not a Decision Record.
 
-## 7. Result-state semantics
+## 7. Result-state and decision semantics
 
-The core vocabulary is:
+### 7.1 Per-check outcome states
+
+The seven-state vocabulary applies to an individual planned check after its execution observation and evidence validation have been interpreted:
 
 - **PASS:** the declared condition was checked and validated evidence satisfies its rule.
 - **FAIL:** validated evidence demonstrates that the declared condition was not satisfied.
@@ -242,7 +274,26 @@ The core vocabulary is:
 - **UNSUPPORTED:** no applicable implementation exists for the declared scope.
 - **ERROR:** the checker or verification infrastructure malfunctioned.
 
-Execution observations and policy outcomes are separate. For example, a process may exit with code zero while its evidence is invalid, resulting in ERROR or UNKNOWN rather than PASS.
+A process exit code is only an execution observation. For example, exit code zero cannot produce PASS when its evidence is malformed, incomplete, stale, or outside the authorized scope.
+
+### 7.2 Aggregate assurance decision
+
+The project-level assurance decision is a separate, policy-derived object. It MUST retain links to every relevant per-check state, mandatory gate, exception, and evidence item. It MUST NOT be represented by copying one check's state or by an undocumented numeric score.
+
+The exact aggregate decision vocabulary and its mapping to legacy workflow states remain an AA-01 owner decision. Until accepted, documents and implementations MUST NOT invent or imply a canonical aggregate-state enum. A mandatory critical check in any non-PASS state prevents a clean assurance conclusion unless an explicit, valid exception applies.
+
+### 7.3 Reproducibility outcomes
+
+Reproducibility status is also separate from check outcomes and aggregate assurance decisions. The proposed vocabulary is:
+
+- **REPRODUCED:** the declared class and scope were independently repeated and the declared comparator/oracle passed.
+- **PARTIALLY_REPRODUCED:** some dimensions matched, but mandatory scope remains incomplete.
+- **NOT_REPRODUCED:** the repeat completed and the equivalence contract failed.
+- **INCONCLUSIVE:** missing oracle, uncontrolled input, nondeterminism, or insufficient observation prevents a conclusion.
+- **BLOCKED:** policy, trust, isolation, integrity, or prerequisite conditions prevented the repeat.
+- **UNSUPPORTED:** the requested reproducibility class or environment cannot be evaluated.
+
+These proposed outcomes do not replace the seven per-check states. Their final naming and compatibility mapping require owner approval.
 
 ## 8. Trust boundaries
 
@@ -325,4 +376,8 @@ The existing `qyrenith_engine.analysis`, `boundary`, and `execution` modules are
 - [ ] Persistent objects have versioning and lifecycle rules.
 - [ ] Existing 1.1.0 behavior and state migration are addressed.
 - [ ] No unsupported sandbox, semantic, or security claim is made.
-- [ ] Each P0 requirement maps to a component and test method.
+- [ ] Each P0 requirement maps to a component, threat/control where relevant, and an ID-level acceptance case.
+- [ ] Per-check outcomes, aggregate assurance decisions, requirement lifecycle states, and reproducibility outcomes are distinct.
+- [ ] Reproducibility claims bind a named class, scope, manifest, comparator/oracle, and uncontrolled-input list.
+- [ ] Profile and exception records have explicit ownership and versioned contracts.
+- [ ] Release Assurance owns manifest, artifact qualification, provenance, and publication gates.

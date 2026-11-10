@@ -137,6 +137,10 @@ Risk ratings are qualitative and provisional. They must be revisited with implem
 | AA-THR-023 | AI-generated guidance is treated as a verified remediation or fact. | Unsafe changes or false claims. | AI remains advisory; every proposed change requires normal approval and verification. | Tests proving agent text cannot change decision state. |
 | AA-THR-024 | Resource limits are configured but not enforceable on a platform. | Overstated containment. | Capability report and explicit unsupported enforcement state; never claim unsupported limits. | Platform-specific capability tests and documentation review. |
 
+| AA-THR-025 | A reproducibility claim omits a mutable or uncontrolled input such as a dependency source, toolchain, environment variable, clock, cache, or remote service. | False claim that a result can be repeated or compared. | Versioned reproducibility manifest; explicit uncontrolled-input inventory; invalidate affected evidence when identity-defining inputs change. | Change one hidden input at a time and assert that the manifest or reproducibility verdict changes or becomes INCONCLUSIVE. |
+| AA-THR-026 | Output normalization removes a security- or behavior-relevant difference. | A materially different or unsafe result is reported as equivalent. | Versioned comparator/normalizer; preserve raw digests; prohibit normalization of security-relevant modes, signatures, permissions, or behavior. | Adversarial fixtures differing only in protected fields must not compare equivalent. |
+| AA-THR-027 | A replay repeats a destructive or externally visible side effect using stale authorization. | Data loss, duplicate deployment/publication, or unintended external action. | Fresh exact-scope authorization for side-effecting replay; default-deny destructive operations. | Replayed mutation/publication fixture must be blocked without a new authorization record. |
+
 ## 8. Mitigation priorities
 
 ### P0 before checker execution is expanded
@@ -151,6 +155,9 @@ Risk ratings are qualitative and provisional. They must be revisited with implem
 - Secret-safe logs and reports.
 - Atomic evidence lifecycle.
 - No implicit network or publication.
+- Reproducibility claims bind identity-defining inputs and list uncontrolled inputs.
+- Comparators and normalization policies are versioned; raw evidence remains available.
+- Side-effecting replay requires fresh exact-scope authorization.
 
 ### P1 before broad integrations
 
@@ -172,6 +179,7 @@ Risk ratings are qualitative and provisional. They must be revisited with implem
 - A local administrator, kernel compromise, or malicious host toolchain is outside the core guarantee.
 - Time and memory limits may be unavailable or approximate on some platforms.
 - No assurance profile can prove that a project is defect-free.
+- Exact reproduction may be impossible when external services, hardware, mutable dependencies, or host state cannot be preserved; the correct outcome is an explicit limitation or INCONCLUSIVE, not an inferred match.
 
 These limitations must be visible in product documentation and in affected reports where relevant.
 

@@ -83,6 +83,20 @@ Verify:
 - no unintended internal, temporary, or sensitive files;
 - no publication from ordinary pushes.
 
+### 2.8 Reproducibility and cross-environment tests
+
+For every reproducibility claim, tests must:
+- name the reproducibility class, scope, comparator/oracle, and expected equivalence;
+- verify that a versioned manifest records identity-defining inputs and explicitly lists uncontrolled inputs;
+- distinguish raw artifact digests from normalized comparison digests;
+- verify that normalization is versioned and does not erase security- or behavior-relevant differences;
+- use a clean workspace and separately identified attempt when independent reproduction is required;
+- report each environment-matrix cell independently and never generalize from an untested cell;
+- reject REPRODUCED when required evidence, an oracle, or a mandatory scope dimension is missing;
+- require fresh exact-scope authorization before replaying side-effecting operations.
+
+These are future acceptance requirements; this strategy does not claim that the reproducibility engine or its tests already exist.
+
 ## 3. Determinism and test isolation
 
 - Unit and policy tests use fixed inputs.
@@ -119,7 +133,8 @@ Every phase report records:
 - logs or artifact references with digests where appropriate;
 - skipped and unsupported tests;
 - failures and disposition;
-- known limitations.
+- known limitations;
+- for reproducibility claims: class, scope, manifest revision/digest, comparator/oracle version, uncontrolled inputs, independent-attempt identity, environment-matrix cell, and raw/normalized artifact digests.
 
 A phase is not VERIFIED while a mandatory test is skipped, unsupported, or unresolved unless an approved exception explicitly addresses that test.
 
