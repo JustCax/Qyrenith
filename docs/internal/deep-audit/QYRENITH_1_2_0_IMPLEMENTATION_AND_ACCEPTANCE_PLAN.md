@@ -106,7 +106,13 @@ Any failing required CI job, unresolved critical/high security defect, false PAS
 
 ## 7. Governance
 
-Work occurs on `feature/1.2.0-universal-migration-core`. Do not merge to main, tag, publish to PyPI, or create a public release without explicit owner approval. Changes to this plan or architecture require a decision record and updated traceability.
+- The only active development/integration branch for 1.2.0 is `feature/1.2.0-universal-migration-core`.
+- Do not commit, merge into, rebase, or otherwise modify `main` before the approved 1.2.0 release integration.
+- PR #9 is the release PR from the 1.2.0 branch to `main`; keep it open and draft during development. Do not merge it before release approval.
+- PR #3 and any other supporting PRs are review/source branches only. If accepted, their changes are integrated into the 1.2.0 branch only, after selective review; never merge them into `main`.
+- Do not merge every PR automatically. First determine whether its content is needed, non-duplicative, compatible, and accepted. Preserve useful PRs as draft review records when direct integration is unnecessary.
+- No tag, PyPI publication, or public release is authorized without explicit owner approval.
+- Changes to accepted architecture require a decision record and updated traceability.
 
 ## 8. Expanded capability envelope — proposed extension
 
@@ -119,6 +125,7 @@ The six product pillars map onto the existing five planes in `UNIVERSAL_SOFTWARE
 - `REPRODUCIBILITY_AND_CROSS_ENVIRONMENT_ASSURANCE_SPEC.md`: extends the existing lab/evidence model.
 - `OPTIMIZATION_AND_REPAIR_INTELLIGENCE_SPEC.md`: controlled optimization and repair.
 - `ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md`: crosswalk for the separate AA-01 draft and PR #3 disposition.
+- `ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md`: detailed alternatives and recommended defaults for the seven AA-01 owner decisions; proposal only until explicitly approved.
 - `RESEARCH_AND_STANDARDS_ALIGNMENT.md`: source register and interoperability consequences.
 - DI-001..DI-081: proposed requirements in the authoritative matrix.
 - RCA-01..RCA-12 and OI-01..OI-10: add to the authoritative matrix before implementation.
