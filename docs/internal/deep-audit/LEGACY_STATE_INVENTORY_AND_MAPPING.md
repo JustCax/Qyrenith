@@ -19,6 +19,28 @@ Conversion MUST preserve the original field, raw value, source subsystem/schema 
 
 The following values were observed in the 1.2.0 branch source and schemas during this read-only inventory.
 
+### 2.1.1 Exit-code mapping
+
+The `EXIT` mapping in `qyrenith.py` is a process/CLI interface, not a check-outcome enum. The source currently defines:
+
+| Label | Code | Mapping caution |
+|---|---:|---|
+| `SUCCESS` | 0 | Command success only; not automatically PASS or ASSURED |
+| `FAILED` | 1 | Generic; distinguish subject failure from infrastructure failure |
+| `BLOCKED` | 2 | Candidate BLOCKED when a gate prevented work |
+| `STOPPED` | 3 | Cause may be policy stop, cancellation, or unexpected stop |
+| `PREFLIGHT_FAILURE` | 10 | Distinguish prerequisite block from internal/host error |
+| `AUDIT_BLOCKER` | 11 | Mandatory audit gate unresolved; normally BLOCKED |
+| `UNKNOWN_API` | 12 | UNKNOWN unless exact-scope support evidence proves UNSUPPORTED |
+| `DEPENDENCY_BLOCKER` | 13 | BLOCKED or UNKNOWN depending on known policy gate vs missing knowledge |
+| `PORTING_FAILURE` | 14 | FAIL only with a subject-level migration oracle |
+| `BUILD_FAILURE` | 15 | Distinguish build defect from runner/tool infrastructure ERROR |
+| `VALIDATION_FAILURE` | 16 | FAIL only for a subject-level contract violation |
+| `FIX_LIMIT_REACHED` | 17 | Usually INCONCLUSIVE when the required verification remains unresolved |
+| `UNTRUSTED_BUILD` | 18 | BLOCKED due to trust/integrity gate |
+| `USAGE` | 20 | No subject check ran; NOT_RUN plus command validation error as applicable |
+| `INTERNAL_ERROR` | 70 | ERROR, retaining redacted diagnostic metadata |
+
 ### 2.1 Legacy CLI workflow state
 
 Source: `qyrenith.py`, especially `initial_state`, `set_phase`, `report`, `close_transaction`, and `cmd_health`.
@@ -74,6 +96,19 @@ Sources: `qyrenith_engine/migration/worker.py`, `qyrenith_engine/migration/plann
 | Worker qualification result | Must be `PASS` | Qualification test-suite result; not the worker's own assurance verdict |
 
 These state families must remain distinct. In particular, `QUALIFIED` is not `PASS` for project verification; `WORKED` is not proof of a correct change; `NO_CHANGE` is not automatically a failure or pass; `NOT_SELECTED` is not `NOT_RUN` without a check-level scope decision.
+
+### 2.5.1 Additional values observed in legacy tests and adjacent models
+
+The source and legacy test inventory also contains these domain/lifecycle labels. They are recorded here to prevent accidental conversion into the canonical check vocabulary:
+
+- Workflow/lifecycle: `BACKUP`, `TEST`, `STOP`, `PENDING`, `READY_FOR_VERIFICATION`, `TERMINAL`, `RUNNING`, `OPEN`, `COMMITTED`.
+- Trust/knowledge: `COMMUNITY`, `UNTRUSTED`, `UNVERIFIED`, `NOT_SEMANTICALLY_VERIFIED`, `REQUIRES_VERIFICATION`, `RESOLVED_BY_EVIDENCE`.
+- Availability/discovery: `NOT_AVAILABLE`, `NOT_ACTIVE`, `SKIPPED_NO_GIT`, `SKIPPED_UNAVAILABLE`, `CANDIDATE`, `DECLARED`, `DISCOVERED`.
+- Comparison/replay: `MATCH`, `CHANGED`, `UNCHANGED`, `REPLAYABLE`, `REPLAY_BLOCKED`.
+- Analysis/review: `REVIEW_REQUIRED`, `UNREADABLE`, `UNRESOLVED`.
+- Evidence/claim: `OBSERVED`, `INFERRED`, `VERIFIED`, `CONFLICTED`, `STALE`, `AVAILABLE`.
+
+The migration repair model also uses authorization permissions such as `PROPOSE_ONLY`, `READ_PROJECT`, `WRITE_PROJECT`, `EXECUTE_PROCESS`, `INSTALL_DEPENDENCIES`, `NETWORK`, `GIT_WRITE`, and `PUBLISH_ARTIFACT`. These describe permission/capability grants, not outcomes.
 
 ### 2.5 Other observed legacy statuses
 
@@ -132,7 +167,7 @@ This is a semantic mapping policy, not a bulk rewrite instruction.
 
 ## 6. Source scope and limitations
 
-This first inventory read the 1.2.0 branch versions of:
+This first inventory read the 1.2.0 branch versions of the source modules below and cross-checked legacy status families in the 1.1.0 CLI tests:
 - `qyrenith.py`
 - `qyrenith_engine/execution.py`
 - `qyrenith_engine/approval.py`
