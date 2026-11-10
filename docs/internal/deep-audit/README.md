@@ -30,6 +30,7 @@ This directory contains eighteen normative engineering specifications for the 1.
 | [Evidence store backend evaluation](EVIDENCE_STORE_BACKEND_EVALUATION.md) | Candidate storage designs, measurable comparison criteria, crash-recovery and fault-injection plan |
 | [Language and domain adapters](LANGUAGE_AND_DOMAIN_ADAPTER_SPEC.md) | Native frontends, adapter contracts, capability qualification |
 | [Extensibility and supportability](EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md) | Versioned extension ecosystem, qualification, exact support scope, lifecycle, compatibility and trust |
+| [Checker catalog and profile design](CHECKER_CATALOG_AND_PROFILE_DESIGN.md) | Deterministic check identity, exact support scope, immutable profile manifests, resource budgets and aggregate assurance gates |
 | [Audit maturity and coverage](AUDIT_MATURITY_AND_COVERAGE_MODEL.md) | Multidimensional support and honest maturity |
 | [Integrated reporting and orchestration](INTEGRATED_REPORTING_AND_ORCHESTRATION_SPEC.md) | Dependency scheduling, verdicts, coverage, report exports |
 | [Implementation and acceptance plan](QYRENITH_1_2_0_IMPLEMENTATION_AND_ACCEPTANCE_PLAN.md) | Phase gates, traceability, definition of done |
