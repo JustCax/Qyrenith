@@ -22,7 +22,7 @@ Tests include migration/QDAS/approval/trust/recovery/release/performance and Nod
 
 ## 3. Domain coverage
 
-| # | Domain | Initial status | Visible foundation | Major missing proof / next audit |
+| # | Domain | Initial status | Visible foundation | Current test references / fixtures |
 |---:|---|---|---|---|
 | 1 | Diagnostic Core | undefined | tests/test_qdas_events.py; tests/test_qdas_collector.py | PARTIAL |
 | 2 | Language Intelligence | undefined | tests/test_node_domain.py; tests/test_rust_domain.py | PARTIAL |
