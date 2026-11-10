@@ -279,7 +279,7 @@ The following rows are traceability records for proposed scope only. `PROPOSED` 
 
 ### Advanced Assurance foundation (AA-REQ-*)
 
-**Source:** PR #3 draft, branch `feature/advanced-assurance-aa01-mainline`, audited head `96cd17cc867d57075744073e1158b16f60b86bb9`. The requirement statements below are preserved from the source draft; the mapping is an integration proposal, not acceptance of PR #3 or its proposed ADRs. The source audit clarified the requirement lifecycle, added ID-level acceptance-case traceability, separated per-check/aggregate/reproducibility outcomes, and made release ownership explicit; these changes remain proposed.
+**Source:** PR #3 draft, branch `feature/advanced-assurance-aa01-mainline`, audited head `0ee2edb9fe136bba729483e56d5c450421fa6e80`. The requirement statements below are preserved from the source draft; the mapping is an integration proposal, not acceptance of PR #3 or its proposed ADRs. The source audit clarified the requirement lifecycle, added ID-level acceptance-case traceability, separated per-check/aggregate/reproducibility outcomes, and made release ownership explicit; these changes remain proposed.
 
 | Requirement ID | Priority | Requirement | Proposed architecture owner | Acceptance test target | Evidence artifact | Status |
 |---|---|---|---|---|---|---|
