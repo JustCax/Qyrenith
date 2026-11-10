@@ -2,12 +2,12 @@
 
 ## 1. Release principle
 
-1.2.0 is complete only when all accepted requirements across the seventeen normative specifications are implemented, tested, integrated, documented, and supported by retained evidence. The deep-audit README is the navigation index. A specification, stub, placeholder, TODO, or passing narrow unit test does not constitute feature completion.
+1.2.0 is complete only when all accepted requirements across the eighteen normative specifications are implemented, tested, integrated, documented, and supported by retained evidence. The deep-audit README is the navigation index. A specification, stub, placeholder, TODO, or passing narrow unit test does not constitute feature completion.
 
 ## 2. Mandatory sequence
 
 ### Phase 0 — Documentation baseline
-- Create and cross-link all seventeen normative specifications and the specification index.
+- Create and cross-link all eighteen normative specifications and the specification index.
 - Maintain `REQUIREMENT_TRACEABILITY_MATRIX.md` as the authoritative requirement-to-implementation/test/evidence/dependency/status map.
 - Resolve contradictions with existing public/internal docs.
 - Review all security, trust, permission, isolation, and non-claim language.
@@ -125,7 +125,8 @@ The six product pillars map onto the existing five planes in `UNIVERSAL_SOFTWARE
 - `REPRODUCIBILITY_AND_CROSS_ENVIRONMENT_ASSURANCE_SPEC.md`: extends the existing lab/evidence model.
 - `OPTIMIZATION_AND_REPAIR_INTELLIGENCE_SPEC.md`: controlled optimization and repair.
 - `ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md`: crosswalk for the separate AA-01 draft and PR #3 disposition.
-- `ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md`: detailed alternatives and recommended defaults for the seven AA-01 owner decisions; proposal only until explicitly approved.
+- `ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md`: owner-approved seven-decision AA-01 design baseline; backend/profile details remain deferred where explicitly stated.
+- `EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md`: owner-approved first-class extension ecosystem, qualification, exact support scope, lifecycle, and compatibility contract.
 - `RESEARCH_AND_STANDARDS_ALIGNMENT.md`: source register and interoperability consequences.
 - DI-001..DI-081: proposed requirements in the authoritative matrix.
 - RCA-01..RCA-12 and OI-01..OI-10: add to the authoritative matrix before implementation.
@@ -142,12 +143,13 @@ The separate AA-01 draft is a cross-cutting assurance contract, not a fifteenth 
 The PR #3 draft contributes 70 proposed AA requirement IDs across eleven groups, including 55 P0 requirements. They are tracked in `REQUIREMENT_TRACEABILITY_MATRIX.md` as `PROPOSED`; the corrected PR #3 acceptance matrix maps all 70 IDs to an architecture owner, threat references, and a reserved acceptance-test ID. These are planned test identifiers, not existing test code or verification evidence. This does not accept PR #3, its four proposed ADRs, or its architecture. See `ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md` for the full mapping, overlap rules, seven unresolved AA-01 decisions and safe PR disposition.
 
 Before implementation:
-- review ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md and resolve or explicitly defer the seven AA-01 open review questions;
+- implement the approved AA-01 decision directions from ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md only after reconciling the required contracts;
 - reconcile ADR-AA-001..004 with existing trust, migration authorization, QDAS ledger/lineage and native-engine policies;
 - approve the exact requirement baseline and acceptance methods, including the distinction between SPECIFIED, IMPLEMENTED and VERIFIED;
 - preserve Phase 1 migration hardening and Phase 2 QDAS-first order;
 - define implementation slices against the existing module contracts rather than creating a parallel runtime;
-- keep per-check outcome states, aggregate assurance decisions and reproducibility outcomes as separate vocabularies.
+- keep per-check outcomes, aggregate assurance decisions, reproducibility outcomes, and extension support classifications as separate vocabularies;
+- implement extensibility through versioned contracts, capability discovery, qualification, support manifests, and conformance—not an untrusted code-loading shortcut.
 
 ## 9. Verification while GitHub Actions are disabled
 
@@ -166,4 +168,4 @@ If equivalent independent verification is unavailable, release readiness remains
 
 ## 10. Proposal governance
 
-The six-pillar grouping, 27-domain envelope, reproducibility extension and optimization specification are proposals pending owner review. They do not automatically amend accepted architecture or remove requirements. Before implementation, review overlaps with existing modules, add RCA/OI IDs to the matrix, approve exact 1.2.0 vertical slices and record architecture decisions.
+The six-pillar grouping, 27-domain envelope, reproducibility extension and optimization specification remain proposals pending owner review. The extensibility and supportability architecture is an owner-approved requirement, but its implementation and each individual extension's qualification remain unverified. They do not automatically amend accepted architecture or remove requirements. Before implementation, review overlaps with existing modules, add RCA/OI IDs to the matrix, approve exact 1.2.0 vertical slices and record architecture decisions.
