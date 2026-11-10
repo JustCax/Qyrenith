@@ -446,3 +446,29 @@ Update this matrix in the same change that implements a requirement. A status ch
 | DI-081 | Domain-Specific Diagnostic Packs | Keep domain knowledge separate while exposing common findings/evidence and unsupported states. | Minecraft/migration foundations and Node/Rust domain tests | tests/test_node_domain.py; tests/test_rust_domain.py; tests/test_migration_benchmarks_120.py | Verification evidence, limitations and meta-audit result | Execution boundary, policy and independent oracle | PARTIAL |
 
 DI IDs are stable and reserved. Do not mark them IMPLEMENTED/TESTED/VERIFIED based on documentation or adjacent legacy code. PARTIAL means only that relevant foundations were identified; exact requirement acceptance remains outstanding.
+
+
+## Owner-approved extensibility and supportability requirements (EX-001..EX-016)
+
+These requirements were approved as a first-class 1.2.0 architectural requirement on 2026-11-10. Their specification is accepted; implementation status remains NOT_STARTED unless independently evidenced. They complement LA-01..LA-13 and do not create a sixth architectural plane.
+
+| Requirement | Specification | Planned implementation target | Positive and negative/adversarial acceptance | Evidence artifact | Dependencies | Status |
+|---|---|---|---|---|---|---|
+| EX-001 | Stable, versioned extension API and protocol contracts | Extension contract package and schemas | API compatibility, malformed contract, major-version mismatch | Contract manifest and conformance report | Master architecture; LA-06 | NOT_STARTED |
+| EX-002 | Capability discovery is non-executing and side-effect free | Extension catalog/discovery | Prove discovery never launches provider code; malformed declarations remain visible | Discovery trace and manifest validation | EX-001; LA-01 | NOT_STARTED |
+| EX-003 | Exact multidimensional support manifests | Support manifest and compatibility model | Exact-version match, wildcard/scope widening rejection, N/A dimension handling | Scope decision and compatibility matrix | EX-001; LA-02 | NOT_STARTED |
+| EX-004 | Separate support classifications from execution/verdict outcomes | Support-state model | Ensure support states cannot become PASS/ASSURED or hide NOT_RUN/UNSUPPORTED checks | Typed state and policy test evidence | EX-003; AA-01 outcome decisions | NOT_STARTED |
+| EX-005 | Explicit extension qualification lifecycle | Qualification service and records | Positive/negative/boundary/adversarial conformance; expiry and revocation | Qualification record and suite digest | EX-001; EX-003; LA-07 | NOT_STARTED |
+| EX-006 | Provenance and immutable implementation identity | Extension provenance and digest validation | Digest substitution, publisher mismatch, tampered package | Provenance record and content digest | Evidence model; trust store | NOT_STARTED |
+| EX-007 | Least-privilege capability and permission grants | Central policy/authorization integration | Permission escalation, undeclared capability, revocation | Scope-bound authorization and execution evidence | QDAS; migration authorization; RVL | NOT_STARTED |
+| EX-008 | Extensions cannot self-qualify, self-authorize, or issue final verdicts | Authority enforcement | Attempted self-qualification, policy override, evidence rewrite, verdict forgery | Independent authority-separation test results | Master trust model; AA-01 | NOT_STARTED |
+| EX-009 | Extension execution uses central isolation and resource contracts | Provider execution boundary | Filesystem/process/network escape and resource exhaustion | RVL isolation evidence | RVL L0-L5; EX-007 | NOT_STARTED |
+| EX-010 | Versioned conformance and compatibility test suites | Extension qualification harness | Regression, backward-compatibility and unsupported-version fixtures | Versioned suite manifest and results | EX-005; meta-audit | NOT_STARTED |
+| EX-011 | Explicit extension lifecycle and deprecation policy | Registry/catalog lifecycle metadata | Deprecated, revoked, expired and removed extension behavior | Lifecycle transition records | EX-001; evidence model | NOT_STARTED |
+| EX-012 | Conflict detection and deterministic extension resolution | Catalog resolver and capability negotiation | Duplicate IDs, conflicting providers, nondeterministic selection | Resolution trace and conflict report | EX-002; EX-003 | NOT_STARTED |
+| EX-013 | Local/offline-first extension catalog; remote sources optional | Local registry and optional remote catalog adapter | No-network operation; remote source blocked by default | Registry provenance and network-policy evidence | AA-01 network decision; EX-006 | NOT_STARTED |
+| EX-014 | Extension categories compose shared engines, not parallel authorities | Plane integration contracts | Detect duplicate runner, evidence ledger, policy engine or verdict authority | Architecture conformance report | Five-plane master architecture; QDAS; RVL | NOT_STARTED |
+| EX-015 | Support claims disclose feature-level coverage and limitations | Support report and coverage evaluator | Partial feature/version coverage, unsupported feature, stale qualification | Machine-readable support matrix and user report | EX-003; audit maturity/coverage | NOT_STARTED |
+| EX-016 | Extension changes trigger impact analysis and requalification | QDAS extension lifecycle integration | Changed digest/API/dependency invalidates qualification and dependent evidence | Invalidation and requalification lineage | QDAS; evidence lifecycle; EX-005 | NOT_STARTED |
+
+The EX specification is the normative source for these requirements. No extension is considered supported merely because it is discoverable, installable, present in a catalog, or described in documentation.

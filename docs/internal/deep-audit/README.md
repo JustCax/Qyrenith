@@ -28,6 +28,7 @@ This directory contains the normative engineering specifications for the 1.2.0 d
 | [Meta-audit and benchmarks](META_AUDIT_AND_BENCHMARK_SPEC.md) | Mutation fixtures, false positives, blind spots, metrics |
 | [Evidence and confidence](EVIDENCE_AND_CONFIDENCE_MODEL.md) | Provenance, confidence, verdict evidence, integrity |
 | [Language and domain adapters](LANGUAGE_AND_DOMAIN_ADAPTER_SPEC.md) | Native frontends, adapter contracts, capability qualification |
+| [Extensibility and supportability](EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md) | Versioned extension ecosystem, qualification, exact support scope, lifecycle, compatibility and trust |
 | [Audit maturity and coverage](AUDIT_MATURITY_AND_COVERAGE_MODEL.md) | Multidimensional support and honest maturity |
 | [Integrated reporting and orchestration](INTEGRATED_REPORTING_AND_ORCHESTRATION_SPEC.md) | Dependency scheduling, verdicts, coverage, report exports |
 | [Implementation and acceptance plan](QYRENITH_1_2_0_IMPLEMENTATION_AND_ACCEPTANCE_PLAN.md) | Phase gates, traceability, definition of done |
@@ -69,7 +70,8 @@ These proposals extend and map onto the existing five-plane architecture; they d
 | [Optimization and repair intelligence](OPTIMIZATION_AND_REPAIR_INTELLIGENCE_SPEC.md) | Controlled optimization experiments, multi-objective decisions and safe repair |
 | [Research and standards alignment](RESEARCH_AND_STANDARDS_ALIGNMENT.md) | Primary research sources and interoperability consequences |
 | [Advanced Assurance integration and PR #3 review](ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md) | AA-01 crosswalk, requirement mapping, proposed ADR reconciliation and PR disposition |
-| [AA-01 owner decision design proposal](ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md) | Alternatives, recommended defaults, semantics, and acceptance conditions for seven unresolved AA-01 decisions |
+| [AA-01 owner decision design](ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md) | Owner-approved decisions and their semantics, consequences, and acceptance conditions |
+| [AA-01 owner decision record](AA01_OWNER_DECISION_RECORD.md) | Explicit approval scope, accepted decisions, deferred details, and governance boundaries |
 
 The six pillars are a product-level grouping, not a replacement for control, analysis, execution, knowledge and evidence planes. The 27 domains are a target envelope; delivery remains dependency- and acceptance-gated.
 
@@ -78,9 +80,10 @@ The six pillars are a product-level grouping, not a replacement for control, ana
 - **DI-001..DI-081:** proposed diagnostic requirements, three per domain.
 - **RCA-01..RCA-12:** proposed reproducibility requirements.
 - **OI-01..OI-10:** proposed optimization requirements.
-- **AA-REQ-*** (70 IDs): proposed cross-cutting Advanced Assurance requirements from PR #3.
+- **AA-REQ-*** (70 IDs): proposed cross-cutting Advanced Assurance requirements from PR #3; the seven owner decision directions do not automatically accept this entire requirement family.
+- **EX-001..EX-016:** accepted extensibility/supportability requirements; implementation remains NOT_STARTED until evidence is produced.
 
-RCA, OI and AA requirement families are present in the authoritative traceability matrix with `PROPOSED` status. They must not be implemented as accepted release scope until owner approval.
+RCA, OI and the 70 PR #3 AA requirement IDs remain `PROPOSED` unless separately accepted. The AA-01 decision directions and EX-001..EX-016 design requirements are owner-approved; documentation approval does not establish implementation or verification.
 
 ## CI-disabled verification constraint
 
