@@ -27,6 +27,7 @@ This directory contains eighteen normative engineering specifications for the 1.
 | [Migration platform integration](MIGRATION_PLATFORM_INTEGRATION_SPEC.md) | End-to-end typed migration, authorization, execution, recovery |
 | [Meta-audit and benchmarks](META_AUDIT_AND_BENCHMARK_SPEC.md) | Mutation fixtures, false positives, blind spots, metrics |
 | [Evidence and confidence](EVIDENCE_AND_CONFIDENCE_MODEL.md) | Provenance, confidence, verdict evidence, integrity |
+| [Evidence store backend evaluation](EVIDENCE_STORE_BACKEND_EVALUATION.md) | Candidate storage designs, measurable comparison criteria, crash-recovery and fault-injection plan |
 | [Language and domain adapters](LANGUAGE_AND_DOMAIN_ADAPTER_SPEC.md) | Native frontends, adapter contracts, capability qualification |
 | [Extensibility and supportability](EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md) | Versioned extension ecosystem, qualification, exact support scope, lifecycle, compatibility and trust |
 | [Audit maturity and coverage](AUDIT_MATURITY_AND_COVERAGE_MODEL.md) | Multidimensional support and honest maturity |
