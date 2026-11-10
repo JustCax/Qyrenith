@@ -27,16 +27,16 @@ This matrix connects the stable requirement groups to architecture ownership, th
 | Requirement group | Architecture owner | Threat references | Verification method introduced by |
 |---|---|---|---|
 | AA-REQ-PROJ | Project Discovery / Project Model | 001–004 | AA-03 discovery and model tests |
-| AA-REQ-PLAN | Verification Planner / Authorization Gate | 011–013, 021 | AA-03 plan determinism and scope tests |
-| AA-REQ-CHK | Checker Registry / Runtime | 004–008, 022, 024 | AA-02 conformance and execution tests |
-| AA-REQ-EVD | Evidence Validator / Store | 008–011, 016, 019 | AA-04 schema, atomicity, integrity tests |
+| AA-REQ-PLAN | Verification Planner / Authorization Gate | 011–013, 021, 027 | AA-03 plan determinism and scope tests |
+| AA-REQ-CHK | Checker Registry / Runtime | 004–008, 022, 024, 027 | AA-02 conformance and execution tests |
+| AA-REQ-EVD | Evidence Validator / Store | 008–011, 016, 019, 025–026 | AA-04 schema, atomicity, integrity tests |
 | AA-REQ-POL | Policy Evaluator | 008, 012–014, 017, 023 | AA-05 exhaustive decision and exception tests |
-| AA-REQ-SEC | Discovery, Authorization, Runtime, Provider Boundary | 001–008, 014–016, 022, 024 | AA-02 and AA-07 adversarial tests |
+| AA-REQ-SEC | Discovery, Authorization, Runtime, Provider Boundary | 001–008, 014–016, 022, 024, 027 | AA-02 and AA-07 adversarial tests |
 | AA-REQ-RPT | Reporting Layer | 009–017, 023 | AA-05 report consistency and redaction tests |
 | AA-REQ-EXT | Provider and Adapter Boundary | 008, 014, 015, 017, 018 | AA-02 protocol tests; AA-07 provider simulations |
-| AA-REQ-CMP | Compatibility owner | 018, 020–022, 024 | AA-10 platform matrix and benchmark qualification |
-| AA-REQ-REL | Release Assurance / Evidence | 020–021 | AA-11 manifest, artifact-content, provenance, and publication-gate tests |
-| AA-REQ-NFR | Cross-cutting architecture owners | 003, 007, 019, 022 | Per-phase regression, schema compatibility, and supported-platform evidence |
+| AA-REQ-CMP | Compatibility owner | 018, 020–022, 024–026 | AA-10 platform matrix and benchmark qualification |
+| AA-REQ-REL | Release Assurance / Evidence | 020–021, 027 | AA-11 manifest, artifact-content, provenance, and publication-gate tests |
+| AA-REQ-NFR | Cross-cutting architecture owners | 003, 007, 019, 022, 025–027 | Per-phase regression, schema compatibility, and supported-platform evidence |
 
 ## 3. Requirement-level traceability
 
@@ -50,28 +50,28 @@ The following identifiers reserve one independently verifiable acceptance case f
 | `AA-REQ-PROJ-004` | P0 | Project Discovery / Project Model | 001–004 | `AA-TST-PROJ-004` |
 | `AA-REQ-PROJ-005` | P0 | Project Discovery / Project Model | 001–004 | `AA-TST-PROJ-005` |
 | `AA-REQ-PROJ-006` | P1 | Project Discovery / Project Model | 001–004 | `AA-TST-PROJ-006` |
-| `AA-REQ-PLAN-001` | P0 | Verification Planner / Authorization Gate | 011–013, 021 | `AA-TST-PLAN-001` |
-| `AA-REQ-PLAN-002` | P0 | Verification Planner / Authorization Gate | 011–013, 021 | `AA-TST-PLAN-002` |
-| `AA-REQ-PLAN-003` | P0 | Verification Planner / Authorization Gate | 011–013, 021 | `AA-TST-PLAN-003` |
-| `AA-REQ-PLAN-004` | P0 | Verification Planner / Authorization Gate | 011–013, 021 | `AA-TST-PLAN-004` |
-| `AA-REQ-PLAN-005` | P1 | Verification Planner / Authorization Gate | 011–013, 021 | `AA-TST-PLAN-005` |
-| `AA-REQ-PLAN-006` | P0 | Verification Planner / Authorization Gate | 011–013, 021 | `AA-TST-PLAN-006` |
-| `AA-REQ-CHK-001` | P0 | Checker Registry / Checker Runtime | 004–008, 022, 024 | `AA-TST-CHK-001` |
-| `AA-REQ-CHK-002` | P0 | Checker Registry / Checker Runtime | 004–008, 022, 024 | `AA-TST-CHK-002` |
-| `AA-REQ-CHK-003` | P0 | Checker Registry / Checker Runtime | 004–008, 022, 024 | `AA-TST-CHK-003` |
-| `AA-REQ-CHK-004` | P0 | Checker Registry / Checker Runtime | 004–008, 022, 024 | `AA-TST-CHK-004` |
-| `AA-REQ-CHK-005` | P0 | Checker Registry / Checker Runtime | 004–008, 022, 024 | `AA-TST-CHK-005` |
-| `AA-REQ-CHK-006` | P0 | Checker Registry / Checker Runtime | 004–008, 022, 024 | `AA-TST-CHK-006` |
-| `AA-REQ-CHK-007` | P0 | Checker Registry / Checker Runtime | 004–008, 022, 024 | `AA-TST-CHK-007` |
-| `AA-REQ-CHK-008` | P1 | Checker Registry / Checker Runtime | 004–008, 022, 024 | `AA-TST-CHK-008` |
-| `AA-REQ-EVD-001` | P0 | Evidence Validator / Evidence Store | 008–011, 016, 019 | `AA-TST-EVD-001` |
-| `AA-REQ-EVD-002` | P0 | Evidence Validator / Evidence Store | 008–011, 016, 019 | `AA-TST-EVD-002` |
-| `AA-REQ-EVD-003` | P0 | Evidence Validator / Evidence Store | 008–011, 016, 019 | `AA-TST-EVD-003` |
-| `AA-REQ-EVD-004` | P0 | Evidence Validator / Evidence Store | 008–011, 016, 019 | `AA-TST-EVD-004` |
-| `AA-REQ-EVD-005` | P0 | Evidence Validator / Evidence Store | 008–011, 016, 019 | `AA-TST-EVD-005` |
-| `AA-REQ-EVD-006` | P0 | Evidence Validator / Evidence Store | 008–011, 016, 019 | `AA-TST-EVD-006` |
-| `AA-REQ-EVD-007` | P0 | Evidence Validator / Evidence Store | 008–011, 016, 019 | `AA-TST-EVD-007` |
-| `AA-REQ-EVD-008` | P1 | Evidence Validator / Evidence Store | 008–011, 016, 019 | `AA-TST-EVD-008` |
+| `AA-REQ-PLAN-001` | P0 | Verification Planner / Authorization Gate | 011–013, 021, 027 | `AA-TST-PLAN-001` |
+| `AA-REQ-PLAN-002` | P0 | Verification Planner / Authorization Gate | 011–013, 021, 027 | `AA-TST-PLAN-002` |
+| `AA-REQ-PLAN-003` | P0 | Verification Planner / Authorization Gate | 011–013, 021, 027 | `AA-TST-PLAN-003` |
+| `AA-REQ-PLAN-004` | P0 | Verification Planner / Authorization Gate | 011–013, 021, 027 | `AA-TST-PLAN-004` |
+| `AA-REQ-PLAN-005` | P1 | Verification Planner / Authorization Gate | 011–013, 021, 027 | `AA-TST-PLAN-005` |
+| `AA-REQ-PLAN-006` | P0 | Verification Planner / Authorization Gate | 011–013, 021, 027 | `AA-TST-PLAN-006` |
+| `AA-REQ-CHK-001` | P0 | Checker Registry / Checker Runtime | 004–008, 022, 024, 027 | `AA-TST-CHK-001` |
+| `AA-REQ-CHK-002` | P0 | Checker Registry / Checker Runtime | 004–008, 022, 024, 027 | `AA-TST-CHK-002` |
+| `AA-REQ-CHK-003` | P0 | Checker Registry / Checker Runtime | 004–008, 022, 024, 027 | `AA-TST-CHK-003` |
+| `AA-REQ-CHK-004` | P0 | Checker Registry / Checker Runtime | 004–008, 022, 024, 027 | `AA-TST-CHK-004` |
+| `AA-REQ-CHK-005` | P0 | Checker Registry / Checker Runtime | 004–008, 022, 024, 027 | `AA-TST-CHK-005` |
+| `AA-REQ-CHK-006` | P0 | Checker Registry / Checker Runtime | 004–008, 022, 024, 027 | `AA-TST-CHK-006` |
+| `AA-REQ-CHK-007` | P0 | Checker Registry / Checker Runtime | 004–008, 022, 024, 027 | `AA-TST-CHK-007` |
+| `AA-REQ-CHK-008` | P1 | Checker Registry / Checker Runtime | 004–008, 022, 024, 027 | `AA-TST-CHK-008` |
+| `AA-REQ-EVD-001` | P0 | Evidence Validator / Evidence Store | 008–011, 016, 019, 025–026 | `AA-TST-EVD-001` |
+| `AA-REQ-EVD-002` | P0 | Evidence Validator / Evidence Store | 008–011, 016, 019, 025–026 | `AA-TST-EVD-002` |
+| `AA-REQ-EVD-003` | P0 | Evidence Validator / Evidence Store | 008–011, 016, 019, 025–026 | `AA-TST-EVD-003` |
+| `AA-REQ-EVD-004` | P0 | Evidence Validator / Evidence Store | 008–011, 016, 019, 025–026 | `AA-TST-EVD-004` |
+| `AA-REQ-EVD-005` | P0 | Evidence Validator / Evidence Store | 008–011, 016, 019, 025–026 | `AA-TST-EVD-005` |
+| `AA-REQ-EVD-006` | P0 | Evidence Validator / Evidence Store | 008–011, 016, 019, 025–026 | `AA-TST-EVD-006` |
+| `AA-REQ-EVD-007` | P0 | Evidence Validator / Evidence Store | 008–011, 016, 019, 025–026 | `AA-TST-EVD-007` |
+| `AA-REQ-EVD-008` | P1 | Evidence Validator / Evidence Store | 008–011, 016, 019, 025–026 | `AA-TST-EVD-008` |
 | `AA-REQ-POL-001` | P0 | Policy Evaluator | 008, 012–014, 017, 023 | `AA-TST-POL-001` |
 | `AA-REQ-POL-002` | P0 | Policy Evaluator | 008, 012–014, 017, 023 | `AA-TST-POL-002` |
 | `AA-REQ-POL-003` | P0 | Policy Evaluator | 008, 012–014, 017, 023 | `AA-TST-POL-003` |
@@ -79,16 +79,16 @@ The following identifiers reserve one independently verifiable acceptance case f
 | `AA-REQ-POL-005` | P0 | Policy Evaluator | 008, 012–014, 017, 023 | `AA-TST-POL-005` |
 | `AA-REQ-POL-006` | P0 | Policy Evaluator | 008, 012–014, 017, 023 | `AA-TST-POL-006` |
 | `AA-REQ-POL-007` | P1 | Policy Evaluator | 008, 012–014, 017, 023 | `AA-TST-POL-007` |
-| `AA-REQ-SEC-001` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024 | `AA-TST-SEC-001` |
-| `AA-REQ-SEC-002` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024 | `AA-TST-SEC-002` |
-| `AA-REQ-SEC-003` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024 | `AA-TST-SEC-003` |
-| `AA-REQ-SEC-004` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024 | `AA-TST-SEC-004` |
-| `AA-REQ-SEC-005` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024 | `AA-TST-SEC-005` |
-| `AA-REQ-SEC-006` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024 | `AA-TST-SEC-006` |
-| `AA-REQ-SEC-007` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024 | `AA-TST-SEC-007` |
-| `AA-REQ-SEC-008` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024 | `AA-TST-SEC-008` |
-| `AA-REQ-SEC-009` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024 | `AA-TST-SEC-009` |
-| `AA-REQ-SEC-010` | P1 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024 | `AA-TST-SEC-010` |
+| `AA-REQ-SEC-001` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024, 027 | `AA-TST-SEC-001` |
+| `AA-REQ-SEC-002` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024, 027 | `AA-TST-SEC-002` |
+| `AA-REQ-SEC-003` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024, 027 | `AA-TST-SEC-003` |
+| `AA-REQ-SEC-004` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024, 027 | `AA-TST-SEC-004` |
+| `AA-REQ-SEC-005` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024, 027 | `AA-TST-SEC-005` |
+| `AA-REQ-SEC-006` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024, 027 | `AA-TST-SEC-006` |
+| `AA-REQ-SEC-007` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024, 027 | `AA-TST-SEC-007` |
+| `AA-REQ-SEC-008` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024, 027 | `AA-TST-SEC-008` |
+| `AA-REQ-SEC-009` | P0 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024, 027 | `AA-TST-SEC-009` |
+| `AA-REQ-SEC-010` | P1 | Discovery / Authorization / Runtime / Provider Boundary | 001–008, 014–016, 022, 024, 027 | `AA-TST-SEC-010` |
 | `AA-REQ-RPT-001` | P0 | Reporting Layer | 009–017, 023 | `AA-TST-RPT-001` |
 | `AA-REQ-RPT-002` | P0 | Reporting Layer | 009–017, 023 | `AA-TST-RPT-002` |
 | `AA-REQ-RPT-003` | P0 | Reporting Layer | 009–017, 023 | `AA-TST-RPT-003` |
@@ -100,20 +100,20 @@ The following identifiers reserve one independently verifiable acceptance case f
 | `AA-REQ-EXT-003` | P0 | Provider / Adapter Boundary | 008, 014, 015, 017, 018 | `AA-TST-EXT-003` |
 | `AA-REQ-EXT-004` | P1 | Provider / Adapter Boundary | 008, 014, 015, 017, 018 | `AA-TST-EXT-004` |
 | `AA-REQ-EXT-005` | P1 | Provider / Adapter Boundary | 008, 014, 015, 017, 018 | `AA-TST-EXT-005` |
-| `AA-REQ-CMP-001` | P0 | Compatibility owner | 018, 020–022, 024 | `AA-TST-CMP-001` |
-| `AA-REQ-CMP-002` | P0 | Compatibility owner | 018, 020–022, 024 | `AA-TST-CMP-002` |
-| `AA-REQ-CMP-003` | P1 | Compatibility owner | 018, 020–022, 024 | `AA-TST-CMP-003` |
-| `AA-REQ-REL-001` | P0 | Release Assurance / Evidence | 020–021 | `AA-TST-REL-001` |
-| `AA-REQ-REL-002` | P0 | Release Assurance / Evidence | 020–021 | `AA-TST-REL-002` |
-| `AA-REQ-REL-003` | P0 | Release Assurance / Evidence | 020–021 | `AA-TST-REL-003` |
-| `AA-REQ-REL-004` | P0 | Release Assurance / Evidence | 020–021 | `AA-TST-REL-004` |
-| `AA-REQ-NFR-001` | P0 | Cross-cutting architecture owners | 003, 007, 019, 022 | `AA-TST-NFR-001` |
-| `AA-REQ-NFR-002` | P0 | Cross-cutting architecture owners | 003, 007, 019, 022 | `AA-TST-NFR-002` |
-| `AA-REQ-NFR-003` | P0 | Cross-cutting architecture owners | 003, 007, 019, 022 | `AA-TST-NFR-003` |
-| `AA-REQ-NFR-004` | P0 | Cross-cutting architecture owners | 003, 007, 019, 022 | `AA-TST-NFR-004` |
-| `AA-REQ-NFR-005` | P1 | Cross-cutting architecture owners | 003, 007, 019, 022 | `AA-TST-NFR-005` |
-| `AA-REQ-NFR-006` | P1 | Cross-cutting architecture owners | 003, 007, 019, 022 | `AA-TST-NFR-006` |
-| `AA-REQ-NFR-007` | P1 | Cross-cutting architecture owners | 003, 007, 019, 022 | `AA-TST-NFR-007` |
+| `AA-REQ-CMP-001` | P0 | Compatibility owner | 018, 020–022, 024–026 | `AA-TST-CMP-001` |
+| `AA-REQ-CMP-002` | P0 | Compatibility owner | 018, 020–022, 024–026 | `AA-TST-CMP-002` |
+| `AA-REQ-CMP-003` | P1 | Compatibility owner | 018, 020–022, 024–026 | `AA-TST-CMP-003` |
+| `AA-REQ-REL-001` | P0 | Release Assurance / Evidence | 020–021, 027 | `AA-TST-REL-001` |
+| `AA-REQ-REL-002` | P0 | Release Assurance / Evidence | 020–021, 027 | `AA-TST-REL-002` |
+| `AA-REQ-REL-003` | P0 | Release Assurance / Evidence | 020–021, 027 | `AA-TST-REL-003` |
+| `AA-REQ-REL-004` | P0 | Release Assurance / Evidence | 020–021, 027 | `AA-TST-REL-004` |
+| `AA-REQ-NFR-001` | P0 | Cross-cutting architecture owners | 003, 007, 019, 022, 025–027 | `AA-TST-NFR-001` |
+| `AA-REQ-NFR-002` | P0 | Cross-cutting architecture owners | 003, 007, 019, 022, 025–027 | `AA-TST-NFR-002` |
+| `AA-REQ-NFR-003` | P0 | Cross-cutting architecture owners | 003, 007, 019, 022, 025–027 | `AA-TST-NFR-003` |
+| `AA-REQ-NFR-004` | P0 | Cross-cutting architecture owners | 003, 007, 019, 022, 025–027 | `AA-TST-NFR-004` |
+| `AA-REQ-NFR-005` | P1 | Cross-cutting architecture owners | 003, 007, 019, 022, 025–027 | `AA-TST-NFR-005` |
+| `AA-REQ-NFR-006` | P1 | Cross-cutting architecture owners | 003, 007, 019, 022, 025–027 | `AA-TST-NFR-006` |
+| `AA-REQ-NFR-007` | P1 | Cross-cutting architecture owners | 003, 007, 019, 022, 025–027 | `AA-TST-NFR-007` |
 
 ## 4. P0 requirement acceptance methods
 
