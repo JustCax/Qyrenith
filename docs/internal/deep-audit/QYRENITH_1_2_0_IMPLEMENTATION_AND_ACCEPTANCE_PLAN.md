@@ -133,6 +133,7 @@ The six product pillars map onto the existing five planes in `UNIVERSAL_SOFTWARE
 - `EVIDENCE_STORE_BACKEND_EVALUATION.md`: common backend comparison and fault-injection protocol; no physical backend is selected until evidence is reviewed.
 - `CHECKER_CATALOG_AND_PROFILE_DESIGN.md`: check identity, support resolution, immutable profile manifests, resource budgets, and aggregate assurance rules; final profile inventories remain deferred.
 - `AA_REQUIREMENT_RECONCILIATION.md`: review of all 70 proposed PR #3 AA requirements; owner disposition remains pending and IDs remain PROPOSED.
+- `AA_ADR_RECONCILIATION_REVIEW.md`: standalone reconciliation summary for the four AA ADR drafts; owner acceptance remains pending.
 - `EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md`: owner-approved first-class extension ecosystem, qualification, exact support scope, lifecycle, and compatibility contract.
 - `RESEARCH_AND_STANDARDS_ALIGNMENT.md`: source register and interoperability consequences.
 - DI-001..DI-081: proposed requirements in the authoritative matrix.
