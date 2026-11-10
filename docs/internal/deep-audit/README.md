@@ -53,10 +53,6 @@ This directory contains eighteen normative engineering specifications for the 1.
 - **DA-14:** implementation plan, migration integration (MI-01..MI-15), and integrated reporting (IR-01..IR-14).
 - **QDAS-01..QDAS-22:** dedicated QDAS requirements.
 
-## Global completion rule
-
-Every requirement must map to implementation, positive test, negative/adversarial test, evidence artifact, and an explicit status. Documentation alone never satisfies an implementation requirement. Missing mandatory evidence is a blocker, not a pass.
-
 ## Universal software intelligence expansion
 
 These proposals extend and map onto the existing five-plane architecture; they do not silently amend accepted architecture or claim implementation.
@@ -69,11 +65,20 @@ These proposals extend and map onto the existing five-plane architecture; they d
 | [Reproducibility and cross-environment assurance](REPRODUCIBILITY_AND_CROSS_ENVIRONMENT_ASSURANCE_SPEC.md) | Reproducibility classes, manifests, independent replay and environment matrices |
 | [Optimization and repair intelligence](OPTIMIZATION_AND_REPAIR_INTELLIGENCE_SPEC.md) | Controlled optimization experiments, multi-objective decisions and safe repair |
 | [Research and standards alignment](RESEARCH_AND_STANDARDS_ALIGNMENT.md) | Primary research sources and interoperability consequences |
-| [Advanced Assurance integration and PR #3 review](ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md) | AA-01 crosswalk, requirement mapping, proposed ADR reconciliation and PR disposition |
+| [Advanced Assurance integration and PR #3 review](ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md) | AA-01 crosswalk, requirement mapping, ADR reconciliation and PR disposition |
 | [AA-01 owner decision design](ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md) | Owner-approved decisions and their semantics, consequences, and acceptance conditions |
 | [AA-01 owner decision record](AA01_OWNER_DECISION_RECORD.md) | Explicit approval scope, accepted decisions, deferred details, and governance boundaries |
 
-The six pillars are a product-level grouping, not a replacement for control, analysis, execution, knowledge and evidence planes. The 27 domains are a target envelope; delivery remains dependency- and acceptance-gated.
+## Advanced Assurance decision records
+
+The following ADR drafts are retained as selectively reconciled source material from PR #3. Their status remains **PROPOSED — ADR acceptance pending**; the owner's seven AA-01 decision directions constrain their content but do not automatically accept these four ADRs or PR #3 as a whole.
+
+| ADR | Scope |
+|---|---|
+| [ADR-AA-001 — Authority separation](../ARCHITECTURE_DECISION_RECORDS/ADR-AA-001-authority-separation.md) | Observation, evidence validation, qualification, authorization, policy verdict and reporting authority |
+| [ADR-AA-002 — Side-effect authorization](../ARCHITECTURE_DECISION_RECORDS/ADR-AA-002-explicit-side-effect-authorization.md) | Exact-scope authorization, RVL L0–L5, host enforcement and default-deny network |
+| [ADR-AA-003 — Evidence lifecycle](../ARCHITECTURE_DECISION_RECORDS/ADR-AA-003-evidence-lifecycle.md) | One logical QDAS evidence system, immutable artifacts, atomicity and deferred backend choice |
+| [ADR-AA-004 — Standard-library-first core](../ARCHITECTURE_DECISION_RECORDS/ADR-AA-004-standard-library-first-core.md) | Native core, optional qualified providers, dependency governance and offline-first operation |
 
 ## Additional requirement families
 
