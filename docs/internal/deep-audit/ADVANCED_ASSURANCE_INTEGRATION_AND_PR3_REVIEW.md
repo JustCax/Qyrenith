@@ -104,7 +104,7 @@ RCA, OI and AA requirement families are now listed in the traceability matrix as
 
 Recommended disposition:
 
-1. Keep PR #3 open and draft; do not merge it independently into `main`.
+1. Keep PR #3 open and draft. It must not be merged into `main`; if its content is accepted, integrate it only into `feature/1.2.0-universal-migration-core`.
 2. Review the requirement and architecture crosswalk in this document.
 3. Resolve or explicitly defer the seven AA-01 open decisions and compare each proposed ADR against the existing master architecture and migration authorization/evidence schemas.
 4. If accepted, retain the stable AA requirement IDs and proposed ADR content, but integrate them into the 1.2.0 branch as reviewed documents. Prefer reviewed, selective integration over blindly merging the entire divergent PR branch. Preserve PR #3 as the historical review source until the owner decides whether to close it.
