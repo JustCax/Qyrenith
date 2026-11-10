@@ -20,8 +20,8 @@ Do not merge PR #3 independently into `main`. Keep it draft as a separate source
 Repository and PR state observed on 2026-11-10 after the AA-01 decision-design documentation commit:
 
 - `main` HEAD: `2cc0a0c3d34bb056ee8aeb2f16529fe608a7536a`. This review did not modify `main`.
-- 1.2.0 branch HEAD: `61df2885d0721c8318ad418dd0d0590698d4096b`.
-- PR #9 is the release PR from `feature/1.2.0-universal-migration-core` to `main`. It remains open/draft and unmerged. Its current comparison is 662 commits ahead and 1 behind `main`, across 124 changed files. The large diff requires a separate release review; GitHub's mergeable flag is not an independent quality review.
+- The 1.2.0 branch continues to receive documentation-only planning commits; consult PR #9 for its live head rather than relying on a historical hash embedded in this review.
+- PR #9 is the release PR from `feature/1.2.0-universal-migration-core` to `main`. It remains open/draft and unmerged. Its comparison includes substantial pre-existing migration-platform work and the specification set; exact ahead/behind and changed-file counts are time-dependent and must be rechecked before release. The large diff requires a separate release review; GitHub's mergeable flag is not an independent quality review.
 - PR #3 remains open/draft and unmerged, with head `0ee2edb9fe136bba729483e56d5c450421fa6e80`, targeting `main`. Its current comparison is 14 commits ahead and 11 behind `main`, across 13 paths: eleven AA-01 documentation/ADR/provenance files and two workflow deletions. It contains no implementation code. Do not merge it into `main`; any accepted content is integrated into the 1.2.0 branch only.
 - The `.github/workflows/` trees on `main`, the 1.2.0 branch, and PR #3 are empty. No workflow file was added by this documentation update.
 - The latest observed Actions runs were created on 2026-11-09 13:15:35 UTC, before the November 10 documentation commits. No newer run was observed. GitHub Actions were disabled by the owner for billing reasons; no CI was run for these commits. Historical runs do not verify the current heads.
@@ -65,16 +65,16 @@ The AA requirements are platform-level contracts. They must not duplicate the do
 
 ## 5. Reconciliation of PR #3 proposed ADRs
 
-All four ADRs on PR #3 are still marked **Proposed for AA-01 acceptance**. They are not accepted architecture decisions merely because they are named ADRs.
+The four PR #3 ADRs were selectively recreated on the 1.2.0 branch in reconciled form. Their status remains **RECONCILED PROPOSAL — OWNER ACCEPTANCE REQUIRED**; none is marked ACCEPTED.
 
-| ADR | Reconciliation result on 2026-11-10 | Remaining owner decision |
-|---|---|---|
-| ADR-AA-001 — authority separation | Rewritten to align observation, evidence validation, qualification, authorization, policy verdict and reporting authorities; keeps per-check, aggregate assurance, reproducibility and support vocabularies separate. | Owner acceptance of this ADR draft; no new authority or sixth plane is introduced. |
-| ADR-AA-002 — explicit side-effect authorization | Rewritten to bind authorization to exact snapshot/plan/action/scope; separates authorization from host-enforced RVL L0–L5 isolation; includes default-deny network and no network-dependent mandatory check in 1.2.0. | Owner acceptance of this ADR draft; platform-specific enforcement remains independently qualified. |
-| ADR-AA-003 — evidence lifecycle | Rewritten around one logical QDAS event journal, content-addressed immutable artifacts and optional rebuildable non-authoritative index; physical backend remains deferred pending comparison. | Owner acceptance of this ADR draft; backend selection remains a separate deferred decision. |
-| ADR-AA-004 — standard-library-first core | Rewritten to preserve native/stdlib-first core while making qualified extensions and optional providers first-class; adds dependency governance and offline-first constraints. | Owner acceptance of this ADR draft; no particular provider or mandatory dependency is approved. |
+| Reconciled ADR | 1.2.0 branch document | Reconciliation result | Remaining owner gate |
+|---|---|---|---|
+| ADR-AA-001 — authority separation | `docs/internal/ARCHITECTURE_DECISION_RECORDS/ADR-AA-001-authority-separation.md` | Separates observation, evidence validation, policy evaluation, reporting, and independent verification; preserves authority within the existing planes. | Explicit owner acceptance of the reconciled authority contract. |
+| ADR-AA-002 — side-effect authorization | `docs/internal/ARCHITECTURE_DECISION_RECORDS/ADR-AA-002-explicit-side-effect-authorization.md` | Adds exact plan/snapshot/action scope, authenticated host approval, RVL enforcement, no silent downgrade, and network default-deny. | Explicit owner acceptance of the reconciled authorization contract. |
+| ADR-AA-003 — evidence lifecycle | `docs/internal/ARCHITECTURE_DECISION_RECORDS/ADR-AA-003-evidence-lifecycle.md` | Reuses the QDAS canonical journal, immutable artifacts, derived index, and separation of integrity/authenticity/truth. | Explicit owner acceptance; physical backend remains deferred. |
+| ADR-AA-004 — standard-library-first core | `docs/internal/ARCHITECTURE_DECISION_RECORDS/ADR-AA-004-standard-library-first-core.md` | Preserves a standard-library-first core with qualified, least-privilege optional providers and exact support scopes. | Explicit owner acceptance of the reconciled dependency/provider contract. |
 
-The four ADRs now exist as selectively reconciled drafts on the 1.2.0 branch under `docs/internal/ARCHITECTURE_DECISION_RECORDS/`. Their status remains **PROPOSED — ADR acceptance pending**. The owner's seven AA-01 decision directions constrain these drafts but do not automatically accept them, all 70 AA requirements, or PR #3 as a whole.
+The complete crosswalk, invariants, remaining gates, and non-claims are in `AA_ADR_RECONCILIATION_REVIEW.md`. Selective document integration is not a merge of PR #3 and does not accept all 70 proposed AA requirements.
 
 ## 6. AA-01 owner decisions — resolved on 2026-11-10
 
@@ -98,7 +98,7 @@ The RCA-01..RCA-12 requirements define reproducibility across build, tests, diag
 
 The OI-01..OI-10 requirements define measured optimization and safe repair. They extend QDAS, root-cause analysis, dynamic audit, formal verification, reproducibility and meta-audit; they do not authorize automatic code mutation.
 
-RCA, OI and the 70 PR #3 AA requirement IDs remain `PROPOSED` in the traceability matrix unless separately accepted. The seven AA-01 decision directions are approved design constraints, not blanket acceptance of those requirement families.
+RCA, OI and the 70 PR #3 AA requirement IDs remain `PROPOSED` in the traceability matrix unless separately accepted. The seven AA-01 decision directions are approved design constraints, not blanket acceptance of those requirement families. The four ADRs remain reconciled proposals pending explicit owner acceptance.
 
 ## 8. PR #3 disposition and safe integration sequence
 
@@ -106,16 +106,16 @@ Recommended disposition:
 
 1. Keep PR #3 open and draft. It must not be merged into `main`; if its content is accepted, integrate it only into `feature/1.2.0-universal-migration-core`.
 2. Review the requirement and architecture crosswalk in this document.
-3. The seven AA-01 decision directions are resolved; reconcile their consequences and compare each proposed ADR against the existing master architecture and migration authorization/evidence schemas.
-4. If accepted, retain the stable AA requirement IDs and proposed ADR content, but integrate them into the 1.2.0 branch as reviewed documents. Prefer reviewed, selective integration over blindly merging the entire divergent PR branch. Preserve PR #3 as the historical review source until the owner decides whether to close it.
-5. Update the 1.2.0 plan and traceability matrix in the same change.
-6. Only then design implementation slices. AA-02 checker contract/runtime and AA-03 project model/planning must not bypass the Phase 1 migration safety gate or Phase 2 QDAS-first integration sequence.
+3. The seven AA-01 decision directions are resolved. The four ADRs are reconciled as proposals and selectively present on the 1.2.0 branch; obtain explicit owner acceptance before treating them as accepted architecture.
+4. Complete the legacy outcome inventory/mapping, evidence-backend comparison, checker catalog/resource model, and extension contract boundary work.
+5. Update the 1.2.0 plan and traceability matrix alongside every accepted requirement or ADR change.
+6. Only then finalize implementation slices. AA-02 checker contract/runtime and AA-03 project model/planning must not bypass the Phase 1 migration safety gate or Phase 2 QDAS-first integration sequence.
 
 PR #9 is the release PR for the 1.2.0 branch and remains open/draft against main; it is not an internal integration target. PR #3 remains a separate source/review PR. Any accepted PR #3 content is integrated into the 1.2.0 branch only. No PR merge, branch retargeting, rebase, close, release or publication is authorized by this proposal.
 
 ## 9. Verification and repository safety
 
-- The AA-01 specification corrections are documentation-only. No Python source, schema, or test files were changed.
+- The AA-01 decision and ADR reconciliation work is documentation-only. No Python source, schema, or test files were changed.
 - Two legacy workflow files were removed from the PR #3 branch as a separate repository-safety cleanup; the workflow directories on `main`, PR #3, and PR #9 are now empty.
 - The owner has disabled GitHub Actions for billing reasons. Do not restore workflows or initiate CI without explicit approval.
 - No new Actions run was observed after the November 10 branch commits. Historical Actions runs do not verify these revisions.
