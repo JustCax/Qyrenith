@@ -124,8 +124,9 @@ The six product pillars map onto the existing five planes in `UNIVERSAL_SOFTWARE
 - `DIAGNOSTIC_CAPABILITY_COVERAGE_MATRIX.md`: initial inventory, not verification.
 - `REPRODUCIBILITY_AND_CROSS_ENVIRONMENT_ASSURANCE_SPEC.md`: extends the existing lab/evidence model.
 - `OPTIMIZATION_AND_REPAIR_INTELLIGENCE_SPEC.md`: controlled optimization and repair.
-- `ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md`: crosswalk for the separate AA-01 draft and PR #3 disposition.
+- `ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md`: crosswalk for the separate AA-01 draft, reconciled ADRs, and PR #3 disposition.
 - `ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md`: owner-approved seven-decision AA-01 design baseline; backend/profile details remain deferred where explicitly stated.
+- `ARCHITECTURE_DECISION_RECORDS/ADR-AA-001..004`: selectively reconciled ADR drafts; all four remain PROPOSED pending explicit owner acceptance.
 - `EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md`: owner-approved first-class extension ecosystem, qualification, exact support scope, lifecycle, and compatibility contract.
 - `RESEARCH_AND_STANDARDS_ALIGNMENT.md`: source register and interoperability consequences.
 - DI-001..DI-081: proposed requirements in the authoritative matrix.
@@ -144,7 +145,7 @@ The PR #3 draft contributes 70 proposed AA requirement IDs across eleven groups,
 
 Before implementation:
 - implement the approved AA-01 decision directions from ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md only after reconciling the required contracts;
-- reconcile ADR-AA-001..004 with existing trust, migration authorization, QDAS ledger/lineage and native-engine policies;
+- obtain explicit owner disposition for the four reconciled ADR-AA-001..004 drafts; keep their status PROPOSED until individually accepted or rejected;
 - approve the exact requirement baseline and acceptance methods, including the distinction between SPECIFIED, IMPLEMENTED and VERIFIED;
 - preserve Phase 1 migration hardening and Phase 2 QDAS-first order;
 - define implementation slices against the existing module contracts rather than creating a parallel runtime;
