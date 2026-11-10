@@ -232,6 +232,7 @@ These decisions remain open until actual checker capabilities and resource measu
 - `REPRODUCIBLE_VERIFICATION_LAB_SPEC.md`
 - `EVIDENCE_AND_CONFIDENCE_MODEL.md`
 - `DEEP_AUDIT_MASTER_ARCHITECTURE.md`
+- `CHECKER_CATALOG_AND_RESOURCE_MODEL.md` (focused resource/scheduling detail)
 - `REQUIREMENT_TRACEABILITY_MATRIX.md`
 
 This design defines no implemented checker registry or published profile and makes no broad support claim.
