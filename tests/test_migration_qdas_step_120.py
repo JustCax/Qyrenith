@@ -5,7 +5,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from qyrenith_engine.migration.qdas_step import record_migration_step_with_qdas
+from qyrenith_engine.migration.qdas_step import (
+    MigrationEvidenceCommitError,
+    record_migration_step_with_qdas,
+)
 from qyrenith_engine.migration.assurance import AssuranceLedger, verify_assurance_chain, AssuranceLedgerError
 from qyrenith_engine.qdas.collector import QdasCaptureResult
 from qyrenith_engine.qdas.ledger import verify_qdas_ledger, QdasLedgerError
@@ -96,6 +99,53 @@ class TestQdasMigrationStep(unittest.TestCase):
             # Assurance ledger has one record
             assurance_records = verify_assurance_chain([assurance_record])
             self.assertEqual(len(assurance_records), 1)
+
+    def test_assurance_failure_exposes_committed_qdas_evidence_for_recovery(self):
+        class FailingAssuranceLedger:
+            def append(self, fields):
+                raise RuntimeError("simulated assurance write failure")
+
+        with tempfile.TemporaryDirectory() as directory:
+            from qyrenith_engine.qdas.ledger import QdasEventLedger
+            qdas_path = Path(directory) / "qdas.jsonl"
+            qdas = QdasEventLedger(qdas_path)
+
+            with self.assertRaises(MigrationEvidenceCommitError) as raised:
+                record_migration_step_with_qdas(
+                    bounded_report(),
+                    project=directory,
+                    qdas_ledger=qdas,
+                    assurance_ledger=FailingAssuranceLedger(),
+                    project_id="proj-alpha",
+                    project_revision="rev-1",
+                    workspace_id="ws-1",
+                    event_kind="BUILD",
+                    tool_name="python",
+                    tool_version="3.11",
+                    argv=["python", "-m", "build"],
+                    environment={"PYTHONPATH": "src"},
+                    run_id="run-recovery",
+                    step_id="step-recovery",
+                    transition_id="transition-recovery",
+                    source_identity='{"product_version":"1.21"}',
+                    target_identity='{"product_version":"1.21.1"}',
+                    plan_digest="a" * 64,
+                    pre_state_digest="b" * 64,
+                    worker_id="worker-fixture",
+                    worker_version="1.0.0",
+                    worker_status="WORKED",
+                    changed_files=[],
+                    verdict="UNKNOWN",
+                    created_at="2026-11-04T12:00:00Z",
+                )
+
+            error = raised.exception
+            records = verify_qdas_ledger(qdas_path)
+            self.assertEqual(len(records), 1)
+            self.assertEqual(error.event_digest, records[0]["event"]["event_digest"])
+            self.assertEqual(error.qdas_record_digest, records[0]["record_digest"])
+            self.assertIsInstance(error.capture_result, QdasCaptureResult)
+            self.assertIsInstance(error.__cause__, RuntimeError)
 
     def test_tampering_breaks_both_ledgers(self):
         with tempfile.TemporaryDirectory() as directory:
