@@ -157,6 +157,8 @@ def _run_process(
 
     buffers = {"stdout": bytearray(), "stderr": bytearray()}
     totals = {"stdout": 0, "stderr": 0}
+    captured_bytes = 0
+    capture_lock = threading.Lock()
     overflow = threading.Event()
     read_error = threading.Event()
     input_error = threading.Event()
@@ -179,10 +181,16 @@ def _run_process(
                 if not chunk:
                     break
                 totals[name] += len(chunk)
-                remaining = output_limit - len(buffers[name])
-                if remaining > 0:
-                    buffers[name].extend(chunk[:remaining])
-                if len(chunk) > remaining:
+                nonlocal_capture_overflow = False
+                with capture_lock:
+                    remaining = max(0, output_limit - captured_bytes)
+                    accepted = min(len(chunk), remaining)
+                    if accepted:
+                        buffers[name].extend(chunk[:accepted])
+                        # The budget is shared by stdout and stderr, not per stream.
+                        captured_bytes += accepted
+                    nonlocal_capture_overflow = len(chunk) > remaining
+                if nonlocal_capture_overflow:
                     overflow.set()
                     terminate_once()
                     break
