@@ -196,6 +196,10 @@ class TestQdasMigrationStep(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, "already active"):
                     reconcile_migration_evidence_commit(error, qdas, real_assurance)
 
+            # A persistent lock file from a crashed process is reusable:
+            # the kernel lock, not file existence, determines ownership.
+            recovery_lock.write_text("stale", encoding="ascii")
+
             original_qdas_record_digest = error.qdas_record_digest
             error.qdas_record_digest = "0" * 64
             with self.assertRaisesRegex(RuntimeError, "does not match the verified QDAS record"):
@@ -214,7 +218,6 @@ class TestQdasMigrationStep(unittest.TestCase):
                 real_assurance.path.name
                 + ".reconcile-" + error.event_digest + ".lock"
             )
-            stale_lock.write_text("stale", encoding="ascii")
             repeated = reconcile_migration_evidence_commit(
                 error, qdas, real_assurance
             )
