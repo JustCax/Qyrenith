@@ -1,6 +1,6 @@
 # Advanced Assurance Requirement Reconciliation — PR #3 to Qyrenith 1.2.0
 
-**Status:** REVIEW BASELINE — owner disposition pending; all 70 source requirements remain PROPOSED  
+**Status:** OWNER-ACCEPTED REQUIREMENT BASELINE — all 70 source requirements accepted on 2026-11-16  
 **Source:** PR #3, `feature/advanced-assurance-aa01-mainline`, source head `0ee2edb9fe136bba729483e56d5c450421fa6e80`  
 **Target:** `feature/1.2.0-universal-migration-core`  
 **Review date:** 2026-11-10  
@@ -8,11 +8,11 @@
 
 ## 1. Executive recommendation
 
-Retain the 70 stable AA requirement IDs as a proposed cross-cutting assurance contract, but do not accept PR #3 wholesale and do not create a separate AA product/runtime.
+Retain the 70 stable AA requirement IDs as an accepted cross-cutting assurance contract, but do not accept PR #3 wholesale and do not create a separate AA product/runtime.
 
 The requirements are broadly useful and align with the Qyrenith 1.2.0 direction. Most should remain as shared pipeline guarantees mapped onto the existing five planes, QDAS, RVL, the evidence model, the migration foundation, and the fourteen capability modules. Their presence must not create duplicate implementations of discovery, checker execution, evidence storage, policy, isolation, or reporting.
 
-**Recommended disposition:** retain all 70 IDs for traceability; reconcile wording and ownership; consolidate duplicate implementation targets with existing requirements; defer individual acceptance until the owner reviews the resulting baseline. No AA requirement is marked ACCEPTED by this document.
+**Owner disposition (2026-11-16): ACCEPT ALL 70 REQUIREMENTS** as a grouped cross-cutting assurance contract, preserving the eleven existing groups and stable IDs. The accepted requirements map to the existing five planes, QDAS, RVL, evidence model, migration foundation and capability modules; they do not create a parallel AA runtime.
 
 ## 2. Inventory and priority counts
 
@@ -29,7 +29,7 @@ The requirements are broadly useful and align with the Qyrenith 1.2.0 direction.
 | Compatibility/performance | AA-REQ-CMP-001..003 | 3 | 2 | 1 | RETAIN; map to support matrices, RVL and benchmark evidence |
 | Release assurance | AA-REQ-REL-001..004 | 4 | 4 | 0 | RETAIN; map to existing release manifest/provenance/publication gates |
 | Non-functional | AA-REQ-NFR-001..007 | 7 | 4 | 3 | RETAIN WITH DEPENDENCY/COMPATIBILITY RECONCILIATION |
-| **Total** | **AA-REQ-*** | **70** | **55** | **15** | **All remain PROPOSED pending owner disposition** |
+| **Total** | **AA-REQ-*** | **70** | **55** | **15** | **OWNER ACCEPTED — 2026-11-16** |
 
 ## 3. Group-by-group reconciliation
 
@@ -185,12 +185,12 @@ Primary integration: all five planes and the implementation/acceptance plan.
 
 ## 5. Acceptance and governance recommendation
 
-The owner should review the 70 requirements as a coherent baseline after the cross-document wording changes. Recommended owner disposition choices are ACCEPT, ACCEPT WITH SCOPE/WORDING CHANGES, DEFER, or REJECT for each requirement or coherent group.
+The owner reviewed and accepted all 70 requirements as a coherent baseline on 2026-11-16, preserving the eleven existing groups and stable IDs.
 
-Until that review:
-- all 70 AA requirement IDs remain PROPOSED;
-- their existing traceability rows remain PROPOSED;
-- no implementation status is advanced;
+Following the owner decision:
+- all 70 AA requirement IDs are ACCEPTED scope;
+- their traceability rows are ACCEPTED as requirements, while implementation status remains NOT_STARTED/PARTIAL/IMPLEMENTED only when supported by evidence;
+- no implementation or verification status is advanced by owner acceptance alone;
 - PR #3 remains open/draft and is not merged;
 - only selectively accepted documentation may be integrated into the 1.2.0 branch;
 - no PR is merged into `main`, and `main` remains frozen until 1.2.0 release approval.
@@ -207,4 +207,4 @@ Until that review:
 - `EVIDENCE_STORE_BACKEND_EVALUATION.md`
 - `REQUIREMENT_TRACEABILITY_MATRIX.md`
 
-This reconciliation is a recommendation for owner review, not acceptance of the 70 requirements or PR #3.
+This reconciliation records acceptance of the 70 requirements only; it does not accept PR #3 as a whole or certify implementation.
