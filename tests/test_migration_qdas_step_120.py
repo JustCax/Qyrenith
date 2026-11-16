@@ -190,12 +190,19 @@ class TestQdasMigrationStep(unittest.TestCase):
             self.assertEqual(repaired["status"], "LINKED")
             self.assertEqual(len(real_assurance.read()), 1)
 
-            # Re-running recovery after a successful commit is idempotent.
+            # Re-running recovery after a successful commit is idempotent,
+            # even if a stale recovery lock remains from a prior crash.
+            stale_lock = real_assurance.path.with_name(
+                real_assurance.path.name
+                + ".reconcile-" + error.event_digest + ".lock"
+            )
+            stale_lock.write_text("stale", encoding="ascii")
             repeated = reconcile_migration_evidence_commit(
                 error, qdas, real_assurance
             )
             self.assertEqual(repeated["status"], "LINKED")
             self.assertEqual(len(real_assurance.read()), 1)
+            self.assertTrue(stale_lock.exists())
 
     def test_reconciliation_detects_dangling_and_duplicate_assurance_references(self):
         with tempfile.TemporaryDirectory() as directory:
