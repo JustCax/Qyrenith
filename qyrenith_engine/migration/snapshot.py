@@ -476,6 +476,10 @@ def capture_project_snapshot(
             raise SnapshotError("project exceeds max_depth")
         try:
             before_dir = directory.stat(follow_symlinks=False)
+            if not stat.S_ISDIR(before_dir.st_mode) or stat.S_ISLNK(before_dir.st_mode):
+                raise SnapshotError(
+                    f"directory was replaced by a non-directory or symlink before traversal: {relative or '.'}"
+                )
             children = []
             with os.scandir(directory) as iterator:
                 for child in iterator:
