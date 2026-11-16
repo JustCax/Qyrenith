@@ -21,6 +21,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 import copy
+import os
 import re
 from typing import Any, Mapping, Sequence
 
@@ -118,8 +119,9 @@ def reconcile_migration_evidence_commit(
 
     The exact assurance payload is taken from the original exception, not
     reconstructed from caller-supplied metadata. Only an ORPHANED_QDAS_EVENT
-    may be repaired. The operation is idempotent after a successful append and
-    always re-verifies both ledgers before reporting LINKED.
+    may be repaired. A per-event exclusive lock serializes recovery attempts;
+    the operation is idempotent after a successful append and always re-verifies
+    both ledgers before reporting LINKED.
     """
     if not isinstance(error, MigrationEvidenceCommitError):
         raise TypeError("error must be a MigrationEvidenceCommitError")
@@ -128,41 +130,71 @@ def reconcile_migration_evidence_commit(
     if not isinstance(assurance_ledger, AssuranceLedger):
         raise TypeError("assurance_ledger must be an AssuranceLedger")
 
-    current = inspect_migration_evidence_link(
-        error.event_digest, qdas_ledger, assurance_ledger
-    )
-    if current["status"] == "LINKED":
-        return current
-    if current["status"] != "ORPHANED_QDAS_EVENT":
-        raise RuntimeError(
-            "refusing evidence repair from state %s" % current["status"]
-        )
-
     fields = copy.deepcopy(error.assurance_fields)
     evidence_ids = fields.get("evidence_ids")
     if not isinstance(evidence_ids, (list, tuple)) or error.event_digest not in evidence_ids:
         raise RuntimeError("recovery payload does not bind the original QDAS event")
 
+    assurance_ledger.path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = assurance_ledger.path.with_name(
+        assurance_ledger.path.name + ".reconcile-" + error.event_digest + ".lock"
+    )
+    lock_flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0)
+    lock_fd = None
+    lock_identity = None
     try:
-        assurance_ledger.append(fields)
-    except Exception:
-        # An append can report an error after replacement/fsync. Re-inspect
-        # before deciding whether the operation actually committed.
-        after_error = inspect_migration_evidence_link(
+        try:
+            lock_fd = os.open(lock_path, lock_flags, 0o600)
+        except FileExistsError as exc:
+            raise RuntimeError(
+                "evidence reconciliation is already active or a stale lock requires inspection"
+            ) from exc
+        lock_info = os.fstat(lock_fd)
+        lock_identity = (lock_info.st_dev, lock_info.st_ino)
+        lock_payload = str(os.getpid()).encode("ascii")
+        if os.write(lock_fd, lock_payload) != len(lock_payload):
+            raise OSError("could not write the complete evidence reconciliation lock")
+        os.fsync(lock_fd)
+
+        current = inspect_migration_evidence_link(
             error.event_digest, qdas_ledger, assurance_ledger
         )
-        if after_error["status"] == "LINKED":
-            return after_error
-        raise
+        if current["status"] == "LINKED":
+            return current
+        if current["status"] != "ORPHANED_QDAS_EVENT":
+            raise RuntimeError(
+                "refusing evidence repair from state %s" % current["status"]
+            )
 
-    repaired = inspect_migration_evidence_link(
-        error.event_digest, qdas_ledger, assurance_ledger
-    )
-    if repaired["status"] != "LINKED":
-        raise RuntimeError(
-            "assurance append returned but evidence link is %s" % repaired["status"]
+        try:
+            assurance_ledger.append(fields)
+        except Exception:
+            # An append can report an error after replacement/fsync. Re-inspect
+            # before deciding whether the operation actually committed.
+            after_error = inspect_migration_evidence_link(
+                error.event_digest, qdas_ledger, assurance_ledger
+            )
+            if after_error["status"] == "LINKED":
+                return after_error
+            raise
+
+        repaired = inspect_migration_evidence_link(
+            error.event_digest, qdas_ledger, assurance_ledger
         )
-    return repaired
+        if repaired["status"] != "LINKED":
+            raise RuntimeError(
+                "assurance append returned but evidence link is %s" % repaired["status"]
+            )
+        return repaired
+    finally:
+        if lock_fd is not None:
+            os.close(lock_fd)
+            try:
+                current_lock = os.lstat(lock_path)
+                if (current_lock.st_dev, current_lock.st_ino) == lock_identity:
+                    lock_path.unlink()
+            except FileNotFoundError:
+                pass
 
 
 def record_migration_step_with_qdas(
