@@ -99,7 +99,7 @@ The six-workstream source review is complete. It confirms useful integrity, fres
 
 ### Findings and limits
 
-- Windows execution now creates a suspended child, assigns it to a Job Object before resuming it, sets kill-on-close, and caps the job at 64 active processes. A Windows-only descendant-cleanup regression test was added but has not been run. This is process-tree containment, not filesystem/network isolation.
+- Windows execution now creates a suspended child, assigns it to a Job Object before resuming it, sets kill-on-close, and caps the job at 64 active processes. A Windows-only descendant-cleanup regression test was added but has not been run. This is process-tree containment, not filesystem/network isolation. The current resume path calls the undocumented `NtResumeProcess` export because `subprocess.Popen` does not expose the primary thread handle; this is not a stable documented Win32 contract and must be replaced or independently qualified before the Windows execution path can pass the safety gate. Job termination now checks and reports `TerminateJobObject` failure while still attempting the kill-on-close handle cleanup; a platform-independent mocked regression test was added but not executed.
 - POSIX process-group cleanup is process cleanup, not filesystem, network, secret, syscall, identity, or resource isolation.
 - The default environment is reduced, but callers can opt into inherited environment. Neither mode is an OS security boundary.
 - Timeout/output limits do not constrain CPU, memory, disk, network, child process creation, filesystem access, or access to credentials available to the invoking account.
