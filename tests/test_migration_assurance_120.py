@@ -59,6 +59,11 @@ class TestAssuranceLedger(unittest.TestCase):
             self.assertEqual(verified[0]["verdict"], "INCONCLUSIVE")
             self.assertEqual(verified[0]["record_digest"], appended["record_digest"])
 
+    def test_schema_declares_inconclusive_verdict(self):
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "migration-assurance-record.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        self.assertIn("INCONCLUSIVE", schema["properties"]["verdict"]["enum"])
+
     def test_worker_qualification_provenance_round_trips_through_chain_verifier(self):
         with tempfile.TemporaryDirectory() as directory:
             ledger = AssuranceLedger(Path(directory) / "assurance.jsonl")
