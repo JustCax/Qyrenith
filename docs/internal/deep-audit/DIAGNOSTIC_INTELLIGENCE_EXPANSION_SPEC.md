@@ -1,6 +1,6 @@
 # Diagnostic Intelligence Expansion Specification — Qyrenith 1.2.0
 
-**Status:** PROPOSED REQUIREMENTS — OWNER REVIEW REQUIRED  
+**Status:** OWNER-ACCEPTED 1.2.0 RELEASE SCOPE — 2026-11-16; implementation not certified  
 **Target:** 1.2.0 capability envelope; delivery is dependency- and evidence-gated  
 **Parent:** `DEEP_AUDIT_MASTER_ARCHITECTURE.md` and `UNIVERSAL_SOFTWARE_INTELLIGENCE_ARCHITECTURE.md`
 
@@ -8,7 +8,7 @@
 
 Define the complete diagnostic capability envelope: project understanding, language intelligence, security, dependencies, architecture, testing, runtime/production, repair, reporting, APIs/protocols, infrastructure, databases, resilience, compatibility, build/release, accessibility, privacy, documentation consistency, cost/resource efficiency, AI-agent assurance, project knowledge graph, attack-surface analysis, change impact, continuous assurance, forensics and domain packs.
 
-A requirement is a target contract, not an implementation claim. Current inventory status is in `DIAGNOSTIC_CAPABILITY_COVERAGE_MATRIX.md`.
+The owner accepted all 27 domains and their 81 stable DI-001..DI-081 requirement IDs for the 1.2.0 release scope on 2026-11-16. Acceptance defines delivery scope, not implementation, test, qualification, or verification status. A requirement is a target contract, not an implementation claim. Current inventory status is in `DIAGNOSTIC_CAPABILITY_COVERAGE_MATRIX.md`.
 
 ## 2. Design principles
 
@@ -323,4 +323,4 @@ DI-001 through DI-081 are stable, three per domain in the order listed. Append n
 
 ## 9. Non-claims
 
-This catalog does not claim all 27 domains are implemented, all languages/platforms are supported, all defects are detectable, absence of findings proves security, regressions can always be predicted, or arbitrary projects can be automatically repaired.
+This accepted scope does not claim all 27 domains are already implemented, all languages/platforms are supported, all defects are detectable, absence of findings proves security, regressions can always be predicted, or arbitrary projects can be automatically repaired.
