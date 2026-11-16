@@ -58,6 +58,10 @@ class OwnerTrustStoreTests(unittest.TestCase):
         _secure_windows_acl(
             self.path.with_name(self.path.name + ".key"), directory=False
         )
+        store.decisions()
+        lock_path = self.path.with_name(self.path.name + ".lock")
+        self.assertTrue(lock_path.is_file())
+        _secure_windows_acl(lock_path, directory=False)
         self.assertEqual(store.generation, 0)
 
     def test_exact_digest_trust_expiry_and_revocation(self):
