@@ -13,8 +13,11 @@ MigrationEvidenceCommitError preserves the captured event and exact record
 digests. Because the assurance append may have reached storage before an error
 surfaced, callers must inspect both ledgers before retrying. The read-only
 inspect_migration_evidence_link() operation classifies LINKED, orphaned,
-dangling, conflicting, and missing references; it does not repair them or make
-the two writes atomic.
+dangling, conflicting, and missing references. The explicit
+reconcile_migration_evidence_commit() operation can repair only a verified
+ORPHANED_QDAS_EVENT using the exact payload preserved by the exception, under
+a per-event exclusive lock. Neither operation makes the original two writes
+atomic or provides automatic background recovery.
 """
 from __future__ import annotations
 
