@@ -11,7 +11,7 @@ Evidence may be incomplete, corrected, invalidated by changed inputs, superseded
 
 A digest detects a mismatch relative to a trusted digest; it does not establish that an observation was truthful or its producer qualified. The owner-approved AA-D2 direction requires one logical evidence system, while physical backend selection remains deferred pending comparative evaluation.
 
-## Decision proposal
+## Accepted decision
 
 Qyrenith MUST expose one logical evidence system with three cooperating roles:
 
@@ -75,4 +75,4 @@ A future external trust anchor/signature mechanism requires a separate key-manag
 - `REPRODUCIBLE_VERIFICATION_LAB_SPEC.md`
 - `REQUIREMENT_TRACEABILITY_MATRIX.md`
 
-This proposal records the logical evidence architecture only; it selects no physical backend and claims no completed persistence implementation.
+This accepted ADR records the logical evidence architecture only; it selects no physical backend and claims no completed persistence implementation.
