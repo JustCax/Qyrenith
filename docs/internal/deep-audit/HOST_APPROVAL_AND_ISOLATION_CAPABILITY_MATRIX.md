@@ -68,8 +68,8 @@ The current branch does not contain a controlled qualification runner that indep
 1. Add a platform-authentication provider interface with explicit authenticated, unavailable, expired, and rejected outcomes. Unsupported platforms must fail closed.
 2. Bind approvals to an authenticated principal and a host trust anchor; do not treat local username or caller strings as proof.
 3. Make approval mandatory at the central side-effect dispatcher, not only at helper APIs.
-4. Implement Windows owner-only trust-store ACLs and handle/reparse-point-safe traversal.
-5. Implement Windows Job Object descendant containment and define equivalent process-tree behavior on POSIX platforms.
+4. Verify the source-implemented Windows owner/SYSTEM trust-store ACLs; implement handle/reparse-point-safe traversal.
+5. Verify the source-implemented Windows Job Object descendant containment and 64-process cap; define and verify equivalent process-tree behavior on POSIX platforms.
 6. Introduce a host-enforced RVL isolation provider contract for filesystem, network, environment, secrets, CPU, memory, process count, timeout, and output.
 7. Implement controlled worker conformance execution with independently collected, digest-bound raw evidence.
 8. Verify the Windows Job Object process-tree containment and 64-process cap on supported Windows hosts; add adversarial tests for replay, expiry, principal substitution, trust revocation, TOCTOU, child-process escape, network access, filesystem escape, resource exhaustion, crash recovery, and concurrent access.
