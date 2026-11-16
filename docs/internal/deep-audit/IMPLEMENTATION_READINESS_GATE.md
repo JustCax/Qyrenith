@@ -105,6 +105,8 @@ A read-only source review confirms that several foundations exist, but they do n
 - `qyrenith_engine/execution.py` explicitly describes bounded subprocess execution as not an OS sandbox. In particular, the Windows path terminates the direct process and does not establish a Job Object/container boundary for descendants. A 2026-11-16 source audit also found that the output capture ceiling was applied independently to stdout and stderr; the implementation now shares one aggregate capture budget across both streams, with a targeted regression test added. This correction is **not test-verified** because no local test run or CI run was authorized/performed.
 - Workspace materialization creates a verified independent copy; it is not an OS/process/network isolation boundary.
 
+The migration `AssuranceLedger` also validates record structure and its local digest chain only. A `PASS` value is caller-supplied; the current ledger does not resolve evidence IDs, inspect referenced artifacts, independently collect results, or authenticate their origin. Treat it as a recorded verdict label, not independent assurance evidence, until the evidence-validation and authority integration is implemented.
+
 These are source observations, not runtime verification. Do not relabel any of the above as authenticated approval, sandboxing, or completed Phase 1 until independent enforcement and adversarial evidence exist.
 - [ ] Full 1.1.0 regression suite and required Windows/Linux/macOS matrix pass on the same commit.
 - [ ] No unresolved critical/high migration identity, planner, worker, authorization, ledger, snapshot or workspace defects.
