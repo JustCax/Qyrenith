@@ -2,6 +2,7 @@
 
 ## Rules
 
+- English only project.
 - Keep the core project-neutral.
 - Do not add an author's private mod names or proprietary feature names to core logic.
 - Keep Minecraft API knowledge in specialist skills/references.
