@@ -11,7 +11,7 @@ A checker, worker, native analyzer, or external provider emits observations. Its
 
 Qyrenith already defines five canonical planes and distinguishes discovery, qualification, authorization, execution, and verification. Advanced Assurance (AA) must use those authorities rather than create a parallel subsystem.
 
-## Decision proposal
+## Accepted decision
 
 Separate these responsibilities and preserve one authority for each:
 
@@ -69,4 +69,4 @@ This is a cross-cutting contract implemented through the existing five planes. I
 - `QYRENITH_DEVELOPMENT_ASSURANCE_SYSTEM_SPEC.md`
 - `REPRODUCIBLE_VERIFICATION_LAB_SPEC.md`
 
-This proposal does not accept all PR #3 requirements or independently authorize implementation.
+This accepted ADR does not accept PR #3 as a whole or independently authorize implementation.
