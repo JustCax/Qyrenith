@@ -174,6 +174,7 @@ def _run_process(
         _terminate_process_group(process)
 
     def drain(stream, name: str) -> None:
+        nonlocal captured_bytes
         read_chunk = getattr(stream, "read1", stream.read)
         try:
             while True:
