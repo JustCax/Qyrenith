@@ -38,7 +38,7 @@ The estimates below preserve the previous planning snapshot and must be refreshe
 
 | Roadmap phase | Workstream | Previous estimate | Current evidence disposition | Exit dependency |
 |---|---|---:|---|---|
-| Phase 0 | Architecture and specification baseline | 85–90% | IN_PROGRESS — reconciled specifications exist; explicit ADR/AA owner dispositions and several design prerequisites remain open | Owner decisions and traceability closure |
+| Phase 0 | Architecture and specification baseline | 90–95% | IN_PROGRESS — all four AA ADRs, all 70 AA requirements, and all 27 diagnostic domains are owner-accepted; remaining design prerequisites and traceability closure remain open | Owner decisions and traceability closure |
 | Phase 1 | Existing migration-platform safety hardening | 55–65% | SOURCE_AUDITED — six workstreams reviewed; safety exit gate NOT PASSED | Actual enforcement, authenticated approval, independent worker evidence, adversarial cross-platform verification |
 | Phase 2 | QDAS completion and independent validation | 50–60% | IN_PROGRESS — useful foundations exist; full integration and independent validation remain open | Phase 1 exit gate |
 | Phase 3 | Universal Migration Engine execution chain and integration completion | 35–45% | IN_PROGRESS — planning/authorization/workspace foundations exist; safe executable lifecycle and end-to-end integration remain incomplete | Phase 1 safety boundary and QDAS/evidence contracts |
@@ -68,7 +68,7 @@ Checklist:
 - [ ] Confirm internal specifications are excluded from public package contents unless separately approved.
 - [ ] Record the final Phase 0 review, owner decisions, exact branch HEAD, and remaining accepted/deferred scope.
 
-**Known blockers at the dashboard baseline:** four ADRs remain reconciled proposals awaiting owner acceptance; all 70 AA requirements remain proposed pending owner disposition; the legacy state inventory is not exhaustive; evidence backend selection/measurement is deferred; checker/profile inventory and extension API boundaries are incomplete. Phase 0 MUST remain open until these are resolved or explicitly deferred through owner-approved scope decisions.
+**Current open design prerequisites:** the legacy state inventory and historical fixture mapping are not exhaustive; evidence backend comparison/selection remains deferred pending measurable results and owner disposition; checker/profile inventory and exact extension API boundaries need final closure. The four AA ADRs, 70 AA requirements, and 27 diagnostic domains are accepted scope as of 2026-11-16. Phase 0 MUST remain open until these are resolved or explicitly deferred through owner-approved scope decisions.
 
 ## 4. Phase 1 — Existing migration-platform safety hardening
 
