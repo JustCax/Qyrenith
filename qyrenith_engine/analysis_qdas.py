@@ -42,8 +42,18 @@ def record_analysis_with_qdas(
 
     analysis_report = analyze_project(root, **analysis_kwargs)
 
-    _STATUS_MAP = {"PASS": "PASS", "FAIL": "FAIL", "BLOCKED": "BLOCKED", "UNKNOWN": "ERROR"}
-    status = _STATUS_MAP.get(analysis_report.get("status", "UNKNOWN"), "ERROR")
+    # QDAS records execution-layer outcomes, which are intentionally narrower
+    # than the eight-state per-check vocabulary. An analyzer UNKNOWN is not an
+    # infrastructure failure: retain it in the captured report and mark the
+    # execution event BLOCKED rather than incorrectly emitting ERROR.
+    _STATUS_MAP = {
+        "PASS": "PASS",
+        "FAIL": "FAIL",
+        "BLOCKED": "BLOCKED",
+        "UNKNOWN": "BLOCKED",
+    }
+    raw_status = analysis_report.get("status", "UNKNOWN")
+    status = _STATUS_MAP.get(raw_status, "ERROR")
     if status == "PASS":
         exit_code = 0
     elif status == "ERROR":
