@@ -70,7 +70,8 @@ class TestQdasStaticAnalysisCapture(unittest.TestCase):
             self.assertEqual(analysis_report["status"], "UNKNOWN")
             self.assertEqual(capture_result.report["status"], "BLOCKED")
             self.assertEqual(capture_result.event.execution_status, "BLOCKED")
-            self.assertIsNone(capture_result.classification)
+            self.assertEqual(capture_result.classification.category, "UNKNOWN_FAILURE")
+            self.assertEqual(capture_result.classification.rule_id, "ANALYSIS-INCOMPLETE-001")
 
     def test_tampering_breaks_qdas_ledger(self):
         with tempfile.TemporaryDirectory() as directory:
