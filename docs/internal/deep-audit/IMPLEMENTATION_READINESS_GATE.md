@@ -106,6 +106,7 @@ A read-only source review confirms that several foundations exist, but they do n
 - Workspace materialization creates a verified independent copy; it is not an OS/process/network isolation boundary.
 
 The migration `AssuranceLedger` also validates record structure and its local digest chain only. A `PASS` value is caller-supplied; the current ledger does not resolve evidence IDs, inspect referenced artifacts, independently collect results, or authenticate their origin. Treat it as a recorded verdict label, not independent assurance evidence, until the evidence-validation and authority integration is implemented.
+The current `record_migration_step_with_qdas()` integration appends to the QDAS ledger and then to the migration assurance ledger as two independent writes. If the second append fails, the first QDAS event remains without an assurance record; there is no cross-ledger transaction, orphan-reconciliation protocol, or automatic recovery yet. This is an integration/recovery blocker, not a verified end-to-end evidence lifecycle.
 
 These are source observations, not runtime verification. Do not relabel any of the above as authenticated approval, sandboxing, or completed Phase 1 until independent enforcement and adversarial evidence exist.
 - [ ] Full 1.1.0 regression suite and required Windows/Linux/macOS matrix pass on the same commit.
