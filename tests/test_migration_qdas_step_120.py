@@ -7,6 +7,7 @@ from pathlib import Path
 
 from qyrenith_engine.migration.qdas_step import (
     MigrationEvidenceCommitError,
+    inspect_migration_evidence_link,
     record_migration_step_with_qdas,
 )
 from qyrenith_engine.migration.assurance import AssuranceLedger, verify_assurance_chain, AssuranceLedgerError
@@ -146,6 +147,16 @@ class TestQdasMigrationStep(unittest.TestCase):
             self.assertEqual(error.qdas_record_digest, records[0]["record_digest"])
             self.assertIsInstance(error.capture_result, QdasCaptureResult)
             self.assertIsInstance(error.__cause__, RuntimeError)
+            link_status = inspect_migration_evidence_link(
+                error.event_digest,
+                qdas,
+                AssuranceLedger(Path(directory) / "assurance.jsonl"),
+            )
+            self.assertEqual(link_status["status"], "ORPHANED_QDAS_EVENT")
+            self.assertEqual(
+                link_status["qdas_record_digest"], error.qdas_record_digest
+            )
+            self.assertEqual(link_status["assurance_record_digests"], [])
 
     def test_tampering_breaks_both_ledgers(self):
         with tempfile.TemporaryDirectory() as directory:
