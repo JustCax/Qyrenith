@@ -77,6 +77,10 @@ class _WindowsJob:
         kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
         kernel32.CloseHandle.restype = wintypes.BOOL
 
+        self._resume_process = self._ntdll.NtResumeProcess
+        self._resume_process.argtypes = [wintypes.HANDLE]
+        self._resume_process.restype = wintypes.LONG
+
         self._handle = kernel32.CreateJobObjectW(None, None)
         if not self._handle:
             raise OSError(ctypes.get_last_error(), "CreateJobObjectW failed")
@@ -90,10 +94,6 @@ class _WindowsJob:
             error = ctypes.get_last_error()
             self.close()
             raise OSError(error, "SetInformationJobObject failed")
-
-        self._resume_process = self._ntdll.NtResumeProcess
-        self._resume_process.argtypes = [wintypes.HANDLE]
-        self._resume_process.restype = wintypes.LONG
 
     def assign_and_resume(self, process: subprocess.Popen) -> None:
         import ctypes
