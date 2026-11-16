@@ -1,11 +1,13 @@
 # Qyrenith 1.2.0 — Implementation Readiness Gate
 
-**Status:** OPEN — implementation and independent verification in progress; Phase 1 remains a hard blocker  
+**Status:** OVERALL READINESS OPEN — Phase 0 specification baseline COMPLETE; Phase 1 remains a hard blocker  
 **Assessment date:** 2026-11-16  
 **Target branch:** `feature/1.2.0-universal-migration-core`  
 **Purpose:** One auditable checklist for deciding when 1.2.0 is sufficiently specified to begin or resume implementation. This is a planning gate, not implementation evidence.
 
 **Roadmap view:** The reusable [Phase 0–7 Progress Dashboard](PHASE_0_7_PROGRESS_DASHBOARD.md) and its [animated HTML presentation](PHASE_0_7_PROGRESS_DASHBOARD.html) summarize delivery progress. They do not replace this gate, the normative implementation plan, or owner-approved decisions.
+
+**Phase status:** Phase 0 was closed as an owner-accepted documentation/specification baseline on 2026-11-16. This does not certify runtime implementation or test results. Phase 1 remains OPEN and must pass its safety exit gate before QDAS/module execution is enabled.
 
 ## 1. Readiness principle
 
@@ -24,6 +26,7 @@ No code work may bypass an unresolved safety gate merely because a document is c
 
 | Area | Current state | Evidence / remaining work | Blocks implementation? |
 |---|---|---|---|
+| Phase 0 documentation/specification baseline | **COMPLETE — 2026-11-16** | Four AA ADRs, 70 AA requirements, 27 diagnostic domains, specification index, host matrix, checker source inventory, extension authority boundaries and traceability are recorded; measurement-dependent evidence remains in later gates | No — Phase 1 is the next mandatory gate |
 | Canonical architecture | **OWNER-APPROVED BASELINE** | Five planes remain canonical; QDAS-first sequence, RVL authority and no-parallel-ledger/verdict rules are documented | No, provided implementation follows it |
 | Seven AA-01 decisions | **OWNER-APPROVED** | Decision record and design baseline exist; physical backend, final profiles and exhaustive legacy mapping remain deferred | Related detail gates still block affected slices |
 | Extensibility/supportability | **OWNER-APPROVED REQUIREMENT** | EX-001..EX-016 and normative specification exist; schemas, exact API boundaries, conformance implementation and individual support claims remain unimplemented | Yes for extension implementation |
