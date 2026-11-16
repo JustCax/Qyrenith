@@ -17,11 +17,117 @@ _MAX_OUTPUT_BYTES = 8 * 1024 * 1024
 _MAX_WORKER_INPUT_BYTES = 1024 * 1024
 
 
-def _terminate_process_group(process: subprocess.Popen) -> None:
-    """Stop the launched process group on POSIX; Windows uses direct process termination."""
+class _WindowsJob:
+    """Contain a child process tree and terminate descendants when the job closes."""
+
+    def __init__(self) -> None:
+        import ctypes
+        from ctypes import wintypes
+
+        self._ctypes = ctypes
+        self._wintypes = wintypes
+        self._kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        self._ntdll = ctypes.WinDLL("ntdll")
+        self._handle = wintypes.HANDLE()
+
+        class JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
+            _fields_ = [
+                ("PerProcessUserTimeLimit", ctypes.c_longlong),
+                ("PerJobUserTimeLimit", ctypes.c_longlong),
+                ("LimitFlags", wintypes.DWORD),
+                ("MinimumWorkingSetSize", ctypes.c_size_t),
+                ("MaximumWorkingSetSize", ctypes.c_size_t),
+                ("ActiveProcessLimit", wintypes.DWORD),
+                ("Affinity", ctypes.c_size_t),
+                ("PriorityClass", wintypes.DWORD),
+                ("SchedulingClass", wintypes.DWORD),
+            ]
+
+        class IO_COUNTERS(ctypes.Structure):
+            _fields_ = [
+                ("ReadOperationCount", ctypes.c_ulonglong),
+                ("WriteOperationCount", ctypes.c_ulonglong),
+                ("OtherOperationCount", ctypes.c_ulonglong),
+                ("ReadTransferCount", ctypes.c_ulonglong),
+                ("WriteTransferCount", ctypes.c_ulonglong),
+                ("OtherTransferCount", ctypes.c_ulonglong),
+            ]
+
+        class JOBOBJECT_EXTENDED_LIMIT_INFORMATION(ctypes.Structure):
+            _fields_ = [
+                ("BasicLimitInformation", JOBOBJECT_BASIC_LIMIT_INFORMATION),
+                ("IoInfo", IO_COUNTERS),
+                ("ProcessMemoryLimit", ctypes.c_size_t),
+                ("JobMemoryLimit", ctypes.c_size_t),
+                ("PeakProcessMemoryUsed", ctypes.c_size_t),
+                ("PeakJobMemoryUsed", ctypes.c_size_t),
+            ]
+
+        kernel32 = self._kernel32
+        kernel32.CreateJobObjectW.argtypes = [ctypes.c_void_p, wintypes.LPCWSTR]
+        kernel32.CreateJobObjectW.restype = wintypes.HANDLE
+        kernel32.SetInformationJobObject.argtypes = [
+            wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD
+        ]
+        kernel32.SetInformationJobObject.restype = wintypes.BOOL
+        kernel32.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
+        kernel32.AssignProcessToJobObject.restype = wintypes.BOOL
+        kernel32.TerminateJobObject.argtypes = [wintypes.HANDLE, wintypes.UINT]
+        kernel32.TerminateJobObject.restype = wintypes.BOOL
+        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel32.CloseHandle.restype = wintypes.BOOL
+
+        self._handle = kernel32.CreateJobObjectW(None, None)
+        if not self._handle:
+            raise OSError(ctypes.get_last_error(), "CreateJobObjectW failed")
+
+        limits = JOBOBJECT_EXTENDED_LIMIT_INFORMATION()
+        limits.BasicLimitInformation.LimitFlags = 0x00002000 | 0x00000008
+        limits.BasicLimitInformation.ActiveProcessLimit = 64
+        if not kernel32.SetInformationJobObject(
+            self._handle, 9, ctypes.byref(limits), ctypes.sizeof(limits)
+        ):
+            error = ctypes.get_last_error()
+            self.close()
+            raise OSError(error, "SetInformationJobObject failed")
+
+        self._resume_process = self._ntdll.NtResumeProcess
+        self._resume_process.argtypes = [wintypes.HANDLE]
+        self._resume_process.restype = wintypes.LONG
+
+    def assign_and_resume(self, process: subprocess.Popen) -> None:
+        import ctypes
+
+        process_handle = self._wintypes.HANDLE(int(process._handle))
+        if not self._kernel32.AssignProcessToJobObject(self._handle, process_handle):
+            raise OSError(ctypes.get_last_error(), "AssignProcessToJobObject failed")
+        status = self._resume_process(process_handle)
+        if status < 0:
+            raise OSError(status, "NtResumeProcess failed")
+
+    def terminate_and_close(self) -> None:
+        if self._handle:
+            self._kernel32.TerminateJobObject(self._handle, 1)
+            self.close()
+
+    def close(self) -> None:
+        if self._handle:
+            handle = self._handle
+            self._handle = self._wintypes.HANDLE()
+            if not self._kernel32.CloseHandle(handle):
+                raise OSError(self._ctypes.get_last_error(), "CloseHandle(job) failed")
+
+
+def _terminate_process_group(
+    process: subprocess.Popen, windows_job: _WindowsJob | None = None
+) -> None:
+    """Stop the process tree using a Windows Job Object or POSIX process group."""
     try:
         if os.name == "nt":
-            process.terminate()
+            if windows_job is not None:
+                windows_job.terminate_and_close()
+            else:
+                process.terminate()
         else:
             os.killpg(process.pid, signal.SIGTERM)
     except (OSError, ProcessLookupError):
@@ -129,15 +235,35 @@ def _run_process(
         "stdout": subprocess.PIPE,
         "stderr": subprocess.PIPE if separate_stderr else subprocess.STDOUT,
     }
+    windows_job = None
     if os.name == "nt":
-        kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        kwargs["creationflags"] = (
+            getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x00000200)
+            | getattr(subprocess, "CREATE_SUSPENDED", 0x00000004)
+        )
     else:
         kwargs["start_new_session"] = True
 
     started = time.monotonic()
+    process = None
     try:
+        if os.name == "nt":
+            windows_job = _WindowsJob()
         process = subprocess.Popen(list(argv), **kwargs)
-    except (OSError, ValueError) as exc:
+        if windows_job is not None:
+            windows_job.assign_and_resume(process)
+    except (OSError, ValueError, AttributeError) as exc:
+        if windows_job is not None:
+            try:
+                windows_job.terminate_and_close()
+            except OSError:
+                pass
+        if process is not None:
+            try:
+                process.kill()
+                process.wait()
+            except OSError:
+                pass
         return {
             "schema": 1,
             "status": "ERROR",
@@ -155,6 +281,7 @@ def _run_process(
             "environment_digest": _environment_digest(env),
         }
 
+    assert process is not None
     buffers = {"stdout": bytearray(), "stderr": bytearray()}
     totals = {"stdout": 0, "stderr": 0}
     captured_bytes = 0
@@ -171,7 +298,7 @@ def _run_process(
             if terminated:
                 return
             terminated = True
-        _terminate_process_group(process)
+        _terminate_process_group(process, windows_job)
 
     def drain(stream, name: str) -> None:
         nonlocal captured_bytes
@@ -251,6 +378,12 @@ def _run_process(
         timed_out = True
         terminate_once()
 
+    if windows_job is not None:
+        try:
+            windows_job.close()
+        except OSError:
+            terminate_once()
+
     if writer is not None:
         writer.join(timeout=1)
         if writer.is_alive():
@@ -288,7 +421,10 @@ def _run_process(
         "duration_seconds": round(time.monotonic() - started, 3),
         "shell": False,
         "containment": (
-            "POSIX process-group cleanup and bounded capture; not an OS sandbox. "
+            "Windows Job Object process-tree containment and a 64-process cap; "
+            "not filesystem/network isolation or a complete OS sandbox."
+            if os.name == "nt"
+            else "POSIX process-group cleanup and bounded capture; not an OS sandbox. "
             "Child code retains the invoking user's OS permissions."
         ),
         "environment_digest": _environment_digest(env),
