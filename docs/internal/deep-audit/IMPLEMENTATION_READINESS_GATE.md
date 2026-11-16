@@ -27,8 +27,8 @@ No code work may bypass an unresolved safety gate merely because a document is c
 | Canonical architecture | **OWNER-APPROVED BASELINE** | Five planes remain canonical; QDAS-first sequence, RVL authority and no-parallel-ledger/verdict rules are documented | No, provided implementation follows it |
 | Seven AA-01 decisions | **OWNER-APPROVED** | Decision record and design baseline exist; physical backend, final profiles and exhaustive legacy mapping remain deferred | Related detail gates still block affected slices |
 | Extensibility/supportability | **OWNER-APPROVED REQUIREMENT** | EX-001..EX-016 and normative specification exist; schemas, exact API boundaries, conformance implementation and individual support claims remain unimplemented | Yes for extension implementation |
-| Four AA ADRs | **RECONCILED DRAFTS — OWNER ACCEPTANCE PENDING** | ADR-AA-001..004 exist in reconciled form; explicit accept/amend/defer decision still required | Yes for AA architecture baseline |
-| Seventy PR #3 AA requirements | **RECONCILED — OWNER DISPOSITION PENDING** | Group-by-group reconciliation exists; all 70 remain PROPOSED; wording/overlap/acceptance must be approved | Yes for AA requirement baseline |
+| Four AA ADRs | **OWNER-ACCEPTED — 2026-11-16** | ADR-AA-001..004 accepted as reconciled; implementation and verification remain separate | No for architecture acceptance; implementation gates remain |
+| Seventy PR #3 AA requirements | **OWNER-ACCEPTED — 2026-11-16** | All 70 stable IDs accepted across eleven groups; traceability rows updated; mapped tests/evidence still pending | No for requirement acceptance; implementation gates remain |
 | Legacy state inventory | **PARTIAL SOURCE INVENTORY** | Source and test labels inventoried; exhaustive schema/version and real historical fixture corpus still required | Yes for compatibility and outcome conversion |
 | Per-check outcome contract | **DESIGN APPROVED; PARTIALLY IMPLEMENTED, NOT TEST-VERIFIED** | Eight states approved; migration assurance allowlist/schema now include INCONCLUSIVE and a round-trip test exists; analyzer UNKNOWN is retained in the returned analysis/capture report, while the QDAS ledger stores its bounded event metadata and output digest; it is no longer mapped to execution ERROR. Targeted tests are added but unexecuted; full consumer/legacy fixture compatibility remains open | Yes for verdict/evidence slices |
 | Evidence-store architecture | **LOGICAL MODEL APPROVED** | Backend evaluation and fault-injection plan exists; actual candidate measurements and owner backend decision remain open | Yes for persistent evidence implementation |
@@ -38,19 +38,21 @@ No code work may bypass an unresolved safety gate merely because a document is c
 | Phase 1 migration hardening | **OPEN — PARTIAL FOUNDATIONS; NOT VERIFIED COMPLETE** | Owner trust store, exact-digest decisions, freshness rechecks and one-time interactive host-approval records exist. Source review confirms the host principal is populated from `getpass.getuser()` and the trust-store HMAC is local-key integrity, not independent human identity authentication. Sandbox profile ID/digest are caller-supplied scope fields; no OS-enforced sandbox/provider or migration worker executor is present. Worker conformance evidence, actual host identity authentication, OS enforcement, concurrency/recovery and platform evidence remain open | **YES — hard blocker before Phase 2** |
 | QDAS | **PARTIAL IMPLEMENTATION EXISTS** | Existing event/ledger/diagnosis/repair foundations need migration-gate integration, full acceptance, evidence and independent verification | Yes for Phase 2 completion |
 | Fourteen post-QDAS modules | **SPECIFIED AT HIGH LEVEL; DELIVERY NOT STARTED AS A COMPLETE SET** | Exact slices, shared contracts, dependencies, acceptance and scope prioritization remain to be closed | Yes for complete 1.2.0 |
-| Twenty-seven diagnostic domains | **TARGET ENVELOPE — NOT A RELEASE PROMISE** | Shared-engine mapping exists; exact 1.2.0 vertical slices and deferred domains must be owner-approved | Yes for release scope clarity |
+| Twenty-seven diagnostic domains | **OWNER-ACCEPTED 1.2.0 RELEASE SCOPE — 2026-11-16** | All 27 domains and DI-001..DI-081 are in scope; each needs implementation/support evidence and an explicit acceptance disposition | Yes for complete release delivery |
 | Release verification route | **ACTIONS DISABLED BY OWNER** | Approved independent local/external runner and retained revision-bound evidence must be defined; do not restore/trigger Actions without approval | Yes for release |
 | Documentation integrity | **IN PROGRESS** | Continue link, terminology, status, requirement-ID, cross-reference and package-content audits | Yes for final readiness |
 | Final implementation baseline | **NOT APPROVED YET** | Requires closed P0 gates, reconciled traceability, implementation slice plan, and explicit owner sign-off | **YES** |
 
 ## 3. Mandatory pre-implementation exit gates
 
+**Owner decision update (2026-11-16):** Gate A decisions for the four AA ADRs, all 70 AA requirements, and all 27 diagnostic domains are complete and recorded. This does not close the remaining Phase 0 design/evidence prerequisites or Phase 1 safety gate.
+
 ### Gate A — Owner decisions and scope
 
-- [ ] Owner disposition for ADR-AA-001..004.
-- [ ] Owner disposition for all 70 proposed AA requirement IDs, individually or by explicitly approved groups.
-- [ ] Confirm which DI/RCA/OI proposals are in 1.2.0 scope and which remain long-term targets.
-- [ ] Confirm that the 27 diagnostic domains are an ecosystem target envelope, not an implied 1.2.0 completeness claim.
+- [x] Owner accepted ADR-AA-001..004 on 2026-11-16; acceptance recorded in the decision log and individual ADRs.
+- [x] Owner accepted all 70 AA requirements in the existing eleven-group structure on 2026-11-16; implementation evidence remains outstanding.
+- [x] Confirmed DI-001..DI-081 and all 27 diagnostic domains are in 1.2.0 scope; RCA/OI remain separately governed proposals.
+- [x] Owner explicitly included all 27 diagnostic domains in the 1.2.0 release scope; no implementation or support claim is implied until evidence exists.
 - [ ] Freeze the initial release scope and define an explicit change-control process.
 
 ### Gate B — Outcome and compatibility semantics
@@ -165,7 +167,7 @@ This order is subordinate to the accepted master implementation plan; it refines
 ## 5. Status vocabulary for this register
 
 - **OWNER-APPROVED:** the owner explicitly approved the architecture/requirement direction.
-- **RECONCILED DRAFT:** documents have been aligned but still require owner acceptance.
+- **RECONCILED DRAFT:** documents have been aligned but still require owner acceptance (not applicable to the four now-accepted AA ADRs).
 - **PARTIAL SOURCE INVENTORY:** observed sources are recorded; exhaustive historical coverage is not established.
 - **OPEN / NOT VERIFIED:** implementation or independent evidence is missing.
 - **NOT APPROVED:** owner sign-off has not been granted.
