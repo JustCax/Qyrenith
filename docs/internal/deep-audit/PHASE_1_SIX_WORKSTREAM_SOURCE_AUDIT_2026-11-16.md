@@ -163,6 +163,12 @@ The six-workstream source review is complete. It confirms useful integrity, fres
 - Enforce permission/resource limits at the execution boundary and revalidate immediately before each side effect.
 - Add end-to-end tests for authorization substitution, stale/revoked trust, expired qualification, changed workspace/snapshot/command, profile substitution, replay, partial execution, and recovery.
 
+### Evidence reconciliation lock hardening (2026-11-16)
+
+- POSIX lock acquisition now requires `O_NOFOLLOW` before opening, adds close-on-exec where available, and verifies that the lock is a regular single-link file owned by the current user. It applies and reads back exact `0600` permissions before taking the non-blocking kernel advisory lock.
+- Lock descriptor cleanup now closes the descriptor even if explicit unlock reports an error. The Windows branch continues to use the protected ACL/readback and one-byte `msvcrt.locking` protocol; path-based Windows ACL application remains subject to the documented handle-identity race limitation.
+- A POSIX regression test asserts owner, link count, and mode. It has been added but not executed.
+
 ## Cross-workstream disposition
 
 | Workstream | Source-level foundation | Material blocker | Review disposition |
