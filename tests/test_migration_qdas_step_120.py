@@ -1,6 +1,8 @@
 """Tests for the QDAS→migration step integration (1.2.0)."""
 import hashlib
 import json
+import os
+import stat
 import tempfile
 import unittest
 from pathlib import Path
@@ -48,6 +50,16 @@ def assurance_fields(**overrides):
 
 
 class TestQdasMigrationStep(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "POSIX lock permission policy")
+    def test_reconciliation_lock_is_private_and_owned_by_current_user(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "reconcile.lock"
+            with _exclusive_reconciliation_lock(path):
+                info = path.stat()
+                self.assertEqual(stat.S_IMODE(info.st_mode), 0o600)
+                self.assertEqual(info.st_uid, os.getuid())
+                self.assertEqual(info.st_nlink, 1)
+
     def test_reconciliation_api_is_exported_from_public_packages(self):
         from qyrenith_engine import (
             MigrationEvidenceCommitError as EngineCommitError,
