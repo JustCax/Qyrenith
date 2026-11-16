@@ -7,11 +7,14 @@ a migration AssuranceLedger record.
 
 QDAS remains strictly observational: it records events, classifies failures
 (symptom-only, never root-cause), and produces unconfirmed hypotheses. The two
-ledger appends are separate operations, not one transaction. If the QDAS append
-succeeds and the assurance append fails, the QDAS event remains without a
-corresponding assurance record. Callers must treat that exception as a partial
-evidence write requiring reconciliation; this module does not provide a
-cross-ledger commit protocol or automatic orphan recovery.
+ledger appends are separate operations, not one transaction. If the assurance
+append does not return successfully after the QDAS append, a
+MigrationEvidenceCommitError preserves the captured event and exact record
+digests. Because the assurance append may have reached storage before an error
+surfaced, callers must inspect both ledgers before retrying. The read-only
+inspect_migration_evidence_link() operation classifies LINKED, orphaned,
+dangling, conflicting, and missing references; it does not repair them or make
+the two writes atomic.
 """
 from __future__ import annotations
 
@@ -144,8 +147,9 @@ def record_migration_step_with_qdas(
     supplies the process report and exact run/step/worker metadata. Returns the
     QDAS capture result and AssuranceLedger record. The QDAS event digest is
     bound into the assurance record's evidence_ids. The two appends are not
-    atomic: an assurance append failure leaves the committed QDAS event in
-    place and requires caller-managed reconciliation.
+    atomic. If the assurance append does not return successfully, raises
+    MigrationEvidenceCommitError with the QDAS capture and digests so callers
+    can inspect both ledgers before retrying.
     """
     root = Path(project).expanduser().resolve(strict=True)
     started = datetime.now(timezone.utc) if started_at is None else started_at
