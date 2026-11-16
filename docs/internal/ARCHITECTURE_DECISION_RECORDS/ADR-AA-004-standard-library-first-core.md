@@ -1,6 +1,6 @@
 # ADR-AA-004: Keep the Core Standard-Library-First and Providers Optional
 
-**Status:** PROPOSED — reconciled with owner-approved AA-01 decision directions; ADR acceptance pending  
+**Status:** ACCEPTED — owner approval 2026-11-16; implementation and verification remain separate  
 **Original proposal date:** 2026-11-04  
 **Reconciliation date:** 2026-11-10  
 **Scope:** Python runtime dependencies, native engines, optional tools, extension providers, and offline operation
