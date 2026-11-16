@@ -187,6 +187,12 @@ class TestQdasMigrationStep(unittest.TestCase):
             self.assertEqual(link_status["assurance_record_digests"], [])
 
             real_assurance = AssuranceLedger(Path(directory) / "assurance.jsonl")
+            original_qdas_record_digest = error.qdas_record_digest
+            error.qdas_record_digest = "0" * 64
+            with self.assertRaisesRegex(RuntimeError, "does not match the verified QDAS record"):
+                reconcile_migration_evidence_commit(error, qdas, real_assurance)
+            error.qdas_record_digest = original_qdas_record_digest
+
             repaired = reconcile_migration_evidence_commit(
                 error, qdas, real_assurance
             )
