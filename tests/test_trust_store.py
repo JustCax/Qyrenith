@@ -86,6 +86,30 @@ class OwnerTrustStoreTests(unittest.TestCase):
             store.is_trusted("KNOWLEDGE_CATALOG", DIGEST_A, now=NOW + timedelta(seconds=3))
         )
 
+    def test_backdated_trust_cannot_override_a_later_revocation(self):
+        store = OwnerTrustStore.open(self.path, create=True)
+        store.trust(
+            "WORKER_MANIFEST", DIGEST_A, reviewed_by="owner",
+            reviewed_at=NOW + timedelta(seconds=2), rationale="Initial trust",
+        )
+        store.revoke(
+            "WORKER_MANIFEST", DIGEST_A, reviewed_by="owner",
+            reviewed_at=NOW + timedelta(seconds=3), rationale="Revoke worker",
+        )
+
+        with self.assertRaisesRegex(TrustStoreError, "cannot precede the latest decision"):
+            store.trust(
+                "WORKER_MANIFEST", DIGEST_A, reviewed_by="owner",
+                reviewed_at=NOW + timedelta(seconds=1), rationale="Backdated restoration",
+            )
+
+        self.assertFalse(
+            store.is_trusted(
+                "WORKER_MANIFEST", DIGEST_A, now=NOW + timedelta(seconds=4)
+            )
+        )
+        self.assertEqual(store.generation, 2)
+
     def test_existing_instance_observes_external_revocation(self):
         first = OwnerTrustStore.open(self.path, create=True)
         second = OwnerTrustStore.open(self.path)
