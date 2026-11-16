@@ -21,6 +21,12 @@ from qyrenith_engine.migration.snapshot import (
 
 
 class TestProjectSnapshot(unittest.TestCase):
+    @unittest.skipUnless(os.name == "nt", "Windows-only fail-closed policy")
+    def test_windows_snapshot_capture_rejects_path_based_traversal(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaisesRegex(SnapshotError, "handle-relative"):
+                capture_project_snapshot(directory)
+
     def test_portable_traversal_guard_rejects_a_symlink_directory(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
