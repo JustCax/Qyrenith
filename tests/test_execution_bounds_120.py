@@ -1,10 +1,12 @@
 """Regression tests for bounded subprocess output accounting."""
 from pathlib import Path
+import os
 import sys
+import time
 import tempfile
 import unittest
 
-from qyrenith_engine.execution import run_bounded_worker
+from qyrenith_engine.execution import run_bounded_process, run_bounded_worker
 
 
 class BoundedWorkerOutputTests(unittest.TestCase):
@@ -32,6 +34,59 @@ class BoundedWorkerOutputTests(unittest.TestCase):
             256,
         )
         self.assertGreaterEqual(report["output_bytes"], 256)
+
+
+class WindowsJobObjectTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == "nt", "Windows Job Object containment requires Windows")
+    def test_descendant_is_terminated_when_root_process_exits(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            script = (
+                "import subprocess,sys; "
+                "child=subprocess.Popen([sys.executable,'-c','import time; time.sleep(60)']); "
+                "print(child.pid, flush=True)"
+            )
+            report = run_bounded_process(
+                [sys.executable, "-c", script],
+                Path(temporary),
+                timeout=10,
+                output_limit=1024,
+            )
+
+        self.assertEqual(report["status"], "PASS", report)
+        child_pid = int(report["output"].strip())
+
+        import ctypes
+        from ctypes import wintypes
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.OpenProcess.argtypes = [
+            wintypes.DWORD, wintypes.BOOL, wintypes.DWORD
+        ]
+        kernel32.OpenProcess.restype = wintypes.HANDLE
+        kernel32.GetExitCodeProcess.argtypes = [
+            wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)
+        ]
+        kernel32.GetExitCodeProcess.restype = wintypes.BOOL
+        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+        kernel32.CloseHandle.restype = wintypes.BOOL
+
+        still_running = False
+        for _ in range(30):
+            handle = kernel32.OpenProcess(0x1000, False, child_pid)
+            if not handle:
+                still_running = False
+                break
+            try:
+                exit_code = wintypes.DWORD()
+                if kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code)):
+                    still_running = exit_code.value == 259
+            finally:
+                kernel32.CloseHandle(handle)
+            if not still_running:
+                break
+            time.sleep(0.1)
+
+        self.assertFalse(still_running, "Windows Job Object left a child process running")
 
 
 if __name__ == "__main__":
