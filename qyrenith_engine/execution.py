@@ -27,8 +27,20 @@ class _WindowsJob:
         self._ctypes = ctypes
         self._wintypes = wintypes
         self._kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-        self._ntdll = ctypes.WinDLL("ntdll")
         self._handle = wintypes.HANDLE()
+
+        class THREADENTRY32(ctypes.Structure):
+            _fields_ = [
+                ("dwSize", wintypes.DWORD),
+                ("cntUsage", wintypes.DWORD),
+                ("th32ThreadID", wintypes.DWORD),
+                ("th32OwnerProcessID", wintypes.DWORD),
+                ("tpBasePri", wintypes.LONG),
+                ("tpDeltaPri", wintypes.LONG),
+                ("dwFlags", wintypes.DWORD),
+            ]
+
+        self._thread_entry_type = THREADENTRY32
 
         class JOBOBJECT_BASIC_LIMIT_INFORMATION(ctypes.Structure):
             _fields_ = [
@@ -77,9 +89,22 @@ class _WindowsJob:
         kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
         kernel32.CloseHandle.restype = wintypes.BOOL
 
-        self._resume_process = self._ntdll.NtResumeProcess
-        self._resume_process.argtypes = [wintypes.HANDLE]
-        self._resume_process.restype = wintypes.LONG
+        kernel32.CreateToolhelp32Snapshot.argtypes = [wintypes.DWORD, wintypes.DWORD]
+        kernel32.CreateToolhelp32Snapshot.restype = wintypes.HANDLE
+        kernel32.Thread32First.argtypes = [
+            wintypes.HANDLE, ctypes.POINTER(THREADENTRY32)
+        ]
+        kernel32.Thread32First.restype = wintypes.BOOL
+        kernel32.Thread32Next.argtypes = [
+            wintypes.HANDLE, ctypes.POINTER(THREADENTRY32)
+        ]
+        kernel32.Thread32Next.restype = wintypes.BOOL
+        kernel32.OpenThread.argtypes = [
+            wintypes.DWORD, wintypes.BOOL, wintypes.DWORD
+        ]
+        kernel32.OpenThread.restype = wintypes.HANDLE
+        kernel32.ResumeThread.argtypes = [wintypes.HANDLE]
+        kernel32.ResumeThread.restype = wintypes.DWORD
 
         self._handle = kernel32.CreateJobObjectW(None, None)
         if not self._handle:
@@ -101,9 +126,54 @@ class _WindowsJob:
         process_handle = self._wintypes.HANDLE(int(process._handle))
         if not self._kernel32.AssignProcessToJobObject(self._handle, process_handle):
             raise OSError(ctypes.get_last_error(), "AssignProcessToJobObject failed")
-        status = self._resume_process(process_handle)
-        if status < 0:
-            raise OSError(status, "NtResumeProcess failed")
+
+        # Popen closes CreateProcessW's primary-thread handle. Because the child
+        # was created suspended and cannot create other threads before resume,
+        # locate its one initial thread through the documented Toolhelp API.
+        snapshot = self._kernel32.CreateToolhelp32Snapshot(0x00000004, 0)
+        invalid_handle = self._wintypes.HANDLE(-1).value
+        if not snapshot or snapshot == invalid_handle:
+            raise OSError(ctypes.get_last_error(), "CreateToolhelp32Snapshot failed")
+        thread_handle = None
+        try:
+            entry = self._thread_entry_type()
+            entry.dwSize = ctypes.sizeof(entry)
+            if not self._kernel32.Thread32First(snapshot, ctypes.byref(entry)):
+                raise OSError(ctypes.get_last_error(), "Thread32First failed")
+            thread_ids = []
+            while True:
+                if entry.th32OwnerProcessID == process.pid:
+                    thread_ids.append(entry.th32ThreadID)
+                entry.dwSize = ctypes.sizeof(entry)
+                if not self._kernel32.Thread32Next(snapshot, ctypes.byref(entry)):
+                    error = ctypes.get_last_error()
+                    if error != 18:  # ERROR_NO_MORE_FILES
+                        raise OSError(error, "Thread32Next failed")
+                    break
+            if len(thread_ids) != 1:
+                raise OSError(
+                    "expected exactly one suspended primary thread; found %d"
+                    % len(thread_ids)
+                )
+            thread_handle = self._kernel32.OpenThread(
+                0x0002, False, thread_ids[0]  # THREAD_SUSPEND_RESUME
+            )
+            if not thread_handle:
+                raise OSError(ctypes.get_last_error(), "OpenThread failed")
+            previous_suspend_count = self._kernel32.ResumeThread(thread_handle)
+            if previous_suspend_count == 0xFFFFFFFF:
+                raise OSError(ctypes.get_last_error(), "ResumeThread failed")
+            if previous_suspend_count != 1:
+                raise OSError(
+                    "unexpected primary-thread suspend count: %d"
+                    % previous_suspend_count
+                )
+        finally:
+            if thread_handle:
+                if not self._kernel32.CloseHandle(thread_handle):
+                    raise OSError(ctypes.get_last_error(), "CloseHandle(thread) failed")
+            if not self._kernel32.CloseHandle(snapshot):
+                raise OSError(ctypes.get_last_error(), "CloseHandle(thread snapshot) failed")
 
     def terminate_and_close(self) -> None:
         if not self._handle:
