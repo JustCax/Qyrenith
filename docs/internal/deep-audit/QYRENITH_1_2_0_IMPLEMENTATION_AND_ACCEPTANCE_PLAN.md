@@ -13,7 +13,8 @@
 - Maintain `REQUIREMENT_TRACEABILITY_MATRIX.md` as the authoritative requirement-to-implementation/test/evidence/dependency/status map.
 - Resolve contradictions with existing public/internal docs.
 - Review all security, trust, permission, isolation, and non-claim language.
-- Keep internal specifications out of public package contents unless separately approved.\n- Maintain `HOST_APPROVAL_AND_ISOLATION_CAPABILITY_MATRIX.md` as the platform-specific source/enforcement/qualification crosswalk; it does not substitute for Phase 1 implementation or testing.
+- Keep internal specifications out of public package contents unless separately approved.
+- Maintain `HOST_APPROVAL_AND_ISOLATION_CAPABILITY_MATRIX.md` as the platform-specific source/enforcement/qualification crosswalk; it does not substitute for Phase 1 implementation or testing.
 
 ### Phase 1 — Finish existing migration-platform work
 - Audit migration identity, transition validation, knowledge catalog, planner, worker contracts, authorization, ledger, snapshots, and workspace copying.
