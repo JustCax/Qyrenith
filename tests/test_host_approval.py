@@ -147,7 +147,7 @@ class HostApprovalTests(unittest.TestCase):
         with self.assertRaisesRegex(HostApprovalError, "expired before confirmation"):
             approve_host_request(
                 request, self.store,
-                input_stream=SlowTTY(challenge + "\\n"),
+                input_stream=SlowTTY(challenge + "\n"),
                 output_stream=FakeTTY(),
             )
 
