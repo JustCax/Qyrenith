@@ -120,6 +120,7 @@
         "PASS",
         "FAIL",
         "BLOCKED",
+        "INCONCLUSIVE",
         "UNKNOWN",
         "NOT_RUN",
         "UNSUPPORTED",
