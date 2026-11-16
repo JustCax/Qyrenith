@@ -1,18 +1,17 @@
-"""QDAS-instrumented migration step execution.
+"""Record QDAS observations for an already completed migration step report.
 
-Connects the stabilized QDAS observation layer to the migration workflow:
-every migration step execution produces a QDAS ExecutionEvent, and the QDAS
-event digest is stored in the migration AssuranceLedger record's evidence_ids.
+This module does not launch a worker, execute a migration, apply a patch, or
+authorize a side effect. A caller supplies an already captured bounded-process
+report; this module records its QDAS event and references that event digest from
+a migration AssuranceLedger record.
 
 QDAS remains strictly observational: it records events, classifies failures
-(symptom-only, never root-cause), and produces unconfirmed hypotheses. Nothing
-in this module executes migrations, applies patches, or authorizes success.
-
-The QDAS and migration assurance ledgers are separate append operations, not one
-transaction. If the QDAS append succeeds and the assurance append fails, the QDAS
-event remains without a corresponding assurance record. Callers must treat that
-exception as a partial evidence write requiring reconciliation; this module does
-not provide a cross-ledger commit protocol or automatic orphan recovery.
+(symptom-only, never root-cause), and produces unconfirmed hypotheses. The two
+ledger appends are separate operations, not one transaction. If the QDAS append
+succeeds and the assurance append fails, the QDAS event remains without a
+corresponding assurance record. Callers must treat that exception as a partial
+evidence write requiring reconciliation; this module does not provide a
+cross-ledger commit protocol or automatic orphan recovery.
 """
 from __future__ import annotations
 
@@ -64,12 +63,14 @@ def record_migration_step_with_qdas(
     commit_id: str | None = None,
     recovery_reference: str | None = None,
 ) -> tuple[QdasCaptureResult, dict[str, Any]]:
-    """Run one migration step under QDAS observation and record an assurance ledger entry.
+    """Record an already captured migration-step report in QDAS and assurance.
 
-    Returns the QDAS capture result and the AssuranceLedger record. The QDAS
-    event digest (event_digest) is bound into the assurance record's evidence_ids.
-    The two appends are not atomic: an assurance append failure leaves the already
-    committed QDAS event in place and requires caller-managed reconciliation.
+    This function does not execute or authorize the migration step. The caller
+    supplies the process report and exact run/step/worker metadata. Returns the
+    QDAS capture result and AssuranceLedger record. The QDAS event digest is
+    bound into the assurance record's evidence_ids. The two appends are not
+    atomic: an assurance append failure leaves the committed QDAS event in
+    place and requires caller-managed reconciliation.
     """
     root = Path(project).expanduser().resolve(strict=True)
     started = datetime.now(timezone.utc) if started_at is None else started_at
