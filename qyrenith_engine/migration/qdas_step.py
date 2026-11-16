@@ -140,12 +140,17 @@ def reconcile_migration_evidence_commit(
 
     fields = copy.deepcopy(error.assurance_fields)
     evidence_ids = fields.get("evidence_ids")
-    if not isinstance(evidence_ids, (list, tuple)) or error.event_digest not in evidence_ids:
-        raise RuntimeError("recovery payload does not bind the original QDAS event")
+    if evidence_ids != [error.event_digest]:
+        raise RuntimeError("recovery payload must bind exactly the original QDAS event")
 
     initial = inspect_migration_evidence_link(
         error.event_digest, qdas_ledger, assurance_ledger
     )
+    if (
+        initial["qdas_record_digest"] is not None
+        and initial["qdas_record_digest"] != error.qdas_record_digest
+    ):
+        raise RuntimeError("recovery exception does not match the verified QDAS record")
     if initial["status"] == "LINKED":
         return initial
     if initial["status"] != "ORPHANED_QDAS_EVENT":
