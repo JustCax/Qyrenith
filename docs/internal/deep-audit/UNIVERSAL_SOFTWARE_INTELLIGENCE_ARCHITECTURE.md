@@ -113,7 +113,7 @@ These systems should be represented in the capability catalog and requirement gr
 ## 10. Capability catalog and release boundary
 
 
-The 27 domains are specified in `DIAGNOSTIC_INTELLIGENCE_EXPANSION_SPEC.md`; they are a target capability envelope, not 27 isolated products. Shared primitives include project inventory/snapshots, frontends, typed graphs, policy/execution contracts, common finding/report schemas, reproducible lab, independent oracles, versioned knowledge, adapter qualification, coverage and meta-audit.
+The 27 domains are specified in `DIAGNOSTIC_INTELLIGENCE_EXPANSION_SPEC.md` and are owner-accepted 1.2.0 release scope. They are grouped over shared engines and domain packs, not 27 isolated products. Shared primitives include project inventory/snapshots, frontends, typed graphs, policy/execution contracts, common finding/report schemas, reproducible lab, independent oracles, versioned knowledge, adapter qualification, coverage and meta-audit.
 
 The current 1.2.0 delivery order remains: documentation baseline, migration safety completion, QDAS, fourteen existing capability modules, integrated acceptance. The 27 domains do not imply all are fully implemented in one release. Owner-approved scope must identify shared foundations, executable vertical slices, unsupported/partial domains and evidence required for every shipped claim.
 
