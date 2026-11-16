@@ -436,8 +436,15 @@ def capture_project_snapshot(
     POSIX systems use descriptor-relative traversal with O_NOFOLLOW so replacing
     a directory or file between enumeration and opening cannot redirect the walk.
     Platforms without the required descriptor APIs use the documented portable
-    metadata-checked fallback.
+    metadata-checked fallback only where the platform can provide no-follow
+    path semantics. Windows path-based traversal is rejected until a native
+    handle-relative, reparse-point-safe implementation is available.
     """
+    if os.name == "nt":
+        raise SnapshotError(
+            "Windows snapshot capture is unavailable until handle-relative "
+            "reparse-point-safe traversal is implemented"
+        )
     policy = SnapshotLimits() if limits is None else limits
     if not isinstance(policy, SnapshotLimits):
         raise TypeError("limits must be SnapshotLimits")
