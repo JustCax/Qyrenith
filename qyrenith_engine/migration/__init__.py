@@ -20,6 +20,7 @@ from .preparation import MultiTargetWorkspaceBatch, prepare_multi_target_workspa
 from .qdas_step import (
     MigrationEvidenceCommitError,
     inspect_migration_evidence_link,
+    reconcile_migration_evidence_commit,
     record_migration_step_with_qdas,
 )
 from .snapshot import (ProjectSnapshot, SnapshotEntry, SnapshotError, SnapshotLimits, SnapshotVerification, capture_project_snapshot, deserialize_project_snapshot, serialize_project_snapshot, verify_project_snapshot)
@@ -57,7 +58,7 @@ __all__ = [
     "plan_targets",
     "MultiTargetWorkspaceBatch", "prepare_multi_target_workspaces",
     "MigrationEvidenceCommitError", "inspect_migration_evidence_link",
-    "record_migration_step_with_qdas",
+    "reconcile_migration_evidence_commit", "record_migration_step_with_qdas",
     "MigrationWorkerManifest", "MigrationWorkerRegistry", "RouteWorkerAssessment",
     "assess_route_workers", "WorkerPermission",
     "WorkerQualification", "WorkerRegistration", "WorkerResolution",
