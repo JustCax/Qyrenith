@@ -25,6 +25,24 @@ from ..qdas.ledger import QdasEventLedger
 from .assurance import AssuranceLedger
 
 
+class MigrationEvidenceCommitError(RuntimeError):
+    """QDAS evidence was committed but its assurance linkage failed.
+
+    The captured result and exact QDAS digests are retained so a caller can
+    perform an explicit, independently reviewed reconciliation. This exception
+    does not imply that the missing assurance record was repaired.
+    """
+
+    def __init__(self, capture_result: QdasCaptureResult) -> None:
+        self.capture_result = capture_result
+        self.event_digest = capture_result.event.event_digest
+        self.qdas_record_digest = capture_result.ledger_record["record_digest"]
+        super().__init__(
+            "QDAS event %s was committed, but its migration assurance link failed"
+            % self.event_digest
+        )
+
+
 def record_migration_step_with_qdas(
     report: Mapping[str, Any],
     project: str | Path,
@@ -94,34 +112,37 @@ def record_migration_step_with_qdas(
     event_digest = capture_result.event.event_digest
     evidence_ids = [event_digest]
 
-    assurance_record = assurance_ledger.append(
-        {
-            "run_id": run_id,
-            "step_id": step_id,
-            "transition_id": transition_id,
-            "source_identity": source_identity,
-            "target_identity": target_identity,
-            "plan_digest": plan_digest,
-            "pre_state_digest": pre_state_digest,
-            "worker_id": worker_id,
-            "worker_version": worker_version,
-            "worker_status": worker_status,
-            "changed_files": list(changed_files),
-            "evidence_ids": evidence_ids,
-            "verdict": verdict,
-            "created_at": created_at,
-            "worker_manifest_digest": worker_manifest_digest,
-            "worker_qualification_id": worker_qualification_id,
-            "worker_qualification_digest": worker_qualification_digest,
-            "diff_digest": diff_digest,
-            "post_state_digest": post_state_digest,
-            "artifact_digest": artifact_digest,
-            "commit_id": commit_id,
-            "recovery_reference": recovery_reference,
-        }
-    )
+    try:
+        assurance_record = assurance_ledger.append(
+            {
+                "run_id": run_id,
+                "step_id": step_id,
+                "transition_id": transition_id,
+                "source_identity": source_identity,
+                "target_identity": target_identity,
+                "plan_digest": plan_digest,
+                "pre_state_digest": pre_state_digest,
+                "worker_id": worker_id,
+                "worker_version": worker_version,
+                "worker_status": worker_status,
+                "changed_files": list(changed_files),
+                "evidence_ids": evidence_ids,
+                "verdict": verdict,
+                "created_at": created_at,
+                "worker_manifest_digest": worker_manifest_digest,
+                "worker_qualification_id": worker_qualification_id,
+                "worker_qualification_digest": worker_qualification_digest,
+                "diff_digest": diff_digest,
+                "post_state_digest": post_state_digest,
+                "artifact_digest": artifact_digest,
+                "commit_id": commit_id,
+                "recovery_reference": recovery_reference,
+            }
+        )
+    except Exception as exc:
+        raise MigrationEvidenceCommitError(capture_result) from exc
 
     return capture_result, assurance_record
 
 
-__all__ = ["record_migration_step_with_qdas"]
+__all__ = ["MigrationEvidenceCommitError", "record_migration_step_with_qdas"]
