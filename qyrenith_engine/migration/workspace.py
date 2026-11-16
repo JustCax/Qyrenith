@@ -194,7 +194,7 @@ class WorkspaceDescriptor:
 
 
 def _open_source_file(source_root: Path, relative_path: str) -> int:
-    """Open a snapshot file without following any parent symlink on POSIX."""
+    """Open a snapshot file through pinned parent handles; reject unsafe fallbacks."""
     parts = relative_path.split("/")
     flags = os.O_RDONLY
     if hasattr(os, "O_BINARY"):
@@ -209,7 +209,9 @@ def _open_source_file(source_root: Path, relative_path: str) -> int:
     )
     try:
         if not supports_relative_open:
-            return os.open(source_root.joinpath(*parts), flags)
+            raise WorkspaceError(
+                "safe descriptor-relative source opening is unavailable on this platform"
+            )
         root_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
         root_fd = os.open(source_root, root_flags)
         current_fd = root_fd
