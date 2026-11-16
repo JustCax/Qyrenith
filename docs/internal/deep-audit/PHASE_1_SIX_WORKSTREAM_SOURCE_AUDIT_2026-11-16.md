@@ -12,7 +12,10 @@ The six-workstream source review is complete. It confirms useful integrity, fres
 
 **Phase 1 remains OPEN and is still a hard blocker.** No workstream is marked TEST_VERIFIED or independently verified by this review.
 
-## 1. Owner Trust Store — `qyrenith_engine/trust_store.py`
+## 1. Owner Trust Store
+
+**Follow-up source change (2026-11-16):** `trust_store.py` now applies and reads back a protected Windows DACL for the trust-store directory, data file, and key file. The ACL is restricted to the current user SID and SYSTEM, requires the current user to own the path, rejects unexpected ACE principals, and blocks inherited permissions. A Windows-only regression test was added. This is source-level implementation only; it has not been executed on Windows and does not close the remaining handle-relative/reparse-point race, same-user threat, or host identity limitations.
+ — `qyrenith_engine/trust_store.py`
 
 ### Observed foundations
 
