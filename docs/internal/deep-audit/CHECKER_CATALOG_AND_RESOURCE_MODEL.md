@@ -171,6 +171,30 @@ The aggregate project-assurance evaluator must use mandatory inventory and cover
 - No provider can add itself to a mandatory profile or change policy.
 - Reports disclose exact requested/evaluated scope, exclusions, and unsupported coverage.
 
-## 11. Deferred work
+## 11. Current source-surface inventory — not a qualified checker catalog
+
+The following is the current code-level inventory visible in the 1.2.0 branch. These surfaces are not assigned synthetic checker IDs because a stable checker identity must be introduced with its versioned contract and qualification evidence. This inventory records what exists; it does not claim all listed surfaces are independent checkers or independently qualified.
+
+| Existing surface | Source / test references | What the current surface establishes | Explicit limitation |
+|---|---|---|---|
+| Generic CLI verification orchestration | `qyrenith.py`, `qyrenith_engine/analysis.py`, `tests/test_engine_110.py`, `tests/test_engine_cli_110.py` | Existing project discovery/verification entrypoints and workflow orchestration | Not a complete immutable checker catalog or profile resolver |
+| Python unittest adapter | `tests/test_python_unittest_adapter.py`, `tests/test_qyrenith.py` | Python test invocation/result integration | Does not qualify every Python version, test framework, or project shape |
+| Node verification surface | `tests/test_node_domain.py`, `benchmarks/node-verification/` | Narrow Node project verification fixtures | Not a general JavaScript/TypeScript semantic analyzer |
+| Rust verification surface | `tests/test_rust_domain.py`, `benchmarks/rust-verification/` | Narrow Cargo/Rust verification fixtures | Not a general Rust compiler/analyzer replacement or full ecosystem qualification |
+| Static-analysis QDAS capture adapter | `qyrenith_engine/analysis_qdas.py`, `tests/test_analysis_qdas_120.py` | Captures bounded analysis outcomes into QDAS without rerunning the underlying command | Not an independent static-analysis engine; raw-report retention is caller-side and evidence limitations remain |
+| Dynamic-audit QDAS capture adapter | `qyrenith_engine/dynamic_audit_qdas.py`, `tests/test_dynamic_audit_qdas_120.py` | Captures bounded runtime/process observations and classifies failures | Not production telemetry, a runtime sandbox, or proof of root cause |
+| Shared process execution boundary | `qyrenith_engine/execution.py`, `tests/test_execution_bounds_120.py`, `tests/test_external_check.py` | Shell-free bounded process execution, timeout/output accounting and reduced environment | Not an OS sandbox; platform-specific process-tree and resource enforcement remain incomplete |
+| QDAS event/diagnosis/repair planning | `qyrenith_engine/qdas/`, `tests/test_qdas_*.py` | Event capture, failure classification, hypotheses, proposal-only repair plans, ledger and lineage | Does not execute repair patches or independently certify its own diagnosis |
+| Migration knowledge/planner/worker assessment | `qyrenith_engine/migration/`, `tests/test_migration_*.py` | Typed migration facts, routes, worker records and authorization foundations | Not a general checker registry, controlled conformance runner, or production transformation executor |
+
+### Inventory disposition
+
+- The source-surface inventory above is a discovery aid, not a release qualification record.
+- No final user-facing profile names or mandatory checker sets are approved by this inventory.
+- The 27 diagnostic domains and DI-001..DI-081 are accepted 1.2.0 scope. The source surfaces above cover only a subset and must not be used to imply that every domain is implemented.
+- Each of the 27 domains requires explicit checker/engine/provider mapping, exact supported tuple, exclusions, test fixtures, evidence requirements, resource limits, and acceptance state.
+- A checker can be published as `QUALIFIED_PROVIDER` or `NATIVE_SUPPORTED` only after exact-digest conformance evidence and independent qualification.
+
+## 12. Deferred work
 
 The exact checker inventory, final profile names, check budgets, scheduling algorithms, schema/API/CLI surfaces, and supported platform matrix remain deferred until native checker contracts and representative workload measurements exist. This plan does not claim a checker catalog or profile runtime is implemented.
