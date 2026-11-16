@@ -39,7 +39,7 @@ The estimates below preserve the previous planning snapshot and must be refreshe
 | Roadmap phase | Workstream | Previous estimate | Current evidence disposition | Exit dependency |
 |---|---|---:|---|---|
 | Phase 0 | Architecture and specification baseline | 100% | COMPLETE — owner-accepted specification baseline and traceability closed; runtime implementation and verification remain in subsequent phases | Owner decisions and traceability closure |
-| Phase 1 | Existing migration-platform safety hardening | 60–70% | IN_PROGRESS — six workstreams source-audited; Windows trust-store ACL and Job Object hardening added but not tested; identity, isolation, worker qualification and evidence lifecycle remain open | Actual enforcement, authenticated approval, independent worker evidence, adversarial cross-platform verification |
+| Phase 1 | Existing migration-platform safety hardening | 60–70% | IN_PROGRESS — six workstreams source-audited; Windows owner/SYSTEM ACL and Job Object containment changes are source-present; Job Object resume now uses documented Toolhelp/ResumeThread APIs and termination failures are surfaced. Windows and regression tests remain unexecuted; authenticated identity, enforced isolation, independent worker qualification and evidence lifecycle remain open | Actual enforcement, authenticated approval, independent worker evidence, adversarial cross-platform verification |
 | Phase 2 | QDAS completion and independent validation | 50–60% | IN_PROGRESS — useful foundations exist; full integration and independent validation remain open | Phase 1 exit gate |
 | Phase 3 | Universal Migration Engine execution chain and integration completion | 35–45% | IN_PROGRESS — planning/authorization/workspace foundations exist; safe executable lifecycle and end-to-end integration remain incomplete | Phase 1 safety boundary and QDAS/evidence contracts |
 | Phase 4 | Capability modules implementation | 10–20% | IN_PROGRESS — specifications exist; complete module delivery has not started | Stable QDAS/checker/evidence contracts |
@@ -68,7 +68,7 @@ Checklist:
 - [ ] Confirm internal specifications are excluded from public package contents unless separately approved.
 - [ ] Record the final Phase 0 review, owner decisions, exact branch HEAD, and remaining accepted/deferred scope.
 
-**Current open design prerequisites:** the legacy state inventory and historical fixture mapping are not exhaustive; evidence backend comparison/selection remains deferred pending measurable results and owner disposition; checker/profile inventory and exact extension API boundaries need final closure. The four AA ADRs, 70 AA requirements, and 27 diagnostic domains are accepted scope as of 2026-11-16. Phase 0 MUST remain open until these are resolved or explicitly deferred through owner-approved scope decisions.
+**Follow-up prerequisites carried into implementation:** the legacy state inventory and historical fixture mapping, evidence-backend comparison, checker/profile inventory, and exact extension API delivery remain open work for their dependent implementation slices. They do not reopen Phase 0: the owner-accepted architecture/specification baseline and its 2026-11-16 decision/traceability exit record are COMPLETE. These follow-up items remain explicit blockers in the relevant Phase 1/2 and release gates; no implementation or verification is implied by Phase 0 completion.
 
 ## 4. Phase 1 — Existing migration-platform safety hardening
 
