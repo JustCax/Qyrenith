@@ -78,6 +78,26 @@ def _exclusive_reconciliation_lock(path: Path):
         else:
             import fcntl
 
+            if not hasattr(os, "O_NOFOLLOW"):
+                raise RuntimeError(
+                    "evidence reconciliation requires no-follow lock-file opening"
+                )
+            if not hasattr(os, "fchmod") or not hasattr(os, "getuid"):
+                raise RuntimeError(
+                    "evidence reconciliation cannot verify POSIX lock-file ownership"
+                )
+            if info.st_uid != os.getuid() or info.st_nlink != 1:
+                raise RuntimeError(
+                    "evidence reconciliation lock must be a single-link file owned by the current user"
+                )
+            os.fchmod(descriptor, 0o600)
+            secured_info = os.fstat(descriptor)
+            if (
+                secured_info.st_uid != os.getuid()
+                or secured_info.st_nlink != 1
+                or stat.S_IMODE(secured_info.st_mode) != 0o600
+            ):
+                raise RuntimeError("evidence reconciliation lock permissions are not private")
             try:
                 fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except OSError as exc:
