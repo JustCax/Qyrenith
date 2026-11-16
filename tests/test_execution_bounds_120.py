@@ -6,9 +6,14 @@ import time
 import tempfile
 import unittest
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
-from qyrenith_engine.execution import _WindowsJob, run_bounded_process, run_bounded_worker
+from qyrenith_engine.execution import (
+    _WindowsJob,
+    _terminate_process_group,
+    run_bounded_process,
+    run_bounded_worker,
+)
 
 
 class BoundedWorkerOutputTests(unittest.TestCase):
@@ -39,6 +44,31 @@ class BoundedWorkerOutputTests(unittest.TestCase):
 
 
 class WindowsJobObjectTests(unittest.TestCase):
+    def test_job_cleanup_failure_is_reported_as_unreliable_containment(self):
+        class FakeProcess:
+            pid = 123
+            returncode = 0
+
+            def poll(self):
+                return self.returncode
+
+            def terminate(self):
+                return None
+
+            def wait(self, timeout=None):
+                return self.returncode
+
+            def kill(self):
+                self.returncode = -9
+
+        class FailingJob:
+            def terminate_and_close(self):
+                raise OSError("simulated Job Object cleanup failure")
+
+        with patch("qyrenith_engine.execution.os.name", "nt"):
+            result = _terminate_process_group(FakeProcess(), FailingJob())
+        self.assertFalse(result)
+
     def test_termination_api_failure_is_reported_after_close_fallback(self):
         job = _WindowsJob.__new__(_WindowsJob)
         job._handle = 123
