@@ -349,6 +349,13 @@ def approve_host_request(
     supplied = source.readline().rstrip("\r\n")
     if not hmac.compare_digest(supplied, challenge):
         raise HostApprovalError("host approval challenge was not confirmed")
+    # The human may leave the prompt open. Bind approved_at to the successful
+    # response, not prompt display, and reject a request that expired while waiting.
+    instant = datetime.now(timezone.utc) if now is None else now
+    approved_at = _utc(instant, "approved_at")
+    approved = _parse_utc(approved_at, "approved_at")
+    if approved < issued or approved >= expiry:
+        raise HostApprovalError("approval request expired before confirmation")
     trust_store.decisions()
     if (
         trust_store.store_id != approved_store_id
