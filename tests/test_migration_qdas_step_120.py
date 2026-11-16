@@ -166,6 +166,9 @@ class TestQdasMigrationStep(unittest.TestCase):
                 )
 
             error = raised.exception
+            exposed_payload = error.assurance_fields
+            exposed_payload["verdict"] = "PASS"
+            self.assertEqual(error.assurance_fields["verdict"], "UNKNOWN")
             records = verify_qdas_ledger(qdas_path)
             self.assertEqual(len(records), 1)
             self.assertEqual(error.event_digest, records[0]["event"]["event_digest"])
