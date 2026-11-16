@@ -113,9 +113,9 @@ class _WindowsJob:
     def close(self) -> None:
         if self._handle:
             handle = self._handle
-            self._handle = self._wintypes.HANDLE()
             if not self._kernel32.CloseHandle(handle):
                 raise OSError(self._ctypes.get_last_error(), "CloseHandle(job) failed")
+            self._handle = self._wintypes.HANDLE()
 
 
 def _terminate_process_group(
