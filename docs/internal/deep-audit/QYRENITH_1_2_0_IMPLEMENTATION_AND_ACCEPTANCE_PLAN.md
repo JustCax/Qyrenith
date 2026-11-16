@@ -8,13 +8,36 @@
 
 ### Phase 0 — Documentation baseline
 - Preserve the 2026-11-16 owner acceptance of all four reconciled AA ADRs and verify their final wording remains aligned with the seven AA-01 directions, five-plane architecture, QDAS/RVL authority, migration authorization, and extensibility contract.
-- Maintain requirement-to-ADR traceability; close the source-state inventory and exact legacy mapping design; record the checker source-surface inventory; complete the host approval/isolation capability matrix; and resolve the physical evidence-backend recommendation before implementation depends on it.
+- Maintain requirement-to-ADR traceability and the conservative mapping policy for every observed tracked legacy state; collect real historical user-state fixtures and verify conversions during the Phase 1/2 test gates.
+- Record the current checker source-surface inventory and accepted resource/profile architecture; derive exact checker manifests, profile inventories, and budgets alongside the implementations and representative workload measurements in the relevant module phases.
+- Complete the host approval/isolation capability matrix as the specification baseline; implement and independently qualify the actual platform boundaries in Phase 1.
+- Fix the logical evidence model and complete the physical-backend comparison/fault-injection protocol in Phase 0; select the physical backend in Phase 1 after candidate measurements, before final evidence-store integration.
+- Define extension identity, qualification, trust, support, authorization, RVL execution, and QDAS evidence authority boundaries in Phase 0; deliver exact schemas and runtime APIs with the extension/module implementation slices.
 - Create and cross-link all eighteen normative specifications and the specification index.
 - Maintain `REQUIREMENT_TRACEABILITY_MATRIX.md` as the authoritative requirement-to-implementation/test/evidence/dependency/status map.
 - Resolve contradictions with existing public/internal docs.
 - Review all security, trust, permission, isolation, and non-claim language.
 - Keep internal specifications out of public package contents unless separately approved.
 - Maintain `HOST_APPROVAL_AND_ISOLATION_CAPABILITY_MATRIX.md` as the platform-specific source/enforcement/qualification crosswalk; it does not substitute for Phase 1 implementation or testing.
+
+### Phase 0 exit record — owner-accepted baseline (2026-11-16)
+
+**Phase 0 disposition: COMPLETE — specification and owner-decision baseline.** This does not mean the runtime is implemented or the overall implementation readiness gate has passed.
+
+Completed Phase 0 baseline items:
+
+- All four reconciled AA ADRs accepted by the owner.
+- All 70 AA requirements accepted across their existing eleven groups and recorded as ACCEPTED in the traceability matrix.
+- All 27 diagnostic domains and DI-001..DI-081 accepted as 1.2.0 release scope; current PARTIAL/NOT_STARTED states remain implementation inventory only.
+- The eighteen normative specifications and deep-audit navigation/index are present and cross-linked.
+- Host approval/isolation source capability matrix added, with enforcement gaps and untested platform cells explicit.
+- Current checker/verification source-surface inventory added without claiming qualification or final profile coverage.
+- Extension manifest, qualification, trust, support, authorization, execution, and evidence authority boundaries specified.
+- Legacy state vocabularies and conservative mapping rules documented; historical user-state fixtures remain a Phase 1/2 verification prerequisite.
+- Evidence-store logical architecture and common comparison/fault-injection protocol documented; physical backend selection is explicitly a Phase 1 pre-integration decision after candidate measurements.
+- Public/internal security, package allowlist, documentation links, and release non-claims reconciled at source level.
+
+Phase 0 completion is a documentation/specification baseline only. It does not certify any tests, platform support, checker, domain, extension, worker, isolation provider, or release artifact. Phase 1 remains a mandatory hard blocker.
 
 ### Phase 1 — Finish existing migration-platform work
 - Audit migration identity, transition validation, knowledge catalog, planner, worker contracts, authorization, ledger, snapshots, and workspace copying.
