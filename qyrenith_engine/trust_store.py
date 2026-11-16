@@ -102,6 +102,185 @@ def _reject_reparse_or_symlink(path: Path, *, directory: bool) -> os.stat_result
     return info
 
 
+def _secure_windows_acl(path: Path, *, directory: bool) -> None:
+    """Apply and verify a protected owner/SYSTEM-only Windows DACL."""
+    if os.name != "nt":
+        return
+
+    import ctypes
+    from ctypes import wintypes
+
+    advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+
+    token = wintypes.HANDLE()
+    process = kernel32.GetCurrentProcess()
+    if not advapi32.OpenProcessToken(process, 0x0008, ctypes.byref(token)):
+        raise TrustStoreError("cannot inspect current Windows security principal")
+
+    class SID_AND_ATTRIBUTES(ctypes.Structure):
+        _fields_ = [("Sid", ctypes.c_void_p), ("Attributes", wintypes.DWORD)]
+
+    class TOKEN_USER(ctypes.Structure):
+        _fields_ = [("User", SID_AND_ATTRIBUTES)]
+
+    class ACL_SIZE_INFORMATION(ctypes.Structure):
+        _fields_ = [
+            ("AceCount", wintypes.DWORD),
+            ("AclBytesInUse", wintypes.DWORD),
+            ("AclBytesFree", wintypes.DWORD),
+        ]
+
+    class ACE_HEADER(ctypes.Structure):
+        _fields_ = [
+            ("AceType", wintypes.BYTE),
+            ("AceFlags", wintypes.BYTE),
+            ("AceSize", wintypes.WORD),
+        ]
+
+    def win_error(message: str) -> TrustStoreError:
+        return TrustStoreError(f"{message} (Windows error {ctypes.get_last_error()})")
+
+    current_sid = None
+    system_sid = ctypes.c_void_p()
+    security_descriptor = ctypes.c_void_p()
+    token_buffer = None
+    try:
+        required = wintypes.DWORD()
+        advapi32.GetTokenInformation(token, 1, None, 0, ctypes.byref(required))
+        if required.value <= 0 or required.value > 65536:
+            raise TrustStoreError("cannot determine current Windows user SID")
+        token_buffer = ctypes.create_string_buffer(required.value)
+        if not advapi32.GetTokenInformation(
+            token, 1, token_buffer, required.value, ctypes.byref(required)
+        ):
+            raise win_error("cannot read current Windows user SID")
+        current_sid = ctypes.cast(token_buffer, ctypes.POINTER(TOKEN_USER)).contents.User.Sid
+        if not current_sid:
+            raise TrustStoreError("current Windows user SID is unavailable")
+
+        advapi32.ConvertStringSidToSidW(
+            "S-1-5-18", ctypes.byref(system_sid)
+        )
+        if not system_sid:
+            raise win_error("cannot construct the Windows SYSTEM SID")
+
+        sid_text_buffer = wintypes.LPWSTR()
+        if not advapi32.ConvertSidToStringSidW(
+            current_sid, ctypes.byref(sid_text_buffer)
+        ):
+            raise win_error("cannot encode current Windows user SID")
+        try:
+            current_sid_text = sid_text_buffer.value
+        finally:
+            kernel32.LocalFree(ctypes.cast(sid_text_buffer, ctypes.c_void_p))
+
+        inheritance = "OICI" if directory else ""
+        sddl = (
+            f"D:P(A;{inheritance};FA;;;SY)"
+            f"(A;{inheritance};FA;;;{current_sid_text})"
+        )
+        if not advapi32.ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            sddl, 1, ctypes.byref(security_descriptor), None
+        ):
+            raise win_error("cannot construct private Windows trust-store ACL")
+
+        if not advapi32.SetFileSecurityW(
+            str(path),
+            0x00000004 | 0x80000000,
+            security_descriptor,
+        ):
+            raise win_error("cannot apply private Windows trust-store ACL")
+
+        needed = wintypes.DWORD()
+        advapi32.GetFileSecurityW(
+            str(path), 0x00000001 | 0x00000004, None, 0, ctypes.byref(needed)
+        )
+        if needed.value <= 0 or needed.value > 65536:
+            raise TrustStoreError("cannot inspect Windows trust-store ACL")
+        descriptor_buffer = ctypes.create_string_buffer(needed.value)
+        if not advapi32.GetFileSecurityW(
+            str(path),
+            0x00000001 | 0x00000004,
+            descriptor_buffer,
+            needed.value,
+            ctypes.byref(needed),
+        ):
+            raise win_error("cannot read back Windows trust-store ACL")
+
+        owner = ctypes.c_void_p()
+        if not advapi32.GetSecurityDescriptorOwner(
+            descriptor_buffer, ctypes.byref(owner), None
+        ) or not advapi32.EqualSid(owner, current_sid):
+            raise TrustStoreError("Windows trust-store path must be owned by the current user")
+
+        dacl_present = wintypes.BOOL()
+        dacl_defaulted = wintypes.BOOL()
+        dacl = ctypes.c_void_p()
+        if not advapi32.GetSecurityDescriptorDacl(
+            descriptor_buffer,
+            ctypes.byref(dacl_present),
+            ctypes.byref(dacl),
+            ctypes.byref(dacl_defaulted),
+        ) or not dacl_present.value or not dacl:
+            raise TrustStoreError("Windows trust-store DACL is missing")
+
+        control = wintypes.WORD()
+        revision = wintypes.DWORD()
+        if not advapi32.GetSecurityDescriptorControl(
+            descriptor_buffer, ctypes.byref(control), ctypes.byref(revision)
+        ) or not (control.value & 0x1000):
+            raise TrustStoreError("Windows trust-store DACL must block inherited permissions")
+
+        acl_info = ACL_SIZE_INFORMATION()
+        if not advapi32.GetAclInformation(
+            dacl, ctypes.byref(acl_info), ctypes.sizeof(acl_info), 2
+        ):
+            raise win_error("cannot inspect Windows trust-store access entries")
+        if acl_info.AceCount != 2:
+            raise TrustStoreError("Windows trust-store ACL must contain only user and SYSTEM grants")
+
+        seen: set[str] = set()
+        for index in range(acl_info.AceCount):
+            ace_pointer = ctypes.c_void_p()
+            if not advapi32.GetAce(dacl, index, ctypes.byref(ace_pointer)):
+                raise win_error("cannot inspect Windows trust-store access entry")
+            header = ctypes.cast(ace_pointer, ctypes.POINTER(ACE_HEADER)).contents
+            if header.AceType != 0:
+                raise TrustStoreError("Windows trust-store ACL contains an unexpected access entry")
+            mask = ctypes.cast(
+                ace_pointer.value + ctypes.sizeof(ACE_HEADER), ctypes.POINTER(wintypes.DWORD)
+            ).contents.value
+            sid_pointer = ctypes.c_void_p(
+                ace_pointer.value + ctypes.sizeof(ACE_HEADER) + ctypes.sizeof(wintypes.DWORD)
+            )
+            if mask & 0x001F01FF != 0x001F01FF:
+                raise TrustStoreError("Windows trust-store ACL must grant full control to its principals")
+            if advapi32.EqualSid(sid_pointer, current_sid):
+                principal = "USER"
+            elif advapi32.EqualSid(sid_pointer, system_sid):
+                principal = "SYSTEM"
+            else:
+                raise TrustStoreError("Windows trust-store ACL grants access to an unexpected principal")
+            if principal in seen:
+                raise TrustStoreError("Windows trust-store ACL contains duplicate principal grants")
+            seen.add(principal)
+
+        if seen != {"USER", "SYSTEM"}:
+            raise TrustStoreError("Windows trust-store ACL must grant only user and SYSTEM access")
+    except TrustStoreError:
+        raise
+    except Exception as exc:
+        raise TrustStoreError("cannot establish a private Windows trust-store ACL") from exc
+    finally:
+        if security_descriptor:
+            kernel32.LocalFree(security_descriptor)
+        if system_sid:
+            kernel32.LocalFree(system_sid)
+        if token:
+            kernel32.CloseHandle(token)
+
+
 def _reject_git_worktree_path(directory: Path) -> None:
     current = directory.resolve(strict=True)
     while True:
@@ -121,7 +300,9 @@ def _ensure_private_directory(directory: Path, *, create: bool) -> None:
         _reject_reparse_or_symlink(directory, directory=True)
     else:
         raise TrustStoreError("trust-store directory does not exist")
-    if os.name != "nt":
+    if os.name == "nt":
+        _secure_windows_acl(directory, directory=True)
+    else:
         try:
             directory.chmod(0o700)
         except OSError as exc:
@@ -149,6 +330,8 @@ def _write_exclusive(path: Path, payload: bytes) -> None:
             os.fsync(stream.fileno())
     finally:
         os.close(descriptor)
+    if os.name == "nt":
+        _secure_windows_acl(path, directory=False)
 
 
 def _atomic_write(path: Path, payload: bytes) -> None:
@@ -164,7 +347,9 @@ def _atomic_write(path: Path, payload: bytes) -> None:
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(temporary, path)
-        if os.name != "nt":
+        if os.name == "nt":
+            _secure_windows_acl(path, directory=False)
+        else:
             directory_fd = os.open(path.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
             try:
                 os.fsync(directory_fd)
@@ -271,8 +456,10 @@ class OwnerTrustStore:
         key_exists = key_path.exists() or key_path.is_symlink()
         if store_exists:
             _reject_reparse_or_symlink(target, directory=False)
+            _secure_windows_acl(target, directory=False)
         if key_exists:
             _reject_reparse_or_symlink(key_path, directory=False)
+            _secure_windows_acl(key_path, directory=False)
         if not store_exists and not key_exists:
             if not create:
                 raise TrustStoreError("owner trust store is not initialized")
