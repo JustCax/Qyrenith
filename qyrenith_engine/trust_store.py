@@ -655,12 +655,18 @@ class OwnerTrustStore:
                     _reject_reparse_or_symlink(self.path, directory=False)
                 flags = os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
                 descriptor = os.open(self.path, flags, 0o600)
-                if os.name != "nt":
-                    os.fchmod(descriptor, 0o600)
-                    info = os.fstat(descriptor)
-                    if info.st_uid != os.getuid() or info.st_mode & 0o077:
-                        os.close(descriptor)
-                        raise TrustStoreError("trust-store lock permissions are unsafe")
+                try:
+                    if os.name == "nt":
+                        _secure_windows_acl(self.path, directory=False)
+                        _reject_reparse_or_symlink(self.path, directory=False)
+                    else:
+                        os.fchmod(descriptor, 0o600)
+                        info = os.fstat(descriptor)
+                        if info.st_uid != os.getuid() or info.st_mode & 0o077:
+                            raise TrustStoreError("trust-store lock permissions are unsafe")
+                except Exception:
+                    os.close(descriptor)
+                    raise
                 self.stream = os.fdopen(descriptor, "r+b")
                 deadline = time.monotonic() + 5.0
                 while True:
