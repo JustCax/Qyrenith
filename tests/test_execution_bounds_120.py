@@ -17,6 +17,29 @@ from qyrenith_engine.execution import (
 
 
 class BoundedWorkerOutputTests(unittest.TestCase):
+    def test_bounded_process_exposes_termination_failure(self):
+        report_data = {
+            "status": "BLOCKED",
+            "exit_code": 0,
+            "stdout": "",
+            "output_bytes": 0,
+            "stdout_bytes": 0,
+            "stderr_bytes": 0,
+            "output_limited": False,
+            "output_incomplete": False,
+            "input_incomplete": False,
+            "termination_failed": True,
+            "timed_out": False,
+            "duration_seconds": 0.1,
+            "shell": False,
+            "containment": "test",
+            "environment_digest": "0" * 64,
+        }
+        with patch("qyrenith_engine.execution._run_process", return_value=report_data):
+            report = run_bounded_process(["python", "-V"], Path("."))
+        self.assertEqual(report["status"], "BLOCKED")
+        self.assertTrue(report["termination_failed"])
+
     def test_stdout_and_stderr_share_one_output_budget(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary)
