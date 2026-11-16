@@ -106,9 +106,22 @@ class _WindowsJob:
             raise OSError(status, "NtResumeProcess failed")
 
     def terminate_and_close(self) -> None:
-        if self._handle:
-            self._kernel32.TerminateJobObject(self._handle, 1)
+        if not self._handle:
+            return
+        termination_error = None
+        if not self._kernel32.TerminateJobObject(self._handle, 1):
+            termination_error = OSError(
+                self._ctypes.get_last_error(), "TerminateJobObject failed"
+            )
+        try:
+            # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE remains the cleanup backstop.
             self.close()
+        except OSError as close_error:
+            if termination_error is not None:
+                raise close_error from termination_error
+            raise
+        if termination_error is not None:
+            raise termination_error
 
     def close(self) -> None:
         if self._handle:
