@@ -8,7 +8,7 @@ from .trust_store import OwnerTrustStore, TrustDecision, TrustStoreError, defaul
 from .migration import (
     MigrationAuthorization, MigrationAuthorizationPolicy, MigrationStepGrant,
     MigrationEvidenceCommitError, inspect_migration_evidence_link,
-    authorize_migration,
+    reconcile_migration_evidence_commit, authorize_migration,
     authorize_migration_with_owner_trust, validate_migration_authorization_with_owner_trust, migration_step_approval_scope, create_migration_step_approval_request, validate_migration_step_approval,
     deserialize_migration_authorization, serialize_migration_authorization,
     deserialize_migration_authorization_policy, serialize_migration_authorization_policy,
@@ -38,7 +38,8 @@ __all__ = [
     "OwnerTrustStore", "TrustDecision", "TrustStoreError", "default_trust_store_path",
     "AssuranceLedger", "AssuranceLedgerError", "LedgerLockedError", "verify_assurance_chain",
     "MigrationAuthorization", "MigrationAuthorizationPolicy", "MigrationStepGrant",
-    "MigrationEvidenceCommitError", "inspect_migration_evidence_link", "authorize_migration",
+    "MigrationEvidenceCommitError", "inspect_migration_evidence_link",
+    "reconcile_migration_evidence_commit", "authorize_migration",
     "deserialize_migration_authorization", "serialize_migration_authorization",
     "deserialize_migration_authorization_policy", "serialize_migration_authorization_policy",
     "validate_migration_authorization",
