@@ -179,6 +179,29 @@ class TestQdasMigrationStep(unittest.TestCase):
             )
             self.assertEqual(link_status["assurance_record_digests"], [])
 
+    def test_reconciliation_detects_dangling_and_duplicate_assurance_references(self):
+        with tempfile.TemporaryDirectory() as directory:
+            from qyrenith_engine.qdas.ledger import QdasEventLedger
+            qdas = QdasEventLedger(Path(directory) / "qdas.jsonl")
+            assurance = AssuranceLedger(Path(directory) / "assurance.jsonl")
+            digest = "c" * 64
+
+            assurance.append(assurance_fields(evidence_ids=[digest]))
+            dangling = inspect_migration_evidence_link(digest, qdas, assurance)
+            self.assertEqual(
+                dangling["status"], "ASSURANCE_REFERENCE_WITHOUT_QDAS_EVENT"
+            )
+
+            assurance.append(
+                assurance_fields(
+                    evidence_ids=[digest], run_id="run-duplicate",
+                    step_id="step-duplicate",
+                )
+            )
+            conflict = inspect_migration_evidence_link(digest, qdas, assurance)
+            self.assertEqual(conflict["status"], "CONFLICT")
+            self.assertEqual(len(conflict["assurance_record_digests"]), 2)
+
     def test_tampering_breaks_both_ledgers(self):
         with tempfile.TemporaryDirectory() as directory:
             qdas_path = Path(directory) / "qdas.jsonl"
