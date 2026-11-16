@@ -120,6 +120,13 @@ These are source observations, not runtime verification. Do not relabel any of t
 - [ ] CLI, PR description, public docs, internal specs, schemas, traceability and package contents agree.
 - [ ] Unsupported host boundaries remain propose-only/blocked/unsupported.
 
+
+#### Six-workstream source-audit completion (2026-11-16)
+
+The dedicated six-workstream review is recorded in [Phase 1 Safety Review — Six-Workstream Source Audit](PHASE_1_SIX_WORKSTREAM_SOURCE_AUDIT_2026-11-16.md). The review covers the trust store, host approval, worker qualification, bounded process execution, snapshot/workspace materialization, and migration authorization/step boundary.
+
+**Source-audit disposition: AUDITED — OPEN for all six workstreams.** This closes the requested source-inspection pass only. It does not pass Gate F, upgrade any test to TEST_VERIFIED, or establish independent verification. The report records each observed foundation, material limitation, and required closure evidence. In particular, Windows ACL/handle safety, authenticated human identity, independently collected worker conformance, enforced OS isolation (including Windows descendant containment), crash-safe lifecycle/reconciliation, and same-revision cross-platform adversarial evidence remain release blockers.
+
 ### Gate G — Implementation slices and independent validation
 
 - [ ] Every P0 requirement maps to a concrete implementation slice and acceptance evidence.
