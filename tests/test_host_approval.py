@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import io
 from pathlib import Path
 import tempfile
+import time
 import unittest
 
 from qyrenith_engine.approval import (
@@ -17,6 +18,12 @@ from qyrenith_engine.trust_store import OwnerTrustStore
 class FakeTTY(io.StringIO):
     def isatty(self):
         return True
+
+
+class SlowTTY(FakeTTY):
+    def readline(self, *args, **kwargs):
+        time.sleep(3.1)
+        return super().readline(*args, **kwargs)
 
 
 class HostApprovalTests(unittest.TestCase):
@@ -129,6 +136,19 @@ class HostApprovalTests(unittest.TestCase):
             validate_host_approval(
                 approval, "MIGRATION_STEP", self.scope, self.store,
                 now=now + timedelta(seconds=31),
+            )
+
+    def test_request_expiring_while_prompt_is_open_is_rejected(self):
+        now = datetime.now(timezone.utc).replace(microsecond=0)
+        request = create_host_approval_request(
+            "MIGRATION_STEP", self.scope, lifetime_seconds=3, now=now
+        )
+        challenge = f"APPROVE {request.action_type} {request.request_id} {request.nonce}"
+        with self.assertRaisesRegex(HostApprovalError, "expired before confirmation"):
+            approve_host_request(
+                request, self.store,
+                input_stream=SlowTTY(challenge + "\\n"),
+                output_stream=FakeTTY(),
             )
 
     def test_wrong_challenge_is_rejected(self):
