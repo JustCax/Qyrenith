@@ -1,5 +1,7 @@
+from concurrent.futures import ProcessPoolExecutor
 import hashlib
 import json
+import multiprocessing
 import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -15,6 +17,19 @@ from qyrenith_engine.trust_store import (
 NOW = datetime.now(timezone.utc).replace(microsecond=0)
 DIGEST_A = "sha256:" + "a" * 64
 DIGEST_B = "sha256:" + "b" * 64
+
+
+def _append_concurrent_trust_decision(arguments):
+    path, index = arguments
+    store = OwnerTrustStore.open(Path(path))
+    digest = "sha256:" + format(index + 1, "064x")
+    event = store.trust(
+        "EXECUTION_POLICY", digest,
+        reviewed_by=f"concurrent-writer-{index}",
+        reviewed_at=NOW + timedelta(seconds=index),
+        rationale=f"Concurrent writer fixture {index}",
+    )
+    return event.sequence
 
 
 class OwnerTrustStoreTests(unittest.TestCase):
@@ -88,6 +103,26 @@ class OwnerTrustStoreTests(unittest.TestCase):
                 "WORKER_QUALIFICATION", DIGEST_A, now=NOW + timedelta(seconds=2)
             )
         )
+
+    def test_concurrent_process_writers_preserve_every_event_and_sequence(self):
+        OwnerTrustStore.open(self.path, create=True)
+        writer_count = 8
+        arguments = [(str(self.path), index) for index in range(writer_count)]
+        with ProcessPoolExecutor(
+            max_workers=4,
+            mp_context=multiprocessing.get_context("spawn"),
+        ) as executor:
+            sequences = list(executor.map(_append_concurrent_trust_decision, arguments))
+
+        self.assertEqual(sorted(sequences), list(range(1, writer_count + 1)))
+        store = OwnerTrustStore.open(self.path)
+        decisions = store.decisions()
+        self.assertEqual(
+            [item.sequence for item in decisions],
+            list(range(1, writer_count + 1)),
+        )
+        self.assertEqual(store.generation, writer_count)
+        self.assertEqual(len(decisions), writer_count)
 
     def test_tampered_store_fails_integrity_verification(self):
         store = OwnerTrustStore.open(self.path, create=True)
