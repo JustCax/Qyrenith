@@ -38,7 +38,7 @@ The estimates below preserve the previous planning snapshot and must be refreshe
 
 | Roadmap phase | Workstream | Previous estimate | Current evidence disposition | Exit dependency |
 |---|---|---:|---|---|
-| Phase 0 | Architecture and specification baseline | 90–95% | IN_PROGRESS — all four AA ADRs, all 70 AA requirements, and all 27 diagnostic domains are owner-accepted; remaining design prerequisites and traceability closure remain open | Owner decisions and traceability closure |
+| Phase 0 | Architecture and specification baseline | 100% | COMPLETE — owner-accepted specification baseline and traceability closed; runtime implementation and verification remain in subsequent phases | Owner decisions and traceability closure |
 | Phase 1 | Existing migration-platform safety hardening | 55–65% | SOURCE_AUDITED — six workstreams reviewed; safety exit gate NOT PASSED | Actual enforcement, authenticated approval, independent worker evidence, adversarial cross-platform verification |
 | Phase 2 | QDAS completion and independent validation | 50–60% | IN_PROGRESS — useful foundations exist; full integration and independent validation remain open | Phase 1 exit gate |
 | Phase 3 | Universal Migration Engine execution chain and integration completion | 35–45% | IN_PROGRESS — planning/authorization/workspace foundations exist; safe executable lifecycle and end-to-end integration remain incomplete | Phase 1 safety boundary and QDAS/evidence contracts |
