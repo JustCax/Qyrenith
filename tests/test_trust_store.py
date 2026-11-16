@@ -53,15 +53,17 @@ class OwnerTrustStoreTests(unittest.TestCase):
     @unittest.skipUnless(os.name == "nt", "Windows ACL enforcement requires Windows")
     def test_windows_trust_store_uses_protected_user_and_system_acls(self):
         store = OwnerTrustStore.open(self.path, create=True)
-        _secure_windows_acl(self.path.parent, directory=True)
-        _secure_windows_acl(self.path, directory=False)
+        _secure_windows_acl(self.path.parent, directory=True, apply=False)
+        _secure_windows_acl(self.path, directory=False, apply=False)
         _secure_windows_acl(
-            self.path.with_name(self.path.name + ".key"), directory=False
+            self.path.with_name(self.path.name + ".key"),
+            directory=False,
+            apply=False,
         )
         store.decisions()
         lock_path = self.path.with_name(self.path.name + ".lock")
         self.assertTrue(lock_path.is_file())
-        _secure_windows_acl(lock_path, directory=False)
+        _secure_windows_acl(lock_path, directory=False, apply=False)
         self.assertEqual(store.generation, 0)
 
     def test_exact_digest_trust_expiry_and_revocation(self):
