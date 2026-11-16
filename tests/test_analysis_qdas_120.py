@@ -2,6 +2,7 @@
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from qyrenith_engine.analysis_qdas import record_analysis_with_qdas
@@ -45,6 +46,31 @@ class TestQdasStaticAnalysisCapture(unittest.TestCase):
                 capture_result.event.event_id,
             )
             self.assertEqual(qdas_records[0]["event"]["event_kind"], "STATIC_ANALYSIS")
+
+    @patch("qyrenith_engine.analysis_qdas.analyze_project")
+    def test_unknown_analysis_is_not_misclassified_as_infrastructure_error(self, analyze):
+        analyze.return_value = {
+            "schema": 1,
+            "status": "UNKNOWN",
+            "reason": "The analyzer could not establish a complete result.",
+            "files": [],
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            qdas_path = Path(directory) / "qdas.jsonl"
+            capture_result, analysis_report = record_analysis_with_qdas(
+                project=directory,
+                qdas_ledger=make_qdas_ledger(qdas_path),
+                project_id="proj-unknown",
+                project_revision="rev-unknown",
+                workspace_id="ws-unknown",
+                tool_name="python",
+                tool_version="3.11",
+                environment={},
+            )
+            self.assertEqual(analysis_report["status"], "UNKNOWN")
+            self.assertEqual(capture_result.report["status"], "BLOCKED")
+            self.assertEqual(capture_result.event.execution_status, "BLOCKED")
+            self.assertIsNone(capture_result.classification)
 
     def test_tampering_breaks_qdas_ledger(self):
         with tempfile.TemporaryDirectory() as directory:
