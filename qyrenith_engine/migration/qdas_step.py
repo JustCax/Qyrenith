@@ -36,6 +36,7 @@ from ..qdas.collector import QdasCaptureResult, record_execution_report
 from ..qdas.events import ExecutionEvent
 from ..qdas.ledger import QdasEventLedger
 from .assurance import AssuranceLedger
+from ..trust_store import _secure_windows_acl
 
 
 @contextmanager
@@ -49,6 +50,17 @@ def _exclusive_reconciliation_lock(path: Path):
         if not stat.S_ISREG(info.st_mode):
             raise RuntimeError("evidence reconciliation lock is not a regular file")
         if os.name == "nt":
+            path_info = path.stat(follow_symlinks=False)
+            if (
+                stat.S_ISLNK(path_info.st_mode)
+                or not stat.S_ISREG(path_info.st_mode)
+                or (path_info.st_dev, path_info.st_ino) != (info.st_dev, info.st_ino)
+            ):
+                raise RuntimeError("evidence reconciliation lock path changed or is a reparse point")
+            _secure_windows_acl(path, directory=False)
+            verified_info = path.stat(follow_symlinks=False)
+            if (verified_info.st_dev, verified_info.st_ino) != (info.st_dev, info.st_ino):
+                raise RuntimeError("evidence reconciliation lock changed during ACL verification")
             import msvcrt
 
             if info.st_size == 0:
