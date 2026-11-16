@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
+import re
 from typing import Any, Mapping, Sequence
 
 from ..qdas.collector import QdasCaptureResult, record_execution_report
@@ -25,12 +26,15 @@ from ..qdas.ledger import QdasEventLedger
 from .assurance import AssuranceLedger
 
 
-class MigrationEvidenceCommitError(RuntimeError):
-    """QDAS evidence was committed but its assurance linkage failed.
+_HEX_DIGEST = re.compile(r"^[0-9a-f]{64}$")
 
-    The captured result and exact QDAS digests are retained so a caller can
-    perform an explicit, independently reviewed reconciliation. This exception
-    does not imply that the missing assurance record was repaired.
+
+class MigrationEvidenceCommitError(RuntimeError):
+    """The QDAS append succeeded, but the assurance append did not return successfully.
+
+    The assurance write may itself have reached durable storage before an error
+    surfaced. Callers must inspect both ledgers before retrying; this exception
+    preserves the QDAS evidence needed for that reconciliation.
     """
 
     def __init__(self, capture_result: QdasCaptureResult) -> None:
@@ -41,6 +45,59 @@ class MigrationEvidenceCommitError(RuntimeError):
             "QDAS event %s was committed, but its migration assurance link failed"
             % self.event_digest
         )
+
+
+def inspect_migration_evidence_link(
+    event_digest: str,
+    qdas_ledger: QdasEventLedger,
+    assurance_ledger: AssuranceLedger,
+) -> dict[str, Any]:
+    """Read both verified ledgers and classify one migration evidence link.
+
+    This is an inspection operation only: it never appends, repairs, or deletes
+    evidence. It distinguishes an orphaned QDAS event from a missing event or a
+    dangling/duplicate assurance reference.
+    """
+    if not isinstance(event_digest, str) or not _HEX_DIGEST.fullmatch(event_digest):
+        raise ValueError("event_digest must be a lowercase SHA-256 digest")
+    if not isinstance(qdas_ledger, QdasEventLedger):
+        raise TypeError("qdas_ledger must be a QdasEventLedger")
+    if not isinstance(assurance_ledger, AssuranceLedger):
+        raise TypeError("assurance_ledger must be an AssuranceLedger")
+
+    qdas_records = qdas_ledger.verify()
+    assurance_records = assurance_ledger.read()
+    qdas_matches = [
+        record for record in qdas_records
+        if record["event"]["event_digest"] == event_digest
+    ]
+    assurance_matches = [
+        record for record in assurance_records
+        if event_digest in record["evidence_ids"]
+    ]
+
+    if len(qdas_matches) > 1 or len(assurance_matches) > 1:
+        status = "CONFLICT"
+    elif not qdas_matches and assurance_matches:
+        status = "ASSURANCE_REFERENCE_WITHOUT_QDAS_EVENT"
+    elif qdas_matches and assurance_matches:
+        status = "LINKED"
+    elif qdas_matches:
+        status = "ORPHANED_QDAS_EVENT"
+    else:
+        status = "NOT_FOUND"
+
+    return {
+        "schema": 1,
+        "event_digest": event_digest,
+        "status": status,
+        "qdas_record_digest": (
+            qdas_matches[0]["record_digest"] if len(qdas_matches) == 1 else None
+        ),
+        "assurance_record_digests": sorted(
+            record["record_digest"] for record in assurance_matches
+        ),
+    }
 
 
 def record_migration_step_with_qdas(
@@ -145,4 +202,8 @@ def record_migration_step_with_qdas(
     return capture_result, assurance_record
 
 
-__all__ = ["MigrationEvidenceCommitError", "record_migration_step_with_qdas"]
+__all__ = [
+    "MigrationEvidenceCommitError",
+    "inspect_migration_evidence_link",
+    "record_migration_step_with_qdas",
+]
