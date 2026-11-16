@@ -41,10 +41,11 @@ Phase 0 completion is a documentation/specification baseline only. It does not c
 
 ### Phase 1 — Finish existing migration-platform work
 - Audit migration identity, transition validation, knowledge catalog, planner, worker contracts, authorization, ledger, snapshots, and workspace copying.
-- Close known CI failures, including Windows newline-sensitive subprocess tests.
+- Resolve known platform-test failures, including Windows newline-sensitive subprocess tests, through explicitly authorized local test runs; GitHub Actions remain disabled by owner direction.
 - Reconcile PR description with implemented workspace API and remaining limitations.
 - Resolve subprocess timeout/stdin/output-limit issues and command-path validation bypasses.
 - Review environment allowlisting, worker first-run approval, adapter trust, symlink/race behavior, concurrent access, and failure cleanup.
+- Do not use path-based Windows snapshot/workspace traversal as a security substitute: until native handle-relative, reparse-point-safe traversal and race tests exist, these operations must fail closed on Windows. Treat this as a temporary capability restriction, not Windows support.
 - Finish the trust and execution boundary before any migration worker can run: persist knowledge/worker allowlists in an owner-controlled trust store; revalidate catalog identity, trust decisions, claim scope, and expiry at approval and immediately before execution; implement a controlled conformance runner with independently collected results; add an authenticated host approval channel; and enforce filesystem/process/network limits through an OS sandbox or equivalent host boundary. Until every gate is enforceable, migration-platform and QDAS worker/repair execution remain propose-only. The legacy `worker-run` command is separate: its `--yes` flag is a caller assertion, not authenticated human approval, and it does not provide an OS sandbox.
 - Verify and pin the Gradle wrapper bootstrap JAR and distribution checksums; retain cross-platform subprocess newline and output-limit regression tests.
 - Enforce generated agent-instruction synchronization in tests and reject symlinked release output paths.
@@ -62,7 +63,7 @@ Do not begin Phase 2 until all of the following are true:
 - Human approval is authenticated through a trusted host channel; caller-supplied strings and CLI flags do not count.
 - Filesystem, process, environment, secret, and network restrictions are enforced by an OS sandbox or equivalent host-controlled boundary.
 - The assurance ledger is integrated into the relevant lifecycle and cannot be treated as independent proof when its local store is replaceable.
-- Workspace and recovery behavior has adversarial tests; any unsupported isolation guarantee remains explicitly unavailable.
+- Workspace and recovery behavior has adversarial tests; Windows snapshot/workspace preparation remains unavailable until handle-relative reparse-point-safe traversal is implemented and verified; any unsupported isolation guarantee remains explicitly unavailable.
 - The PR description, public docs, internal specs, traceability matrix, CLI behavior, and package contents agree.
 
 If any item is missing, keep the affected execution path disabled/propose-only, record the blocker, and do not declare Phase 1 complete.
