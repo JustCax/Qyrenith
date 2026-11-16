@@ -3,7 +3,7 @@
 **Review date:** 2026-11-10  
 **Target branch:** `feature/1.2.0-universal-migration-core`  
 **Source:** PR #3 at `0ee2edb9fe136bba729483e56d5c450421fa6e80`  
-**Status:** FOUR ADRs RECONCILED AS PROPOSALS — OWNER ACCEPTANCE STILL REQUIRED  
+**Status:** FOUR RECONCILED ADRs ACCEPTED BY OWNER — 2026-11-16  
 **Implementation status:** NOT STARTED
 
 ## 1. Review scope and decision boundary
@@ -17,7 +17,7 @@ This review compares the four proposed AA ADRs against:
 - the owner-approved Extensibility and Supportability Specification;
 - the existing native-engine-first and optional-provider policy.
 
-The four ADR texts have been selectively recreated on the 1.2.0 branch in reconciled form. They are **not accepted ADRs**. Their status remains owner acceptance required. This review does not accept PR #3, all 70 proposed AA requirements, or any runtime implementation.
+The four ADR texts were reconciled on the 1.2.0 branch and explicitly accepted by the owner on 2026-11-16. All 70 AA requirements across the eleven existing groups were also accepted, and all 27 diagnostic domains were included in the 1.2.0 release scope. This does not accept PR #3 as a whole or claim runtime implementation.
 
 ## 2. Decision summary
 
@@ -65,3 +65,7 @@ The four reconciled ADR documents are copied as reviewed proposals into the 1.2.
 - No code, schema, test, workflow, or runtime capability is implemented by this review.
 - No physical evidence backend, final verification profile catalog, extension SDK, or provider is selected/qualified.
 - No Actions run or release verification is claimed.
+
+## 4. Owner acceptance record — 2026-11-16
+
+The owner accepted ADR-AA-001 through ADR-AA-004 without requested amendments. The owner also accepted all 70 AA requirements in their existing eleven-group structure and included all 27 diagnostic domains in the 1.2.0 release scope. Implementation, tests, qualification and verification remain separate obligations.
