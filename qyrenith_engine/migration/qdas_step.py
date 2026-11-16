@@ -7,6 +7,12 @@ event digest is stored in the migration AssuranceLedger record's evidence_ids.
 QDAS remains strictly observational: it records events, classifies failures
 (symptom-only, never root-cause), and produces unconfirmed hypotheses. Nothing
 in this module executes migrations, applies patches, or authorizes success.
+
+The QDAS and migration assurance ledgers are separate append operations, not one
+transaction. If the QDAS append succeeds and the assurance append fails, the QDAS
+event remains without a corresponding assurance record. Callers must treat that
+exception as a partial evidence write requiring reconciliation; this module does
+not provide a cross-ledger commit protocol or automatic orphan recovery.
 """
 from __future__ import annotations
 
@@ -62,6 +68,8 @@ def record_migration_step_with_qdas(
 
     Returns the QDAS capture result and the AssuranceLedger record. The QDAS
     event digest (event_digest) is bound into the assurance record's evidence_ids.
+    The two appends are not atomic: an assurance append failure leaves the already
+    committed QDAS event in place and requires caller-managed reconciliation.
     """
     root = Path(project).expanduser().resolve(strict=True)
     started = datetime.now(timezone.utc) if started_at is None else started_at
