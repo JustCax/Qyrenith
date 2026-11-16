@@ -11,6 +11,7 @@ import unittest
 from qyrenith_engine.trust_store import (
     OwnerTrustStore,
     TrustStoreError,
+    _secure_windows_acl,
 )
 
 
@@ -48,6 +49,16 @@ class OwnerTrustStoreTests(unittest.TestCase):
             self.assertEqual(self.path.parent.stat().st_mode & 0o777, 0o700)
             self.assertEqual(self.path.stat().st_mode & 0o777, 0o600)
             self.assertEqual(self.path.with_name(self.path.name + ".key").stat().st_mode & 0o777, 0o600)
+
+    @unittest.skipUnless(os.name == "nt", "Windows ACL enforcement requires Windows")
+    def test_windows_trust_store_uses_protected_user_and_system_acls(self):
+        store = OwnerTrustStore.open(self.path, create=True)
+        _secure_windows_acl(self.path.parent, directory=True)
+        _secure_windows_acl(self.path, directory=False)
+        _secure_windows_acl(
+            self.path.with_name(self.path.name + ".key"), directory=False
+        )
+        self.assertEqual(store.generation, 0)
 
     def test_exact_digest_trust_expiry_and_revocation(self):
         store = OwnerTrustStore.open(self.path, create=True)
