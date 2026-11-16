@@ -6,7 +6,9 @@ from .execution import run_bounded_process, run_bounded_worker
 from .qdas import (ExecutionEvent, FailureClassification, FailureHypothesis, FailureObservation, QdasCaptureResult, QdasEventLedger, QdasLedgerError, RepairPlan, capture_process_event, classify_failure, create_execution_event, create_repair_plan, diagnose_failure, verify_qdas_ledger)
 from .trust_store import OwnerTrustStore, TrustDecision, TrustStoreError, default_trust_store_path
 from .migration import (
-    MigrationAuthorization, MigrationAuthorizationPolicy, MigrationStepGrant, authorize_migration,
+    MigrationAuthorization, MigrationAuthorizationPolicy, MigrationStepGrant,
+    MigrationEvidenceCommitError, inspect_migration_evidence_link,
+    authorize_migration,
     authorize_migration_with_owner_trust, validate_migration_authorization_with_owner_trust, migration_step_approval_scope, create_migration_step_approval_request, validate_migration_step_approval,
     deserialize_migration_authorization, serialize_migration_authorization,
     deserialize_migration_authorization_policy, serialize_migration_authorization_policy,
@@ -35,7 +37,8 @@ __all__ = [
     "capture_process_event", "classify_failure", "create_execution_event", "create_repair_plan", "diagnose_failure", "verify_qdas_ledger",
     "OwnerTrustStore", "TrustDecision", "TrustStoreError", "default_trust_store_path",
     "AssuranceLedger", "AssuranceLedgerError", "LedgerLockedError", "verify_assurance_chain",
-    "MigrationAuthorization", "MigrationAuthorizationPolicy", "MigrationStepGrant", "authorize_migration",
+    "MigrationAuthorization", "MigrationAuthorizationPolicy", "MigrationStepGrant",
+    "MigrationEvidenceCommitError", "inspect_migration_evidence_link", "authorize_migration",
     "deserialize_migration_authorization", "serialize_migration_authorization",
     "deserialize_migration_authorization_policy", "serialize_migration_authorization_policy",
     "validate_migration_authorization",
