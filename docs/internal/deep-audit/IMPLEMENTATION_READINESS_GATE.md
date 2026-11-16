@@ -33,7 +33,7 @@ No code work may bypass an unresolved safety gate merely because a document is c
 | Checker catalog | **DESIGN BASELINE EXISTS** | Checker/resource model and profile design exist; real checker inventory, exact contracts, scope, dependencies and qualification status still need audit | Yes for final profiles and checker runtime |
 | Verification profiles | **MODEL APPROVED; INVENTORY DEFERRED** | Immutable manifests specified; final names, check inventories, mandatory/optional scope and budgets require catalog measurements | Yes for profile publication/runtime |
 | Extension contract | **ARCHITECTURAL REQUIREMENT APPROVED** | Exact manifest/API schemas, protocol compatibility, qualification lifecycle records and provider conformance suites remain to be specified | Yes for extension runtime |
-| Phase 1 migration hardening | **OPEN — NOT VERIFIED COMPLETE** | Trust/revocation freshness, worker qualification, authenticated host approval, OS-enforced isolation, concurrency/recovery and platform evidence must all pass the implementation plan's exit gate | **YES — hard blocker before Phase 2** |
+| Phase 1 migration hardening | **OPEN — PARTIAL FOUNDATIONS; NOT VERIFIED COMPLETE** | Owner trust store, exact-digest decisions, freshness rechecks and one-time interactive host-approval records exist. Source review confirms the host principal is populated from `getpass.getuser()` and the trust-store HMAC is local-key integrity, not independent human identity authentication. Sandbox profile ID/digest are caller-supplied scope fields; no OS-enforced sandbox/provider or migration worker executor is present. Worker conformance evidence, actual host identity authentication, OS enforcement, concurrency/recovery and platform evidence remain open | **YES — hard blocker before Phase 2** |
 | QDAS | **PARTIAL IMPLEMENTATION EXISTS** | Existing event/ledger/diagnosis/repair foundations need migration-gate integration, full acceptance, evidence and independent verification | Yes for Phase 2 completion |
 | Fourteen post-QDAS modules | **SPECIFIED AT HIGH LEVEL; DELIVERY NOT STARTED AS A COMPLETE SET** | Exact slices, shared contracts, dependencies, acceptance and scope prioritization remain to be closed | Yes for complete 1.2.0 |
 | Twenty-seven diagnostic domains | **TARGET ENVELOPE — NOT A RELEASE PROMISE** | Shared-engine mapping exists; exact 1.2.0 vertical slices and deferred domains must be owner-approved | Yes for release scope clarity |
@@ -92,7 +92,19 @@ No code work may bypass an unresolved safety gate merely because a document is c
 
 ### Gate F — Phase 1 migration safety
 
-All items in the implementation plan's Phase 1 exit gate are mandatory:
+All items in the implementation plan's Phase 1 exit gate are mandatory.
+
+#### Source-based status clarification (2026-11-16)
+
+A read-only source review confirms that several foundations exist, but they do not close the gate:
+
+- `qyrenith_engine/trust_store.py` provides a per-user append-only trust-decision store, exact digest matching, revocation/expiry checks, locking, and a local HMAC. Its key is stored alongside the store; this is owner-local integrity protection, not protection against malicious code running as the same OS user or an independent trust anchor.
+- `qyrenith_engine/approval.py` provides an interactive terminal challenge, exact action-scope binding, a trust-store MAC, expiry, and single-use nonce consumption. The recorded `approved_by`/`host_principal` values are populated from `getpass.getuser()`; that is OS account attribution, not independent authentication of the human. Treat the current mechanism as explicit local confirmation, not yet proof of an authenticated human identity.
+- `migration_step_approval_scope()` binds a caller-supplied sandbox profile ID/digest into the approval scope. That binds the declaration, not proof that the profile was installed or enforced. No OS sandbox provider or migration worker execution boundary is established by this code.
+- `qyrenith_engine/execution.py` explicitly describes bounded subprocess execution as not an OS sandbox. In particular, the Windows path terminates the direct process and does not establish a Job Object/container boundary for descendants.
+- Workspace materialization creates a verified independent copy; it is not an OS/process/network isolation boundary.
+
+These are source observations, not runtime verification. Do not relabel any of the above as authenticated approval, sandboxing, or completed Phase 1 until independent enforcement and adversarial evidence exist.
 - [ ] Full 1.1.0 regression suite and required Windows/Linux/macOS matrix pass on the same commit.
 - [ ] No unresolved critical/high migration identity, planner, worker, authorization, ledger, snapshot or workspace defects.
 - [ ] Owner-controlled trust store, exact digest/revocation, and approval/execution-time freshness checks pass.
