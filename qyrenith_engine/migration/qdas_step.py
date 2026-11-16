@@ -16,22 +16,70 @@ inspect_migration_evidence_link() operation classifies LINKED, orphaned,
 dangling, conflicting, and missing references. The explicit
 reconcile_migration_evidence_commit() operation can repair only a verified
 ORPHANED_QDAS_EVENT using the exact payload preserved by the exception, under
-a per-event exclusive lock. Neither operation makes the original two writes
-atomic or provides automatic background recovery.
+a per-event OS advisory lock that is released automatically when the process
+exits, including after a crash. Persistent lock files are reused safely; stale
+files do not permanently block recovery. Neither operation makes the original
+two writes atomic or provides automatic background recovery.
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 import copy
 import os
 import re
+import stat
 from typing import Any, Mapping, Sequence
 
 from ..qdas.collector import QdasCaptureResult, record_execution_report
 from ..qdas.events import ExecutionEvent
 from ..qdas.ledger import QdasEventLedger
 from .assurance import AssuranceLedger
+
+
+@contextmanager
+def _exclusive_reconciliation_lock(path: Path):
+    """Acquire a crash-released OS lock on a persistent, no-follow lock file."""
+    flags = os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(path, flags, 0o600)
+    locked = False
+    try:
+        info = os.fstat(descriptor)
+        if not stat.S_ISREG(info.st_mode):
+            raise RuntimeError("evidence reconciliation lock is not a regular file")
+        if os.name == "nt":
+            import msvcrt
+
+            if info.st_size == 0:
+                os.write(descriptor, b"\\0")
+                os.fsync(descriptor)
+            os.lseek(descriptor, 0, os.SEEK_SET)
+            try:
+                msvcrt.locking(descriptor, msvcrt.LK_NBLCK, 1)
+            except OSError as exc:
+                raise RuntimeError("evidence reconciliation is already active") from exc
+        else:
+            import fcntl
+
+            try:
+                fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except OSError as exc:
+                raise RuntimeError("evidence reconciliation is already active") from exc
+        locked = True
+        yield
+    finally:
+        if locked:
+            if os.name == "nt":
+                import msvcrt
+
+                os.lseek(descriptor, 0, os.SEEK_SET)
+                msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+
+                fcntl.flock(descriptor, fcntl.LOCK_UN)
+        os.close(descriptor)
 
 
 _HEX_DIGEST = re.compile(r"^[0-9a-f]{64}$")
@@ -162,62 +210,40 @@ def reconcile_migration_evidence_commit(
     lock_path = assurance_ledger.path.with_name(
         assurance_ledger.path.name + ".reconcile-" + error.event_digest + ".lock"
     )
-    lock_flags = os.O_CREAT | os.O_EXCL | os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0)
-    lock_fd = None
-    lock_identity = None
     try:
-        try:
-            lock_fd = os.open(lock_path, lock_flags, 0o600)
-        except FileExistsError as exc:
-            raise RuntimeError(
-                "evidence reconciliation is already active or a stale lock requires inspection"
-            ) from exc
-        lock_info = os.fstat(lock_fd)
-        lock_identity = (lock_info.st_dev, lock_info.st_ino)
-        lock_payload = str(os.getpid()).encode("ascii")
-        if os.write(lock_fd, lock_payload) != len(lock_payload):
-            raise OSError("could not write the complete evidence reconciliation lock")
-        os.fsync(lock_fd)
-
-        current = inspect_migration_evidence_link(
-            error.event_digest, qdas_ledger, assurance_ledger
-        )
-        if current["status"] == "LINKED":
-            return current
-        if current["status"] != "ORPHANED_QDAS_EVENT":
-            raise RuntimeError(
-                "refusing evidence repair from state %s" % current["status"]
-            )
-
-        try:
-            assurance_ledger.append(fields)
-        except Exception:
-            # An append can report an error after replacement/fsync. Re-inspect
-            # before deciding whether the operation actually committed.
-            after_error = inspect_migration_evidence_link(
+        with _exclusive_reconciliation_lock(lock_path):
+            current = inspect_migration_evidence_link(
                 error.event_digest, qdas_ledger, assurance_ledger
             )
-            if after_error["status"] == "LINKED":
-                return after_error
-            raise
+            if current["status"] == "LINKED":
+                return current
+            if current["status"] != "ORPHANED_QDAS_EVENT":
+                raise RuntimeError(
+                    "refusing evidence repair from state %s" % current["status"]
+                )
 
-        repaired = inspect_migration_evidence_link(
-            error.event_digest, qdas_ledger, assurance_ledger
-        )
-        if repaired["status"] != "LINKED":
-            raise RuntimeError(
-                "assurance append returned but evidence link is %s" % repaired["status"]
-            )
-        return repaired
-    finally:
-        if lock_fd is not None:
-            os.close(lock_fd)
             try:
-                current_lock = os.lstat(lock_path)
-                if (current_lock.st_dev, current_lock.st_ino) == lock_identity:
-                    lock_path.unlink()
-            except FileNotFoundError:
-                pass
+                assurance_ledger.append(fields)
+            except Exception:
+                # An append can report an error after replacement/fsync. Re-inspect
+                # before deciding whether the operation actually committed.
+                after_error = inspect_migration_evidence_link(
+                    error.event_digest, qdas_ledger, assurance_ledger
+                )
+                if after_error["status"] == "LINKED":
+                    return after_error
+                raise
+
+            repaired = inspect_migration_evidence_link(
+                error.event_digest, qdas_ledger, assurance_ledger
+            )
+            if repaired["status"] != "LINKED":
+                raise RuntimeError(
+                    "assurance append returned but evidence link is %s" % repaired["status"]
+                )
+            return repaired
+    except OSError as exc:
+        raise RuntimeError("cannot safely acquire evidence reconciliation lock") from exc
 
 
 def record_migration_step_with_qdas(
