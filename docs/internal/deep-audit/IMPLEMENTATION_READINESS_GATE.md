@@ -28,7 +28,7 @@ No code work may bypass an unresolved safety gate merely because a document is c
 | Four AA ADRs | **RECONCILED DRAFTS — OWNER ACCEPTANCE PENDING** | ADR-AA-001..004 exist in reconciled form; explicit accept/amend/defer decision still required | Yes for AA architecture baseline |
 | Seventy PR #3 AA requirements | **RECONCILED — OWNER DISPOSITION PENDING** | Group-by-group reconciliation exists; all 70 remain PROPOSED; wording/overlap/acceptance must be approved | Yes for AA requirement baseline |
 | Legacy state inventory | **PARTIAL SOURCE INVENTORY** | Source and test labels inventoried; exhaustive schema/version and real historical fixture corpus still required | Yes for compatibility and outcome conversion |
-| Per-check outcome contract | **DESIGN APPROVED; IMPLEMENTATION GAP KNOWN** | Eight states approved; migration assurance allowlist/schema lacks INCONCLUSIVE; analyzer UNKNOWN→execution ERROR mapping needs correction | Yes for verdict/evidence slices |
+| Per-check outcome contract | **DESIGN APPROVED; PARTIALLY IMPLEMENTED, NOT TEST-VERIFIED** | Eight states approved; migration assurance allowlist/schema now include INCONCLUSIVE and a round-trip test exists; analyzer UNKNOWN is retained as raw evidence and no longer mapped to execution ERROR. Targeted tests are added but unexecuted; full consumer/legacy fixture compatibility remains open | Yes for verdict/evidence slices |
 | Evidence-store architecture | **LOGICAL MODEL APPROVED** | Backend evaluation and fault-injection plan exists; actual candidate measurements and owner backend decision remain open | Yes for persistent evidence implementation |
 | Checker catalog | **DESIGN BASELINE EXISTS** | Checker/resource model and profile design exist; real checker inventory, exact contracts, scope, dependencies and qualification status still need audit | Yes for final profiles and checker runtime |
 | Verification profiles | **MODEL APPROVED; INVENTORY DEFERRED** | Immutable manifests specified; final names, check inventories, mandatory/optional scope and budgets require catalog measurements | Yes for profile publication/runtime |
@@ -57,8 +57,8 @@ No code work may bypass an unresolved safety gate merely because a document is c
 - [ ] Inventory representative historical 1.1.0 state/evidence fixtures with secrets redacted.
 - [ ] Define exhaustive, versioned conversion rules for every known legacy value and explicit UNKNOWN fallback.
 - [ ] Preserve raw values and provenance; prove round-trip/export behavior.
-- [ ] Resolve the missing INCONCLUSIVE value in migration assurance schemas and all consumers.
-- [ ] Resolve analyzer UNKNOWN versus execution ERROR semantics.
+- [x] Add INCONCLUSIVE to the migration assurance runtime allowlist and JSON schema; add a round-trip test. **Implementation only; test execution and full consumer compatibility remain pending.**
+- [x] Correct analyzer UNKNOWN versus execution ERROR mapping without widening the four-state QDAS execution enum; add targeted tests. **Implementation only; test execution remains pending.**
 - [ ] Test that no legacy success, VERIFIED label, missing state, or ambiguous value becomes PASS/ASSURED without evidence.
 
 ### Gate C — Evidence persistence
