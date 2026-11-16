@@ -11,7 +11,7 @@ Qyrenith must remain useful locally and offline without requiring a hosted servi
 
 However, first-class extensibility includes language frontends, build/test integrations, domain adapters, diagnostic/knowledge packs, isolation providers, and optional external tools. Standard-library-first must not prevent extensibility or force every specialist compiler/tool to be reimplemented in the core.
 
-## Decision proposal
+## Accepted decision
 
 The core SHOULD remain Python-standard-library-first for mandatory runtime dependencies. First-party native Qyrenith components are preferred for core logic and normalized contracts. Optional external tools and extensions MAY be supported behind versioned, qualified, least-privilege contracts and central authorization/execution/evidence boundaries.
 
@@ -69,4 +69,4 @@ This ADR governs dependency policy, not the implementation language of every int
 - `RESEARCH_AND_STANDARDS_ALIGNMENT.md`
 - `SECURITY_AND_SUPPLY_CHAIN_AUDIT_SPEC.md`
 
-This proposal accepts no particular provider, adds no mandatory dependency, and does not claim the extension runtime is implemented.
+This accepted ADR accepts no particular provider, adds no mandatory dependency, and does not claim the extension runtime is implemented.
