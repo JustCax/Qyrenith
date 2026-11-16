@@ -1,9 +1,9 @@
 # Diagnostic Capability Coverage Matrix — Qyrenith 1.2.0
 
-**Status:** Initial repository-inventory assessment — NOT an implementation certification  
+**Status:** Owner-accepted 1.2.0 release scope; initial repository-inventory assessment — NOT an implementation certification  
 **Branch/HEAD:** `feature/1.2.0-universal-migration-core` / `e2e164ed16f6d9012669e4b3e7b57bf0d57cb356`  
 **Assessment date:** 2026-11-10  
-**Method:** Git tree inventory, deep-audit specifications, visible source/test path inventory and PR #9 description. No test suite was executed and this was not a line-by-line source audit.
+**Release scope:** All 27 domains are included in 1.2.0 by explicit owner decision on 2026-11-16. **Method:** Git tree inventory, deep-audit specifications, visible source/test path inventory and PR #9 description. No test suite was executed and this was not a line-by-line source audit.
 
 ## 1. Status semantics
 
@@ -21,6 +21,8 @@ No dedicated engine packages were identified in the reviewed tree for API analys
 Tests include migration/QDAS/approval/trust/recovery/release/performance and Node/Rust domain suites. A test filename does not prove behavioral breadth.
 
 ## 3. Domain coverage
+
+All 27 rows below are accepted release scope. The PARTIAL/NOT_STARTED labels describe the initial implementation inventory only; none of the domains is considered complete on that basis. Each domain requires its own supported-scope statement, implementation evidence, positive/negative/boundary/adversarial fixtures, and acceptance record.
 
 | # | Domain | Initial status | Visible foundation | Current test references / fixtures |
 |---:|---|---|---|---|
