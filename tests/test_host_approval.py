@@ -146,7 +146,7 @@ class HostApprovalTests(unittest.TestCase):
     def test_noninteractive_host_cannot_issue_approval(self):
         now = datetime.now(timezone.utc).replace(microsecond=0)
         request = create_host_approval_request("MIGRATION_STEP", self.scope, now=now)
-        with self.assertRaisesRegex(HostApprovalError, "interactive terminal"):
+        with self.assertRaisesRegex(HostApprovalError, "interactive local confirmation"):
             approve_host_request(
                 request, self.store, input_stream=io.StringIO(""),
                 output_stream=io.StringIO(), now=now,
