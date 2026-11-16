@@ -113,6 +113,67 @@ def _secure_windows_acl(path: Path, *, directory: bool) -> None:
     advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 
+    kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+    kernel32.LocalFree.argtypes = [ctypes.c_void_p]
+    kernel32.LocalFree.restype = ctypes.c_void_p
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.restype = wintypes.BOOL
+
+    advapi32.OpenProcessToken.argtypes = [
+        wintypes.HANDLE, wintypes.DWORD, ctypes.POINTER(wintypes.HANDLE)
+    ]
+    advapi32.OpenProcessToken.restype = wintypes.BOOL
+    advapi32.GetTokenInformation.argtypes = [
+        wintypes.HANDLE, wintypes.DWORD, ctypes.c_void_p,
+        wintypes.DWORD, ctypes.POINTER(wintypes.DWORD)
+    ]
+    advapi32.GetTokenInformation.restype = wintypes.BOOL
+    advapi32.ConvertStringSidToSidW.argtypes = [
+        wintypes.LPCWSTR, ctypes.POINTER(ctypes.c_void_p)
+    ]
+    advapi32.ConvertStringSidToSidW.restype = wintypes.BOOL
+    advapi32.ConvertSidToStringSidW.argtypes = [
+        ctypes.c_void_p, ctypes.POINTER(wintypes.LPWSTR)
+    ]
+    advapi32.ConvertSidToStringSidW.restype = wintypes.BOOL
+    advapi32.ConvertStringSecurityDescriptorToSecurityDescriptorW.argtypes = [
+        wintypes.LPCWSTR, wintypes.DWORD, ctypes.POINTER(ctypes.c_void_p),
+        ctypes.POINTER(wintypes.DWORD)
+    ]
+    advapi32.ConvertStringSecurityDescriptorToSecurityDescriptorW.restype = wintypes.BOOL
+    advapi32.SetFileSecurityW.argtypes = [
+        wintypes.LPCWSTR, wintypes.DWORD, ctypes.c_void_p
+    ]
+    advapi32.SetFileSecurityW.restype = wintypes.BOOL
+    advapi32.GetFileSecurityW.argtypes = [
+        wintypes.LPCWSTR, wintypes.DWORD, ctypes.c_void_p,
+        wintypes.DWORD, ctypes.POINTER(wintypes.DWORD)
+    ]
+    advapi32.GetFileSecurityW.restype = wintypes.BOOL
+    advapi32.GetSecurityDescriptorOwner.argtypes = [
+        ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(wintypes.BOOL)
+    ]
+    advapi32.GetSecurityDescriptorOwner.restype = wintypes.BOOL
+    advapi32.GetSecurityDescriptorDacl.argtypes = [
+        ctypes.c_void_p, ctypes.POINTER(wintypes.BOOL),
+        ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(wintypes.BOOL)
+    ]
+    advapi32.GetSecurityDescriptorDacl.restype = wintypes.BOOL
+    advapi32.GetSecurityDescriptorControl.argtypes = [
+        ctypes.c_void_p, ctypes.POINTER(wintypes.WORD), ctypes.POINTER(wintypes.DWORD)
+    ]
+    advapi32.GetSecurityDescriptorControl.restype = wintypes.BOOL
+    advapi32.GetAclInformation.argtypes = [
+        ctypes.c_void_p, ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD
+    ]
+    advapi32.GetAclInformation.restype = wintypes.BOOL
+    advapi32.GetAce.argtypes = [
+        ctypes.c_void_p, wintypes.DWORD, ctypes.POINTER(ctypes.c_void_p)
+    ]
+    advapi32.GetAce.restype = wintypes.BOOL
+    advapi32.EqualSid.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+    advapi32.EqualSid.restype = wintypes.BOOL
+
     token = wintypes.HANDLE()
     process = kernel32.GetCurrentProcess()
     if not advapi32.OpenProcessToken(process, 0x0008, ctypes.byref(token)):
@@ -246,6 +307,9 @@ def _secure_windows_acl(path: Path, *, directory: bool) -> None:
             if not advapi32.GetAce(dacl, index, ctypes.byref(ace_pointer)):
                 raise win_error("cannot inspect Windows trust-store access entry")
             header = ctypes.cast(ace_pointer, ctypes.POINTER(ACE_HEADER)).contents
+            expected_ace_flags = 0x03 if directory else 0x00
+            if header.AceSize < 8 or header.AceFlags != expected_ace_flags:
+                raise TrustStoreError("Windows trust-store ACL has unexpected inheritance flags")
             if header.AceType != 0:
                 raise TrustStoreError("Windows trust-store ACL contains an unexpected access entry")
             mask = ctypes.cast(
