@@ -188,4 +188,25 @@ This first inventory read the 1.2.0 branch versions of the source modules below 
 - `schemas/migration-assurance-record.schema.json`
 - `schemas/qdas-event-ledger-record.schema.json`
 
-The inventory is source-based, not a scan of user project state directories or every historical release artifact. Additional modules, schemas, CLI outputs, documentation examples, and real legacy fixtures still require a systematic sweep. No runtime code, schema, or tests were changed as part of this document.
+The inventory is source-based, not a scan of user project state directories or every historical release artifact. The initial source list above is not exhaustive; the following additional implementation/test surfaces must be included when completing the compatibility sweep:
+- `qyrenith_engine/analysis.py`
+- `qyrenith_engine/trust_cli.py`
+- `qyrenith_engine/migration/preparation.py`
+- `qyrenith_engine/migration/snapshot.py`
+- `qyrenith_engine/migration/workspace.py`
+- `qyrenith_engine/migration/qdas_step.py`
+- `qyrenith_engine/qdas/lineage.py`
+- `tests/test_engine_110.py`
+- `tests/test_engine_cli_110.py`
+- `tests/test_core_regressions.py`
+- `tests/test_recovery_and_targets.py`
+- `tests/test_verification_invariants.py`
+- `tests/test_migration_*.py`
+- `tests/test_qdas_*.py`
+- `tests/test_trust_store*.py`
+- `tests/test_host_approval.py`
+- all `schemas/*.schema.json` files that define persisted or exchanged state.
+
+The observed comparison outcomes include `MATCH` and `CHANGED`; the migration route planner uses `PLANNED`, `UNKNOWN`, `BLOCKED`, and `UNSUPPORTED`; the migration assurance record uses the eight per-check outcomes and a separate worker-status vocabulary. These are separate typed domains and must not be flattened into one universal state enum.
+
+No runtime code, schema, or tests were changed as part of this inventory update. Historical user state directories and real-world historical release artifacts are not present in this repository tree and remain unavailable for source-only inspection.
