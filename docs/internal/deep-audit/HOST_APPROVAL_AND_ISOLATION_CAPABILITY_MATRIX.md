@@ -32,7 +32,7 @@ These labels are not per-check outcomes and do not imply PASS.
 | Snapshot descriptor-relative traversal | POSIX implementation present; NOT_TESTED | POSIX implementation present; NOT_TESTED | Handle-relative/reparse-point-safe path NOT_IMPLEMENTED | POSIX path expected; NOT_TESTED |
 | Race-safe workspace traversal | NOT_QUALIFIED | NOT_QUALIFIED | NOT_QUALIFIED | NOT_QUALIFIED |
 | Bounded subprocess execution | SOURCE_PRESENT; not a sandbox | SOURCE_PRESENT; not a sandbox | SOURCE_PRESENT; not a sandbox | SOURCE_PRESENT; not a sandbox |
-| Process-tree containment | POSIX process-group termination path present; NOT_TESTED | POSIX process-group termination path present; NOT_TESTED | Windows Job Object containment NOT_IMPLEMENTED | POSIX process-group path expected; NOT_TESTED |
+| Process-tree containment | POSIX process-group termination path present; NOT_TESTED | POSIX process-group termination path present; NOT_TESTED | Windows Job Object descendant containment and 64-process cap SOURCE_PRESENT; NOT_TESTED | POSIX process-group path expected; NOT_TESTED |
 | Filesystem isolation | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED |
 | Network isolation | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED |
 | Secret isolation | Reduced child environment is present; OS boundary NOT_IMPLEMENTED | Same | Same | Same |
@@ -72,7 +72,7 @@ The current branch does not contain a controlled qualification runner that indep
 5. Implement Windows Job Object descendant containment and define equivalent process-tree behavior on POSIX platforms.
 6. Introduce a host-enforced RVL isolation provider contract for filesystem, network, environment, secrets, CPU, memory, process count, timeout, and output.
 7. Implement controlled worker conformance execution with independently collected, digest-bound raw evidence.
-8. Add adversarial tests for replay, expiry, principal substitution, trust revocation, TOCTOU, child-process escape, network access, filesystem escape, resource exhaustion, crash recovery, and concurrent access.
+8. Verify the Windows Job Object process-tree containment and 64-process cap on supported Windows hosts; add adversarial tests for replay, expiry, principal substitution, trust revocation, TOCTOU, child-process escape, network access, filesystem escape, resource exhaustion, crash recovery, and concurrent access.
 9. Run the same exact revision across supported Windows, macOS, Linux, and Android/Termux cells where support is claimed. Unsupported cells remain explicit.
 10. Retain exact commit, host/kernel, Python/runtime, filesystem, command, test IDs, raw results, and evidence digests.
 
