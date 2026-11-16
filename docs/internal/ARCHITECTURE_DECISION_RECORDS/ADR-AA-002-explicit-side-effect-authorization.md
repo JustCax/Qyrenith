@@ -11,7 +11,7 @@ Project inspection ranges from bounded local metadata reads to running project-c
 
 Qyrenith's migration authorization, host approval, RVL isolation, and five-plane architecture separate permission from containment. Authorization is not proof that a host-enforced boundary exists.
 
-## Decision proposal
+## Accepted decision
 
 Read-only, bounded, non-executing discovery is the default. Every side-effecting operation MUST be declared in a versioned plan and receive explicit authorization for its exact scope before execution.
 
@@ -79,4 +79,4 @@ Network policy is stricter:
 - `EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md`
 - `SECURITY_AND_SUPPLY_CHAIN_AUDIT_SPEC.md`
 
-This proposal does not authorize restoring GitHub Actions, publishing artifacts, or enabling network by default.
+This accepted ADR does not authorize restoring GitHub Actions, publishing artifacts, or enabling network by default.
