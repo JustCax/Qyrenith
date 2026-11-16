@@ -464,6 +464,9 @@ require(worker_qualification["properties"]["result_status"].get("const") == "PAS
         "only passing conformance records may qualify a worker")
 
 assurance = schemas["migration-assurance-record.schema.json"]
+require(set(assurance["properties"]["verdict"].get("enum", [])) == {
+    "PASS", "FAIL", "BLOCKED", "INCONCLUSIVE", "UNKNOWN", "NOT_RUN", "UNSUPPORTED", "ERROR",
+}, "migration assurance verdict vocabulary mismatch")
 require(set(assurance["properties"]["worker_status"].get("enum", [])) ==
         {"WORKED", "NO_CHANGE", "BLOCKED", "FAILED"},
         "assurance worker status vocabulary mismatch")
