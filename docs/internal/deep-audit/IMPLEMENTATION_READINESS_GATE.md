@@ -5,6 +5,8 @@
 **Target branch:** `feature/1.2.0-universal-migration-core`  
 **Purpose:** One auditable checklist for deciding when 1.2.0 is sufficiently specified to begin or resume implementation. This is a planning gate, not implementation evidence.
 
+**Roadmap view:** The reusable [Phase 0–7 Progress Dashboard](PHASE_0_7_PROGRESS_DASHBOARD.md) and its [animated HTML presentation](PHASE_0_7_PROGRESS_DASHBOARD.html) summarize delivery progress. They do not replace this gate, the normative implementation plan, or owner-approved decisions.
+
 ## 1. Readiness principle
 
 Implementation readiness is not measured by the number of documents or commits. It is reached only when:
