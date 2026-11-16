@@ -40,6 +40,8 @@ This directory contains eighteen normative engineering specifications for the 1.
 
 [Requirement Traceability Matrix](REQUIREMENT_TRACEABILITY_MATRIX.md) maps every stable requirement ID to its planned implementation target, acceptance tests, evidence artifact, dependencies, and conservative current status. It is the working status ledger and must be updated alongside implementation.
 
+The [Phase 0–7 Progress Dashboard](PHASE_0_7_PROGRESS_DASHBOARD.md) is the reusable roadmap/status template. An optional [animated HTML dashboard](PHASE_0_7_PROGRESS_DASHBOARD.html) provides a visual presentation. These are tracking/presentation aids, not normative specifications or verification evidence; the implementation plan and readiness gate remain authoritative.
+
 ## Requirement families
 
 - **DA-01:** master architecture and global trust/safety invariants.
