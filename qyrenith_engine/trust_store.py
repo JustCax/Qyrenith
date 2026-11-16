@@ -320,8 +320,10 @@ def _secure_windows_acl(
             sid_pointer = ctypes.c_void_p(
                 ace_pointer.value + ctypes.sizeof(ACE_HEADER) + ctypes.sizeof(wintypes.DWORD)
             )
-            if mask & 0x001F01FF != 0x001F01FF:
-                raise TrustStoreError("Windows trust-store ACL must grant full control to its principals")
+            if mask != 0x001F01FF:
+                raise TrustStoreError(
+                    "Windows trust-store ACL must use the exact FILE_ALL_ACCESS mask"
+                )
             if advapi32.EqualSid(sid_pointer, current_sid):
                 principal = "USER"
             elif advapi32.EqualSid(sid_pointer, system_sid):
