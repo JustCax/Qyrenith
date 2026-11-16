@@ -68,6 +68,9 @@ class TestQdasStaticAnalysisCapture(unittest.TestCase):
                 environment={},
             )
             self.assertEqual(analysis_report["status"], "UNKNOWN")
+            self.assertEqual(
+                json.loads(capture_result.report["stdout"])["status"], "UNKNOWN"
+            )
             self.assertEqual(capture_result.report["status"], "BLOCKED")
             self.assertEqual(capture_result.event.execution_status, "BLOCKED")
             self.assertEqual(capture_result.classification.category, "UNKNOWN_FAILURE")
