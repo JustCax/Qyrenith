@@ -42,7 +42,14 @@ from .assurance import AssuranceLedger
 @contextmanager
 def _exclusive_reconciliation_lock(path: Path):
     """Acquire a crash-released OS lock on a persistent, no-follow lock file."""
+    if os.name != "nt" and not hasattr(os, "O_NOFOLLOW"):
+        raise RuntimeError(
+            "evidence reconciliation requires no-follow lock-file opening"
+        )
     flags = os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0)
+    flags |= getattr(os, "O_CLOEXEC", 0)
+    if os.name == "nt":
+        flags |= getattr(os, "O_NOINHERIT", 0)
     descriptor = os.open(path, flags, 0o600)
     locked = False
     try:
@@ -105,17 +112,19 @@ def _exclusive_reconciliation_lock(path: Path):
         locked = True
         yield
     finally:
-        if locked:
-            if os.name == "nt":
-                import msvcrt
+        try:
+            if locked:
+                if os.name == "nt":
+                    import msvcrt
 
-                os.lseek(descriptor, 0, os.SEEK_SET)
-                msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
-            else:
-                import fcntl
+                    os.lseek(descriptor, 0, os.SEEK_SET)
+                    msvcrt.locking(descriptor, msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
 
-                fcntl.flock(descriptor, fcntl.LOCK_UN)
-        os.close(descriptor)
+                    fcntl.flock(descriptor, fcntl.LOCK_UN)
+        finally:
+            os.close(descriptor)
 
 
 _HEX_DIGEST = re.compile(r"^[0-9a-f]{64}$")
