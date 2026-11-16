@@ -591,6 +591,7 @@ def run_bounded_process(
         "output_truncated": truncated,
         "output_incomplete": report["output_incomplete"],
         "input_incomplete": report.get("input_incomplete", False),
+        "termination_failed": report.get("termination_failed", False),
         "timed_out": report["timed_out"],
         "duration_seconds": report.get("duration_seconds", 0.0),
         "shell": False,
