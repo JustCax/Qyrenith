@@ -49,6 +49,16 @@ class TestAssuranceLedger(unittest.TestCase):
             self.assertEqual(second["previous_digest"], first["record_digest"])
             self.assertEqual(len(verify_assurance_chain(records)), 2)
 
+    def test_inconclusive_verdict_round_trips_through_chain_verifier(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ledger = AssuranceLedger(Path(directory) / "assurance.jsonl")
+            appended = ledger.append(record_fields(verdict="INCONCLUSIVE"))
+            verified = verify_assurance_chain((appended,))
+            persisted = ledger.read()
+            self.assertEqual(persisted[0]["verdict"], "INCONCLUSIVE")
+            self.assertEqual(verified[0]["verdict"], "INCONCLUSIVE")
+            self.assertEqual(verified[0]["record_digest"], appended["record_digest"])
+
     def test_worker_qualification_provenance_round_trips_through_chain_verifier(self):
         with tempfile.TemporaryDirectory() as directory:
             ledger = AssuranceLedger(Path(directory) / "assurance.jsonl")
