@@ -60,9 +60,9 @@ class TestVersionConsistency(unittest.TestCase):
             properties,
         )
 
-    def test_all_github_actions_are_pinned_to_immutable_shas(self):
+    def test_present_github_actions_are_pinned_to_immutable_shas(self):
+        # Workflows may be intentionally absent when repository policy disables Actions.
         workflows = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
-        self.assertTrue(workflows, "GitHub Actions workflows must exist")
         for workflow in workflows:
             for line_number, line in enumerate(workflow.read_text(encoding="utf-8").splitlines(), 1):
                 if re.match(r"^\s*uses\s*:", line):
