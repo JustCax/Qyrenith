@@ -187,6 +187,15 @@ class TestQdasMigrationStep(unittest.TestCase):
             self.assertEqual(link_status["assurance_record_digests"], [])
 
             real_assurance = AssuranceLedger(Path(directory) / "assurance.jsonl")
+            recovery_lock = real_assurance.path.with_name(
+                real_assurance.path.name
+                + ".reconcile-" + error.event_digest + ".lock"
+            )
+            recovery_lock.write_text("active", encoding="ascii")
+            with self.assertRaisesRegex(RuntimeError, "already active or a stale lock"):
+                reconcile_migration_evidence_commit(error, qdas, real_assurance)
+            recovery_lock.unlink()
+
             original_qdas_record_digest = error.qdas_record_digest
             error.qdas_record_digest = "0" * 64
             with self.assertRaisesRegex(RuntimeError, "does not match the verified QDAS record"):
