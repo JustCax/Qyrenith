@@ -43,6 +43,32 @@ Every extension MUST declare a stable globally namespaced ID, name, category, pu
 
 Names, signatures, package metadata, or registry presence alone do not establish trust, qualification, or support.
 
+### 4.1 Contract object and authority boundaries
+
+The extension architecture uses separate, versioned records. These records are related by immutable IDs/digests but MUST NOT be collapsed into one self-asserted manifest:
+
+| Contract object | Authority / producer | Required content | Explicit non-authority |
+|---|---|---|---|
+| Extension manifest | Extension publisher declares; Qyrenith validates | Stable extension ID, category, publisher claims, extension/API versions, implementation digest, provenance, dependencies, exact support tuple, capabilities, input/output schemas, evidence types, permissions, network policy, resource limits | Does not establish trust, qualification, support, authorization, or execution |
+| Qualification record | Controlled conformance runner emits raw results; independent authority reviews/accepts | Exact manifest digest, API contract, support tuple, conformance-suite identity/version/digest, runner/environment identity, test count/results digest, raw evidence references, reviewer/authority, timestamp, expiry/revocation | A publisher-authored PASS label is not qualification evidence |
+| Trust decision | Owner-controlled trust authority | Exact subject kind/digest, decision, reviewer/principal, rationale, timestamp, expiry/revocation and append-only history | Does not prove that a conformance suite ran or authorize a particular operation |
+| Support claim | Qyrenith derives from native implementation or accepted provider qualification | Exact support tuple, feature coverage, exclusions, lifecycle/freshness, qualification reference and limitations | Is not a per-check outcome or a project assurance verdict |
+| Authorization grant | Central Control authority after authenticated host approval | Exact project snapshot, plan, operation, target, capabilities, limits, expiry and host-enforced policy reference | Does not itself enforce OS isolation |
+| Execution record | RVL is the sole execution authority; QDAS records lifecycle evidence | Exact command/provider digest, environment, isolation level, limits, start/end, process outcome, outputs and evidence references | Does not prove subject correctness or independently qualify the provider |
+| Evidence artifact/event | QDAS owns the canonical lifecycle and journal | Immutable artifact identity/digest, schema, producer, scope, provenance, freshness, lineage and acceptance state | Integrity digest alone is not authenticity or truth |
+
+Normative separation:
+
+1. Manifest parsing and discovery are non-executing and do not install dependencies.
+2. Qualification is exact-digest and exact-scope; it is invalidated by material identity, dependency, permission, contract, or support-scope changes.
+3. Trust, qualification, support, authorization, execution, per-check outcomes, aggregate assurance, and reproducibility remain separate typed concepts.
+4. Executable providers are invoked only through the central RVL boundary after the central Control authority has validated authorization and required host enforcement.
+5. Providers cannot write the canonical QDAS journal, change policy, create trust decisions, or issue final assurance verdicts.
+6. Remote registries and network resolution are optional and remain unavailable by default.
+7. If any required authority, evidence, or host capability is unavailable, the provider is not promoted to a stronger state; the affected operation remains BLOCKED/UNSUPPORTED/PROPOSE_ONLY as applicable.
+
+The exact JSON Schema and runtime API implementations are delivery artifacts for the relevant implementation slices. Their absence does not create permission to infer a loader, SDK, registry, or executable extension runtime.
+
 ## 5. Discovery, registration, and qualification
 
 Discovery MUST be non-executing. Finding a package or parsing its manifest MUST NOT run provider code. Registration and installation MUST NOT grant trust, authorization, qualification, or support.
