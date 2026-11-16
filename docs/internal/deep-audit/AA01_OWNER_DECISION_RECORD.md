@@ -3,13 +3,22 @@
 **Decision date:** 2026-11-10  
 **Owner approval:** Explicitly granted in the project-planning conversation on 2026-11-10  
 **Target branch:** `feature/1.2.0-universal-migration-core`  
-**Status:** Seven decision directions ACCEPTED; implementation NOT STARTED
+**Status:** Seven AA-01 decision directions, four AA ADRs, all 70 AA requirements, and all 27 diagnostic domains ACCEPTED for the 1.2.0 scope; implementation remains unverified
 
 ## 1. Approval scope
 
 The owner explicitly accepted all seven AA-01 decision directions and the first-class extensibility/supportability architectural requirement. These are binding inputs to 1.2.0 specification reconciliation and implementation planning; they do not mean runtime code, schemas, tests, providers, isolation mechanisms, or support claims are implemented or verified.
 
-This approval does not automatically accept all 70 proposed PR #3 AA requirements, the four proposed AA ADRs, PR #3 as a whole, every proposed diagnostic domain, or the six-pillar product grouping. Those retain their separately documented review/acceptance status.
+The owner separately accepted all four reconciled AA ADRs, all 70 AA requirements across the existing eleven groups, and all 27 diagnostic domains for inclusion in the 1.2.0 release scope on 2026-11-16. This does not accept PR #3 as a whole or the six-pillar product grouping. Acceptance establishes scope and architecture; it does not claim implementation, testing, qualification, or verification.
+
+## 2. Owner decisions recorded on 2026-11-16
+
+- **ADR-AA-001..004:** all four reconciled ADRs accepted as written.
+- **AA-REQ-PROJ/PLAN/CHK/EVD/POL/SEC/RPT/EXT/CMP/REL/NFR:** all 70 stable requirements accepted as a grouped cross-cutting assurance contract, preserving their existing eleven-group structure and IDs.
+- **Diagnostic capability scope:** all 27 domains and their 81 stable DI-001..DI-081 requirement IDs are included in the 1.2.0 release scope. Their current PARTIAL/NOT_STARTED implementation statuses remain unchanged until evidence supports advancement.
+- **Product grouping:** the six-pillar grouping is not accepted by this decision.
+
+These decisions update the acceptance baseline only. Each requirement/domain still needs implementation, tests, retained evidence, and independent review where required.
 
 ## 2. Accepted decisions
 
