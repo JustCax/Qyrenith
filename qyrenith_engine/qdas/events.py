@@ -490,6 +490,11 @@ def classify_failure(event: ExecutionEvent) -> FailureClassification | None:
         )
         if event.event_kind == "STATIC_ANALYSIS":
             category, rule = "ANALYZER_FAILURE", "ANALYZER-EXEC-001"
+    elif event.execution_status == "BLOCKED" and event.event_kind == "STATIC_ANALYSIS":
+        category, rule, reason, confidence = (
+            "UNKNOWN_FAILURE", "ANALYSIS-INCOMPLETE-001",
+            "Static analysis did not produce a conclusive result; inspect the retained analyzer report for the exact limitation.", "LOW",
+        )
     elif event.execution_status == "BLOCKED":
         category, rule, reason, confidence = (
             "INFRASTRUCTURE_FAILURE", "EXEC-BLOCKED-001",
