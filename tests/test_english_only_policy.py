@@ -45,7 +45,7 @@ class EnglishOnlyRepositoryPolicyTests(unittest.TestCase):
         self.assertEqual(
             violations,
             [],
-            "Repository text must use English-only ASCII lettering.",
+            "English only project.",
         )
 
 
