@@ -353,6 +353,16 @@ class OwnerTrustStore:
             raise TrustStoreError("trust-store event sequence is not contiguous")
         if len({item.event_id for item in events}) != len(events):
             raise TrustStoreError("trust-store event IDs must be unique")
+        latest_reviewed: dict[tuple[str, str], datetime] = {}
+        for item in events:
+            subject = (item.subject_kind, item.subject_digest)
+            reviewed = _parse_timestamp(item.reviewed_at, "reviewed_at")
+            previous = latest_reviewed.get(subject)
+            if previous is not None and reviewed < previous:
+                raise TrustStoreError(
+                    "trust decision timestamps must not move backwards for the same subject"
+                )
+            latest_reviewed[subject] = reviewed
         payload = {key_name: document[key_name] for key_name in ("schema", "store_id", "generation", "events")}
         expected_mac = hmac.new(key, _canonical(payload), hashlib.sha256).hexdigest()
         if not isinstance(document["hmac_sha256"], str) or not hmac.compare_digest(expected_mac, document["hmac_sha256"]):
@@ -479,12 +489,21 @@ class OwnerTrustStore:
                 raise TrustStoreError("trust store changed after host approval was issued")
             if current["generation"] >= _MAX_EVENTS:
                 raise TrustStoreError("trust store reached its event limit")
-            if subject_kind == "APPROVAL_NONCE" and any(
-                item["subject_kind"] == "APPROVAL_NONCE"
+            matching_events = [
+                item for item in current["events"]
+                if item["subject_kind"] == subject_kind
                 and item["subject_digest"] == subject_digest
-                for item in current["events"]
-            ):
+            ]
+            if subject_kind == "APPROVAL_NONCE" and matching_events:
                 raise TrustStoreError("approval nonce has already been consumed")
+            if matching_events:
+                latest_reviewed = _parse_timestamp(
+                    matching_events[-1]["reviewed_at"], "reviewed_at"
+                )
+                if _parse_timestamp(reviewed_text, "reviewed_at") < latest_reviewed:
+                    raise TrustStoreError(
+                        "trust decision timestamp cannot precede the latest decision for this subject"
+                    )
             event = TrustDecision(
                 sequence=current["generation"] + 1,
                 event_id=uuid.uuid4().hex,
