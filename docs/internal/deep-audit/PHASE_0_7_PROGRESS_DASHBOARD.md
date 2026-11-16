@@ -51,24 +51,27 @@ The estimates below preserve the previous planning snapshot and must be refreshe
 
 ## 3. Phase 0 — Architecture and specification baseline
 
-**Closure rule:** Phase 0 is complete only when the accepted architecture, owner decisions, normative specifications, requirement traceability, compatibility semantics, security/non-claim language, and documentation cross-references are internally consistent and explicitly accepted where owner approval is required.
+**Closure rule:** Phase 0 closes the owner-accepted architecture and specification baseline, decision record, requirement grouping/traceability, authority boundaries, and documentation consistency. It does not claim that every downstream compatibility fixture, physical evidence backend, checker profile, or extension SDK has already been implemented or measured; those delivery prerequisites are explicitly carried into their dependent phases.
 
-Checklist:
+**Completed Phase 0 baseline (2026-11-16):**
 
-- [ ] Reconcile ADR-AA-001..004 against the seven accepted AA-01 decision directions, five-plane architecture, QDAS/RVL authority, migration authorization, and extension contract.
-- [ ] Obtain explicit owner disposition for each reconciled ADR (accept, amend, or defer).
-- [ ] Obtain explicit owner disposition for the 70 proposed PR #3 AA requirements, individually or by clearly defined groups; do not treat reconciliation as acceptance.
-- [ ] Complete requirement-to-ADR/specification/implementation/test/evidence/dependency traceability.
-- [ ] Complete the legacy state inventory and fixture-backed, versioned compatibility mapping; preserve raw values and provenance.
-- [ ] Complete the checker catalog/resource model prerequisites and define the exact inventory/profile decision boundary.
-- [ ] Complete evidence-store candidate comparison using a common atomicity, crash-recovery, concurrency, portability, privacy, retention, export/restore, and fault-injection protocol; obtain the owner backend decision.
-- [ ] Complete the host-approval/isolation capability matrix and extension contract boundaries.
-- [ ] Reconcile terminology, statuses, requirement IDs, links, and claims across public/internal documentation, schemas, CLI, package manifests, and PR description.
-- [ ] Review security, trust, permissions, network defaults, isolation, evidence authenticity, and explicit non-claims.
-- [ ] Confirm internal specifications are excluded from public package contents unless separately approved.
-- [ ] Record the final Phase 0 review, owner decisions, exact branch HEAD, and remaining accepted/deferred scope.
+- [x] Reconcile ADR-AA-001..004 against the accepted AA architecture, five-plane authority model, QDAS/RVL boundaries, migration authorization, and extension contract.
+- [x] Record the owner's acceptance of all four reconciled AA ADRs.
+- [x] Record owner acceptance of all 70 AA requirements in their existing eleven groups.
+- [x] Record all 27 diagnostic domains and DI-001..DI-081 in the 1.2.0 release scope without upgrading their implementation states.
+- [x] Close the Phase 0 decision/requirement traceability record and cross-link the normative specifications and deep-audit index.
+- [x] Reconcile security, trust, approval, isolation, evidence-authority, release and non-claim language at the specification level.
+- [x] Record the Phase 0 exit decision in the normative implementation plan and readiness gate; synchronize this dashboard.
 
-**Follow-up prerequisites carried into implementation:** the legacy state inventory and historical fixture mapping, evidence-backend comparison, checker/profile inventory, and exact extension API delivery remain open work for their dependent implementation slices. They do not reopen Phase 0: the owner-accepted architecture/specification baseline and its 2026-11-16 decision/traceability exit record are COMPLETE. These follow-up items remain explicit blockers in the relevant Phase 1/2 and release gates; no implementation or verification is implied by Phase 0 completion.
+**Carried forward as implementation prerequisites (not Phase 0 exit blockers):**
+
+- [ ] Complete historical legacy-state inventory and fixture-backed, versioned compatibility mapping.
+- [ ] Compare physical evidence-store candidates with crash/fault, concurrency, portability, privacy, retention and export/restore measurements; obtain a separate backend decision.
+- [ ] Complete exact checker catalog/resource profiles and provider conformance runtime.
+- [ ] Deliver exact extension API/schema/SDK and provider conformance implementation.
+- [ ] Complete downstream package, build, test and independent verification evidence.
+
+These items remain visible in the relevant Phase 1/2 and release gates. Phase 0 is COMPLETE only for its accepted specification/decision baseline; no downstream implementation or verification is implied.
 
 ## 4. Phase 1 — Existing migration-platform safety hardening
 
