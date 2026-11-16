@@ -191,10 +191,10 @@ class TestQdasMigrationStep(unittest.TestCase):
                 real_assurance.path.name
                 + ".reconcile-" + error.event_digest + ".lock"
             )
-            recovery_lock.write_text("active", encoding="ascii")
-            with self.assertRaisesRegex(RuntimeError, "already active or a stale lock"):
-                reconcile_migration_evidence_commit(error, qdas, real_assurance)
-            recovery_lock.unlink()
+            from qyrenith_engine.migration.qdas_step import _exclusive_reconciliation_lock
+            with _exclusive_reconciliation_lock(recovery_lock):
+                with self.assertRaisesRegex(RuntimeError, "already active"):
+                    reconcile_migration_evidence_commit(error, qdas, real_assurance)
 
             original_qdas_record_digest = error.qdas_record_digest
             error.qdas_record_digest = "0" * 64
