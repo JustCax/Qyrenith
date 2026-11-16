@@ -318,6 +318,19 @@ def _validate_timestamp(value: object) -> str:
     return value
 
 
+def _require_real_directory(path: Path, display_path: str) -> os.stat_result:
+    """Reject a path that is not a real directory without following its final link."""
+    try:
+        info = path.stat(follow_symlinks=False)
+    except OSError as exc:
+        raise SnapshotError(f"cannot inspect project directory: {display_path}") from exc
+    if not stat.S_ISDIR(info.st_mode) or stat.S_ISLNK(info.st_mode):
+        raise SnapshotError(
+            f"directory was replaced by a non-directory or symlink before traversal: {display_path}"
+        )
+    return info
+
+
 def _same_object(before: os.stat_result, after: os.stat_result) -> bool:
     # Windows exposes file identity and creation-time metadata differently
     # between FindFirstFile/DirEntry and a file descriptor. Keep the portable
@@ -475,11 +488,7 @@ def capture_project_snapshot(
         if depth > policy.max_depth:
             raise SnapshotError("project exceeds max_depth")
         try:
-            before_dir = directory.stat(follow_symlinks=False)
-            if not stat.S_ISDIR(before_dir.st_mode) or stat.S_ISLNK(before_dir.st_mode):
-                raise SnapshotError(
-                    f"directory was replaced by a non-directory or symlink before traversal: {relative or '.'}"
-                )
+            before_dir = _require_real_directory(directory, relative or ".")
             children = []
             with os.scandir(directory) as iterator:
                 for child in iterator:
