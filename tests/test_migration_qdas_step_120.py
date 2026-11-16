@@ -51,14 +51,17 @@ class TestQdasMigrationStep(unittest.TestCase):
         from qyrenith_engine import (
             MigrationEvidenceCommitError as EngineCommitError,
             inspect_migration_evidence_link as engine_inspector,
+            reconcile_migration_evidence_commit as engine_reconciler,
         )
         from qyrenith_engine.migration import (
             MigrationEvidenceCommitError as MigrationCommitError,
             inspect_migration_evidence_link as migration_inspector,
+            reconcile_migration_evidence_commit as migration_reconciler,
         )
 
         self.assertIs(EngineCommitError, MigrationCommitError)
         self.assertIs(engine_inspector, migration_inspector)
+        self.assertIs(engine_reconciler, migration_reconciler)
 
     def test_records_qdas_event_and_assurance_record_with_digest_binding(self):
         with tempfile.TemporaryDirectory() as directory:
