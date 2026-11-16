@@ -171,7 +171,29 @@ A candidate is disqualified if it:
 
 Among candidates that pass every mandatory gate, compare operational simplicity, portability, measured performance, retention/privacy behavior, and maintenance cost. Record the decision and trade-offs in a separate owner-reviewed ADR update. Until then, backend choice remains DEFERRED.
 
-## 9. Open questions deliberately not decided here
+## 9. Preliminary implementation recommendation — owner decision required
+
+**Recommendation, not a selection:** evaluate Candidate A first for the 1.2.0 canonical implementation: one QDAS JSONL journal plus filesystem content-addressed immutable artifacts, with no authoritative query index.
+
+Rationale:
+
+- It is closest to the existing QDAS event-ledger implementation and the accepted standard-library-first core.
+- It preserves a transparent, exportable canonical journal and streamable artifacts.
+- The reference protocol commits an event only after its referenced artifacts are durable; interrupted artifact staging can leave an orphan artifact, but must never create a dangling accepted reference.
+- It avoids adding SQLite schema/index maintenance to the initial acceptance-critical path. Candidate D can be reconsidered later if measured query workloads justify a rebuildable derived index.
+
+Risks that still require comparative tests before the design can be finalized:
+
+- cross-platform lock, flush/fsync, replace, directory durability and crash recovery;
+- multi-process writer serialization and reader consistency;
+- torn final record handling and deterministic recovery;
+- artifact/journal commit ordering and orphan cleanup;
+- 1k/10k/100k event workloads, artifact-size matrix, export/restore and corruption injection;
+- Windows ACLs, macOS/Linux filesystem behavior, and Android/Termux limitations.
+
+The owner has accepted the logical evidence model but has not yet selected the physical backend. Do not implement a final storage migration or mark the backend selected based on this recommendation alone.
+
+## 10. Open questions deliberately not decided here
 
 - Whether the canonical journal is implemented as JSONL, SQLite, or another measured local transactional store.
 - Whether artifacts are filesystem-backed or stored in the same transactional database.
@@ -179,7 +201,7 @@ Among candidates that pass every mandatory gate, compare operational simplicity,
 - Whether external signatures/trust anchors are needed and, if so, the key identity/rotation/revocation model.
 - Whether multi-user/shared-host operation is in 1.2.0 scope; no networked or remote evidence service is implied.
 
-## 10. Related contracts
+## 11. Related contracts
 
 - `ADR-AA-003-evidence-lifecycle.md`
 - `AA01_OWNER_DECISION_RECORD.md`
