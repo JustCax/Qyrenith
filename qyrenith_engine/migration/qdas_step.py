@@ -35,8 +35,8 @@ from typing import Any, Mapping, Sequence
 from ..qdas.collector import QdasCaptureResult, record_execution_report
 from ..qdas.events import ExecutionEvent
 from ..qdas.ledger import QdasEventLedger
-from .assurance import AssuranceLedger
 from ..trust_store import _secure_windows_acl
+from .assurance import AssuranceLedger
 
 
 @contextmanager
@@ -53,6 +53,10 @@ def _exclusive_reconciliation_lock(path: Path):
             path_info = path.stat(follow_symlinks=False)
             if (
                 stat.S_ISLNK(path_info.st_mode)
+                or bool(
+                    getattr(path_info, "st_file_attributes", 0)
+                    & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+                )
                 or not stat.S_ISREG(path_info.st_mode)
                 or (path_info.st_dev, path_info.st_ino) != (info.st_dev, info.st_ino)
             ):
