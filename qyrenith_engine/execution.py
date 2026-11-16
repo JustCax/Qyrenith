@@ -84,6 +84,10 @@ class _WindowsJob:
         kernel32.SetInformationJobObject.restype = wintypes.BOOL
         kernel32.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
         kernel32.AssignProcessToJobObject.restype = wintypes.BOOL
+        kernel32.OpenProcess.argtypes = [
+            wintypes.DWORD, wintypes.BOOL, wintypes.DWORD
+        ]
+        kernel32.OpenProcess.restype = wintypes.HANDLE
         kernel32.TerminateJobObject.argtypes = [wintypes.HANDLE, wintypes.UINT]
         kernel32.TerminateJobObject.restype = wintypes.BOOL
         kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
@@ -123,9 +127,19 @@ class _WindowsJob:
     def assign_and_resume(self, process: subprocess.Popen) -> None:
         import ctypes
 
-        process_handle = self._wintypes.HANDLE(int(process._handle))
-        if not self._kernel32.AssignProcessToJobObject(self._handle, process_handle):
-            raise OSError(ctypes.get_last_error(), "AssignProcessToJobObject failed")
+        # Reopen by PID with the exact rights required by AssignProcessToJobObject;
+        # do not depend on subprocess.Popen's private process-handle attribute.
+        process_handle = self._kernel32.OpenProcess(
+            0x0101, False, process.pid  # PROCESS_SET_QUOTA | PROCESS_TERMINATE
+        )
+        if not process_handle:
+            raise OSError(ctypes.get_last_error(), "OpenProcess for Job Object assignment failed")
+        try:
+            if not self._kernel32.AssignProcessToJobObject(self._handle, process_handle):
+                raise OSError(ctypes.get_last_error(), "AssignProcessToJobObject failed")
+        finally:
+            if not self._kernel32.CloseHandle(process_handle):
+                raise OSError(ctypes.get_last_error(), "CloseHandle(process) failed")
 
         # Popen closes CreateProcessW's primary-thread handle. Because the child
         # was created suspended and cannot create other threads before resume,
