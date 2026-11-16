@@ -5,8 +5,10 @@ import sys
 import time
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import Mock
 
-from qyrenith_engine.execution import run_bounded_process, run_bounded_worker
+from qyrenith_engine.execution import _WindowsJob, run_bounded_process, run_bounded_worker
 
 
 class BoundedWorkerOutputTests(unittest.TestCase):
@@ -37,6 +39,20 @@ class BoundedWorkerOutputTests(unittest.TestCase):
 
 
 class WindowsJobObjectTests(unittest.TestCase):
+    def test_termination_api_failure_is_reported_after_close_fallback(self):
+        job = _WindowsJob.__new__(_WindowsJob)
+        job._handle = 123
+        job._ctypes = SimpleNamespace(get_last_error=lambda: 5)
+        job._kernel32 = SimpleNamespace(
+            TerminateJobObject=lambda handle, exit_code: False
+        )
+        job.close = Mock()
+
+        with self.assertRaisesRegex(OSError, "TerminateJobObject failed"):
+            job.terminate_and_close()
+
+        job.close.assert_called_once_with()
+
     @unittest.skipUnless(os.name == "nt", "Windows Job Object containment requires Windows")
     def test_descendant_is_terminated_when_root_process_exits(self):
         with tempfile.TemporaryDirectory() as temporary:
