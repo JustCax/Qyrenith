@@ -36,6 +36,16 @@ def target_identity(loader="fabric"):
 
 
 class TestIsolatedWorkspace(unittest.TestCase):
+    @unittest.skipUnless(os.name == "nt", "Windows-only fail-closed policy")
+    def test_windows_source_open_rejects_path_based_fallback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source"
+            source.mkdir()
+            (source / "file.txt").write_text("content", encoding="utf-8")
+            with self.assertRaisesRegex(WorkspaceError, "descriptor-relative"):
+                _open_source_file(source, "file.txt")
+
     def source_tree(self, root):
         (root / "src" / "main").mkdir(parents=True)
         (root / "empty").mkdir()
