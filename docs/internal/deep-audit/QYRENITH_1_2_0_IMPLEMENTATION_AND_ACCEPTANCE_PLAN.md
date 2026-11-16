@@ -7,7 +7,7 @@
 ## 2. Mandatory sequence
 
 ### Phase 0 — Documentation baseline
-- Reconcile all four AA-01 ADRs against the accepted seven owner decision directions, five-plane architecture, QDAS/RVL authority, migration authorization, and extensibility contract; obtain explicit owner acceptance before treating them as accepted architecture.
+- Preserve the 2026-11-16 owner acceptance of all four reconciled AA ADRs and verify their final wording remains aligned with the seven AA-01 directions, five-plane architecture, QDAS/RVL authority, migration authorization, and extensibility contract.
 - Complete requirement-to-ADR traceability and close deferred design prerequisites (legacy-state inventory, checker catalog/resource model, evidence-backend comparison, host approval/isolation matrix, and extension contract boundaries).
 - Create and cross-link all eighteen normative specifications and the specification index.
 - Maintain `REQUIREMENT_TRACEABILITY_MATRIX.md` as the authoritative requirement-to-implementation/test/evidence/dependency/status map.
@@ -118,7 +118,7 @@ Any failing required CI job, unresolved critical/high security defect, false PAS
 
 ## 8. Expanded capability envelope — proposed extension
 
-The 27 diagnostic domains in `DIAGNOSTIC_INTELLIGENCE_EXPANSION_SPEC.md` define the target capability envelope. They are grouped into shared engines and domain packs, not 27 isolated packages or a promise that all domains are complete in 1.2.0.
+The owner accepted all 27 diagnostic domains for the 1.2.0 release scope on 2026-11-16. The domains are grouped into shared engines and domain packs, not 27 isolated packages. Every domain must have a delivered implementation/support slice, domain-specific positive/negative/boundary/adversarial evidence, explicit limitations, and an acceptance disposition before release; current PARTIAL/NOT_STARTED labels are implementation status, not scope deferrals.
 
 The six product pillars map onto the existing five planes in `UNIVERSAL_SOFTWARE_INTELLIGENCE_ARCHITECTURE.md`. The current master remains canonical unless the owner approves a decision record changing it.
 
@@ -128,16 +128,16 @@ The six product pillars map onto the existing five planes in `UNIVERSAL_SOFTWARE
 - `OPTIMIZATION_AND_REPAIR_INTELLIGENCE_SPEC.md`: controlled optimization and repair.
 - `ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md`: crosswalk for the separate AA-01 draft, reconciled ADRs, and PR #3 disposition.
 - `ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md`: owner-approved seven-decision AA-01 design baseline; backend/profile details remain deferred where explicitly stated.
-- `ARCHITECTURE_DECISION_RECORDS/ADR-AA-001..004`: selectively reconciled ADR drafts; all four remain PROPOSED pending explicit owner acceptance.
+- `ARCHITECTURE_DECISION_RECORDS/ADR-AA-001..004`: selectively reconciled ADR drafts; all four are ACCEPTED by owner decision on 2026-11-16; implementation and verification remain separate.
 - `LEGACY_STATE_INVENTORY_AND_MAPPING.md`: source-based inventory and conservative mapping proposal; exhaustive historical fixture mapping remains a prerequisite.
 - `EVIDENCE_STORE_BACKEND_EVALUATION.md`: common backend comparison and fault-injection protocol; no physical backend is selected until evidence is reviewed.
 - `CHECKER_CATALOG_AND_PROFILE_DESIGN.md`: check identity, support resolution, immutable profile manifests, resource budgets, and aggregate assurance rules; final profile inventories remain deferred.
-- `AA_REQUIREMENT_RECONCILIATION.md`: review of all 70 proposed PR #3 AA requirements; owner disposition remains pending and IDs remain PROPOSED.
+- `AA_REQUIREMENT_RECONCILIATION.md`: review and owner acceptance of all 70 PR #3 AA requirements across eleven groups on 2026-11-16; implementation remains unverified.
 - `IMPLEMENTATION_READINESS_GATE.md`: consolidated pre-implementation readiness register and mandatory exit gates; it does not replace the phase sequence.
-- `AA_ADR_RECONCILIATION_REVIEW.md`: standalone reconciliation summary for the four AA ADR drafts; owner acceptance remains pending.
+- `AA_ADR_RECONCILIATION_REVIEW.md`: standalone reconciliation summary for the four AA ADR drafts; owner acceptance was recorded on 2026-11-16.
 - `EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md`: owner-approved first-class extension ecosystem, qualification, exact support scope, lifecycle, and compatibility contract.
 - `RESEARCH_AND_STANDARDS_ALIGNMENT.md`: source register and interoperability consequences.
-- DI-001..DI-081: proposed requirements in the authoritative matrix.
+- DI-001..DI-081: accepted 1.2.0 domain requirements across all 27 accepted diagnostic domains; implementation status remains independently tracked.
 - RCA-01..RCA-12 and OI-01..OI-10: add to the authoritative matrix before implementation.
 
 ### 8.2 Delivery interpretation
@@ -149,12 +149,12 @@ The existing Phase 1 migration safety gate and Phase 2 QDAS-first order remain u
 
 The separate AA-01 draft is a cross-cutting assurance contract, not a fifteenth capability module or a replacement for QDAS. Its project discovery/model, verification planner, authorization gate, checker registry/runtime, evidence validator/store, policy evaluator, reporting layer and provider boundary map onto the existing five planes and fourteen post-QDAS capability modules.
 
-The PR #3 draft contributes 70 proposed AA requirement IDs across eleven groups, including 55 P0 requirements. They are tracked in `REQUIREMENT_TRACEABILITY_MATRIX.md` as `PROPOSED`; the corrected PR #3 acceptance matrix maps all 70 IDs to an architecture owner, threat references, and a reserved acceptance-test ID. These are planned test identifiers, not existing test code or verification evidence. This does not accept PR #3, its four proposed ADRs, or its architecture. See `ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md` for the full mapping, overlap rules, resolved AA-01 owner decisions, remaining ADR/requirement review, and safe PR disposition.
+The owner accepted all 70 stable AA requirement IDs across eleven groups on 2026-11-16. Their traceability rows are now marked ACCEPTED as requirements; mapped acceptance-test identifiers remain plans, not existing test code or verification evidence. This does not accept PR #3 as a whole. See `ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md` for the mapping, overlap rules, architecture ownership and safe PR disposition.
 
 Before implementation:
 - implement the approved AA-01 decision directions from ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md only after reconciling the required contracts;
-- obtain explicit owner disposition for the four reconciled ADR-AA-001..004 drafts; keep their status PROPOSED until individually accepted or rejected;
-- obtain owner disposition for the 70 proposed AA requirement IDs after reviewing the reconciliation; do not treat the seven accepted AA-01 decision directions as blanket acceptance of these requirements;
+- verify the accepted ADR-AA-001..004 records and keep their implementation claims separate from architecture acceptance;
+- preserve the explicit acceptance of all 70 AA requirements across the eleven groups and ensure each implementation/test/evidence target remains traceable;
 - approve the exact requirement baseline and acceptance methods, including the distinction between SPECIFIED, IMPLEMENTED and VERIFIED;
 - complete the repository-wide and historical-fixture legacy state inventory; resolve the `INCONCLUSIVE` schema gap and the analyzer `UNKNOWN`/execution `ERROR` semantic mismatch before finalizing compatibility implementation;
 - complete the evidence backend comparison using the common atomicity, crash recovery, concurrency, portability, privacy, retention, export/restore, and fault-injection protocol; obtain owner approval for the selected backend;
@@ -181,4 +181,4 @@ If equivalent independent verification is unavailable, release readiness remains
 
 ## 10. Proposal governance
 
-The six-pillar grouping, 27-domain envelope, reproducibility extension and optimization specification remain proposals pending owner review. The extensibility and supportability architecture is an owner-approved requirement, but its implementation and each individual extension's qualification remain unverified. They do not automatically amend accepted architecture or remove requirements. Before implementation, review overlaps with existing modules, add RCA/OI IDs to the matrix, approve exact 1.2.0 vertical slices and record architecture decisions.
+The six-pillar grouping, reproducibility extension and optimization specification remain proposals pending owner review. The 27 diagnostic domains and DI-001..DI-081 requirements are owner-accepted 1.2.0 release scope; their implementation and qualification remain open until individually evidenced. The extensibility and supportability architecture is an owner-approved requirement, but its implementation and each individual extension's qualification remain unverified. They do not automatically amend accepted architecture or remove requirements. Before implementation, review overlaps with existing modules, add RCA/OI IDs to the matrix, approve exact 1.2.0 vertical slices and record architecture decisions.
