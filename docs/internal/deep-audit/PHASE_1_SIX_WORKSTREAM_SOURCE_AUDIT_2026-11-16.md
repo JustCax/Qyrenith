@@ -29,14 +29,14 @@ The six-workstream source review is complete. It confirms useful integrity, fres
 ### Findings and limits
 
 - The HMAC key is stored beside the store. This is local integrity protection, not an independent trust anchor, publisher identity, remote attestation, or protection against a malicious process running as the same OS user.
-- Windows handling confines the default store beneath the user profile and rejects observed reparse points, but does not create or verify owner-only ACLs for the store, key, parent directories, or lock file. Being under a profile path is not proof of restrictive ACLs.
+- Windows handling confines the default store beneath the user profile and rejects observed reparse points. A follow-up now applies and verifies a protected owner/SYSTEM DACL for the trust-store directory, data file and key file; the Windows-only regression test has not been run. Handle-relative/reparse-point-safe traversal and same-user isolation remain unresolved.
 - The path checks and subsequent path-based reads/writes are not a complete handle-relative defense against concurrent replacement. The current code must not be described as race-safe against a hostile local process.
 - POSIX ownership/mode checks are materially stronger than the Windows checks; cross-platform equivalence is not established.
 - The lock serializes cooperating processes. It is not a boundary against a malicious same-user process that can alter the files or key.
 
 ### Required closure evidence
 
-- Windows owner/SYSTEM-only ACL creation and verification for the complete store/key/lock path, including inherited ACL and reparse-point handling.
+- Windows owner/SYSTEM-only ACL verification for the complete store/key/lock path, plus handle-relative/reparse-point-safe filesystem operations. The source helper currently covers the trust-store directory, data file and key file; lock-path coverage remains to be confirmed.
 - Handle-based file identity checks and race-focused tests on each supported platform.
 - Cross-process contention, crash-during-replacement, tamper, revocation, expiry, and recovery tests on the same revision.
 - Explicitly retain the documented same-OS-user threat-model limitation unless a stronger protected service/key boundary is introduced.
@@ -99,7 +99,7 @@ The six-workstream source review is complete. It confirms useful integrity, fres
 
 ### Findings and limits
 
-- On Windows, `CREATE_NEW_PROCESS_GROUP` is not process-tree containment. The termination helper terminates the direct child; it does not assign the process to a Job Object or prove that descendants are terminated.
+- Windows execution now creates a suspended child, assigns it to a Job Object before resuming it, sets kill-on-close, and caps the job at 64 active processes. A Windows-only descendant-cleanup regression test was added but has not been run. This is process-tree containment, not filesystem/network isolation.
 - POSIX process-group cleanup is process cleanup, not filesystem, network, secret, syscall, identity, or resource isolation.
 - The default environment is reduced, but callers can opt into inherited environment. Neither mode is an OS security boundary.
 - Timeout/output limits do not constrain CPU, memory, disk, network, child process creation, filesystem access, or access to credentials available to the invoking account.
@@ -107,7 +107,7 @@ The six-workstream source review is complete. It confirms useful integrity, fres
 
 ### Required closure evidence
 
-- Windows Job Object assignment before untrusted code can execute, with kill-on-close and tested descendant cleanup; fail closed if assignment fails.
+- Verify Windows Job Object assignment-before-resume, kill-on-close, the 64-process cap, and descendant cleanup on Windows; retain fail-closed behavior if assignment or resume fails.
 - POSIX and Windows isolation providers with explicit filesystem, network, process, resource, environment, and secret-access policies.
 - Adversarial child/descendant, pipe inheritance, timeout, output flood, environment leakage, resource exhaustion, and cleanup tests on supported platforms.
 - A capability contract that distinguishes process cleanup from actual sandbox enforcement.
@@ -165,10 +165,10 @@ The six-workstream source review is complete. It confirms useful integrity, fres
 
 | Workstream | Source-level foundation | Material blocker | Review disposition |
 |---|---|---|---|
-| 1. Trust Store | Exact-digest local trust, HMAC, append/locking/freshness checks | Windows ACL/handle safety and independent trust-anchor limitations | **AUDITED — OPEN** |
+| 1. Trust Store | Exact-digest local trust, HMAC, append/locking/freshness checks; protected Windows owner/SYSTEM DACL source implementation | Windows handle/reparse-point safety, independent trust-anchor and same-user threat limitations; ACL test not run | **AUDITED — OPEN** |
 | 2. Host Approval | Interactive exact-scope approval and nonce lifecycle | No independent authenticated human identity | **AUDITED — OPEN** |
 | 3. Worker Qualification | Pinned declarations and qualification-record matching | No controlled runner or independently collected conformance evidence | **AUDITED — OPEN** |
-| 4. Process Execution | Bounded subprocess and POSIX process-group cleanup | No OS sandbox; Windows process-tree containment absent | **AUDITED — OPEN** |
+| 4. Process Execution | Bounded subprocess, POSIX process-group cleanup, Windows Job Object descendant containment and 64-process cap (source only) | No filesystem/network/environment/secret/resource sandbox; Windows test not run | **AUDITED — OPEN** |
 | 5. Workspace | Snapshot-pinned copies and partial rollback | Windows path race and no execution isolation/lifecycle guarantee | **AUDITED — OPEN** |
 | 6. Authorization | Plan/policy/worker/scope-bound grant validation | Caller attribution and declarative limits are not authenticated/enforced | **AUDITED — OPEN** |
 
@@ -178,8 +178,8 @@ The six-workstream source review is complete. It confirms useful integrity, fres
 
 1. Authenticated human approval with an independently verifiable principal and authority.
 2. Independently collected worker conformance evidence bound to the exact executable artifact.
-3. Enforced OS-level process/filesystem/network/resource/secret isolation, including Windows descendant containment.
-4. Windows owner-only trust-store ACL verification and handle/reparse-point-safe filesystem operations.
+3. Enforced OS-level filesystem/network/environment/resource/secret isolation; Windows process-tree containment is source-present but must be tested.
+4. Verify Windows owner-only trust-store ACLs; implement handle/reparse-point-safe filesystem operations.
 5. Crash-safe execution/workspace/evidence lifecycle and cross-store reconciliation.
 6. Cross-platform adversarial tests and full regression evidence on the same revision.
 
