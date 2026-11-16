@@ -6,6 +6,7 @@ import unittest
 from pathlib import Path
 
 from qyrenith_engine.migration.qdas_step import (
+    _exclusive_reconciliation_lock,
     MigrationEvidenceCommitError,
     inspect_migration_evidence_link,
     reconcile_migration_evidence_commit,
@@ -191,7 +192,6 @@ class TestQdasMigrationStep(unittest.TestCase):
                 real_assurance.path.name
                 + ".reconcile-" + error.event_digest + ".lock"
             )
-            from qyrenith_engine.migration.qdas_step import _exclusive_reconciliation_lock
             with _exclusive_reconciliation_lock(recovery_lock):
                 with self.assertRaisesRegex(RuntimeError, "already active"):
                     reconcile_migration_evidence_commit(error, qdas, real_assurance)
