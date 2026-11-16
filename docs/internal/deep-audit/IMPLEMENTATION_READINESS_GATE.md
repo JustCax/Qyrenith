@@ -129,6 +129,17 @@ The dedicated six-workstream review is recorded in [Phase 1 Safety Review — Si
 
 **Source-audit disposition: AUDITED — OPEN for all six workstreams.** This closes the requested source-inspection pass only. It does not pass Gate F, upgrade any test to TEST_VERIFIED, or establish independent verification. The report records each observed foundation, material limitation, and required closure evidence. In particular, Windows ACL/handle safety, authenticated human identity, independently collected worker conformance, enforced OS isolation (including Windows descendant containment), crash-safe lifecycle/reconciliation, and same-revision cross-platform adversarial evidence remain release blockers.
 
+### Package-manifest and test/workflow consistency review (2026-11-16)
+
+A read-only release-surface review compared `PUBLIC_FILES.txt`, `MANIFEST.in`, the setuptools configuration, the release builder, and the current PR file set.
+
+- `PUBLIC_FILES.txt` contains 181 unique entries; `MANIFEST.in` contains the exact same 181 paths. No internal deep-audit documents or GitHub Actions workflow files are included in the public source archive allowlist.
+- The explicit source-archive allowlist currently omits the new QDAS integration modules `qyrenith_engine/analysis_qdas.py`, `qyrenith_engine/dynamic_audit_qdas.py`, and `qyrenith_engine/migration/qdas_step.py`. This is not silently treated as a packaging defect before release scope is approved; however, if these capabilities are part of the 1.2.0 public runtime, their inclusion, package tests, schemas, and documentation must be reconciled before Phase 7 acceptance.
+- The branch removes `.github/workflows/ci.yml`, `.github/workflows/qyrenith-verify.yml`, and `.github/workflows/release.yml`; GitHub Actions remain disabled by owner direction. A source-level test inconsistency is present: `tests/test_version_consistency.py::test_all_github_actions_are_pinned_to_immutable_shas` currently asserts that at least one workflow file exists. With the workflows absent on this branch, that test is expected to fail if executed. This is a source finding, not a test result; no test was run. Resolve the test contract without restoring or triggering Actions.
+- The public `SECURITY.md` has been corrected to describe the step-boundary HostApproval API accurately while retaining the non-claims: local terminal attribution is not independent identity authentication; the lower-level authorization constructor still accepts caller-supplied attribution; the step API is not a worker executor; a declared sandbox profile is not enforced OS isolation.
+
+These findings must remain visible in the Phase 0/1 and release traceability. No package build, release archive, wheel, test suite, or CI was executed during this source review.
+
 ### Gate G — Implementation slices and independent validation
 
 - [ ] Every P0 requirement maps to a concrete implementation slice and acceptance evidence.
