@@ -102,8 +102,10 @@ def _reject_reparse_or_symlink(path: Path, *, directory: bool) -> os.stat_result
     return info
 
 
-def _secure_windows_acl(path: Path, *, directory: bool) -> None:
-    """Apply and verify a protected owner/SYSTEM-only Windows DACL."""
+def _secure_windows_acl(
+    path: Path, *, directory: bool, apply: bool = True
+) -> None:
+    """Apply and verify, or only verify, a protected owner/SYSTEM-only DACL."""
     if os.name != "nt":
         return
 
@@ -246,7 +248,7 @@ def _secure_windows_acl(path: Path, *, directory: bool) -> None:
         ):
             raise win_error("cannot construct private Windows trust-store ACL")
 
-        if not advapi32.SetFileSecurityW(
+        if apply and not advapi32.SetFileSecurityW(
             str(path),
             0x00000004 | 0x80000000,
             security_descriptor,
