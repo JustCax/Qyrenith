@@ -74,7 +74,7 @@ The four PR #3 ADRs were selectively recreated on the 1.2.0 branch in reconciled
 | ADR-AA-003 — evidence lifecycle | `docs/internal/ARCHITECTURE_DECISION_RECORDS/ADR-AA-003-evidence-lifecycle.md` | Reuses the QDAS canonical journal, immutable artifacts, derived index, and separation of integrity/authenticity/truth. | Explicit owner acceptance; physical backend remains deferred. |
 | ADR-AA-004 — standard-library-first core | `docs/internal/ARCHITECTURE_DECISION_RECORDS/ADR-AA-004-standard-library-first-core.md` | Preserves a standard-library-first core with qualified, least-privilege optional providers and exact support scopes. | Explicit owner acceptance of the reconciled dependency/provider contract. |
 
-The complete crosswalk, invariants, remaining gates, and non-claims are in `AA_ADR_RECONCILIATION_REVIEW.md`. Selective document integration is not a merge of PR #3 and does not accept all 70 proposed AA requirements.
+The complete crosswalk, invariants, remaining gates, and non-claims are in `AA_ADR_RECONCILIATION_REVIEW.md`. Selective document integration is not a merge of PR #3 and does not accept PR #3 as a whole. The 70 stable AA requirements were separately accepted by the owner on 2026-11-16.
 
 ## 6. AA-01 owner decisions — resolved on 2026-11-10
 
@@ -90,7 +90,7 @@ The owner approved all seven decision directions on 2026-11-10. The binding desi
 
 The owner also approved extensibility and supportability as a first-class architectural requirement, specified in `EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md`.
 
-Decision approval does not mark the runtime implemented or verified. It does not automatically accept all 70 proposed AA requirements, the four proposed ADRs, or PR #3 as a whole. The physical evidence backend, final profile catalog, exhaustive legacy mapping table, ADR reconciliation, and implementation contracts remain explicit follow-up work.
+Decision approval does not mark the runtime implemented or verified. The owner subsequently accepted all 70 AA requirements and all four reconciled ADRs on 2026-11-16; PR #3 as a whole remains unaccepted. The physical evidence backend, final profile catalog, exhaustive legacy mapping table, ADR reconciliation, and implementation contracts remain explicit follow-up work.
 
 ## 7. Reproducibility and optimization integration
 
@@ -127,3 +127,7 @@ PR #9 is the release PR for the 1.2.0 branch and remains open/draft against main
 
 - PR #3 source documents at `0ee2edb9fe136bba729483e56d5c450421fa6e80`: `ADVANCED_ASSURANCE_PROGRAM.md`, `ADVANCED_ASSURANCE_ARCHITECTURE.md`, `ADVANCED_ASSURANCE_REQUIREMENTS.md`, `ADVANCED_ASSURANCE_ACCEPTANCE_MATRIX.md`, `ADVANCED_ASSURANCE_THREAT_MODEL.md`, `ADVANCED_ASSURANCE_TEST_STRATEGY.md`, `COMPONENT_PROVENANCE_REGISTER.md`, and four proposed `ADR-AA-00x` records.
 - 1.2.0 branch documents reviewed at the pre-update head `d2c17194b101e2bf2cf5309e266c54600621ac93`: `DEEP_AUDIT_MASTER_ARCHITECTURE.md`, `QYRENITH_1_2_0_IMPLEMENTATION_AND_ACCEPTANCE_PLAN.md`, `REQUIREMENT_TRACEABILITY_MATRIX.md`, `EVIDENCE_AND_CONFIDENCE_MODEL.md`, `REPRODUCIBLE_VERIFICATION_LAB_SPEC.md`, `ROOT_CAUSE_AND_CROSS_MODULE_ANALYSIS_SPEC.md`, `META_AUDIT_AND_BENCHMARK_SPEC.md`, `LANGUAGE_AND_DOMAIN_ADAPTER_SPEC.md`, and the six-pillar/27-domain expansion documents.
+
+## Owner scope update — 2026-11-16
+
+The owner accepted all four reconciled AA ADRs, all 70 AA requirements across the eleven established groups, and all 27 diagnostic domains for the 1.2.0 release scope. This is not acceptance of PR #3 as a whole and does not advance implementation or verification states.
