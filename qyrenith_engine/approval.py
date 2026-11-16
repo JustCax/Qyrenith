@@ -323,7 +323,7 @@ def approve_host_request(
     source = sys.stdin if input_stream is None else input_stream
     output = sys.stdout if output_stream is None else output_stream
     if not source.isatty() or not output.isatty():
-        raise HostApprovalError("authenticated local approval requires an interactive terminal")
+        raise HostApprovalError("interactive local confirmation requires an interactive terminal")
     issued = _parse_utc(request.issued_at, "issued_at")
     expiry = _parse_utc(request.expires_at, "expires_at")
     instant = datetime.now(timezone.utc) if now is None else now
