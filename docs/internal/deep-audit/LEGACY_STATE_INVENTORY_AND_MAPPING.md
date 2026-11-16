@@ -80,7 +80,7 @@ Source: `qyrenith_engine/migration/assurance.py` and `schemas/migration-assuranc
 | `worker_status` / `_WORKER_STATUSES` | `WORKED`, `NO_CHANGE`, `BLOCKED`, `FAILED` |
 | PASS gate | Requires `WORKED`, changed files, diff digest, post-state digest, evidence IDs, commit ID, and qualified worker provenance | A Qyrenith verdict, not a worker self-report |
 
-**Known gap:** `INCONCLUSIVE` is absent from both the current migration assurance verdict allowlist and its JSON schema, despite being part of the owner-approved eight-state vocabulary. This must be corrected before the final compatibility contract is considered complete. Existing records must not be rewritten merely to make the new enum fit.
+**Implementation update (2026-11-16):** the migration assurance runtime allowlist and JSON schema now accept `INCONCLUSIVE` on the 1.2.0 branch. A round-trip ledger test was added. This is implementation present, not test-verified: the test has not been executed, the full legacy fixture corpus is still incomplete, and existing records have not been rewritten. The new value is additive; historical records remain unchanged.
 
 ### 2.4 Migration worker and planner states
 
@@ -150,8 +150,8 @@ This is a semantic mapping policy, not a bulk rewrite instruction.
 
 ## 4. Confirmed reconciliation gaps
 
-1. Add `INCONCLUSIVE` to the migration assurance verdict contract and its JSON schema in a later implementation slice; keep old records byte-for-byte/logically unchanged.
-2. Review `analysis_qdas.py`: its current `UNKNOWN` → `ERROR` conversion conflates subject uncertainty with infrastructure failure. Preserve raw analyzer output and introduce a typed mapping that reserves `ERROR` for actual adapter/transport/runtime errors.
+1. **PARTIALLY IMPLEMENTED, NOT TEST-VERIFIED:** `INCONCLUSIVE` is now accepted by `qyrenith_engine/migration/assurance.py` and `schemas/migration-assurance-record.schema.json`; a positive ledger round-trip test was added. Full schema/consumer compatibility and legacy fixture coverage remain open.
+2. **PARTIALLY IMPLEMENTED, NOT TEST-VERIFIED:** `analysis_qdas.py` now maps analyzer `UNKNOWN` to a non-PASS `BLOCKED` execution event while retaining the original analyzer report. Static-analysis BLOCKED events receive a low-confidence `UNKNOWN_FAILURE` classification instead of being mislabeled as infrastructure failures. The four-state QDAS execution vocabulary remains unchanged; targeted tests were added but not executed.
 3. Preserve the QDAS execution-level four-state enum while defining a separate check-outcome mapping layer. Do not force every low-level event to adopt all eight per-check states.
 4. Keep worker result, worker resolution, route plan, route assessment, phase, transaction, issue, evidence, support, and verdict state vocabularies typed and separate.
 5. Inventory actual persisted state files and historical fixtures before claiming exhaustive legacy conversion. Source declarations alone cannot prove which historical values exist in user data.
