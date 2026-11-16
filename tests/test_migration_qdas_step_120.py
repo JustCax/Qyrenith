@@ -222,6 +222,56 @@ class TestQdasMigrationStep(unittest.TestCase):
             self.assertEqual(len(real_assurance.read()), 1)
             self.assertTrue(stale_lock.exists())
 
+    def test_recovery_does_not_duplicate_assurance_append_that_committed_before_error(self):
+        class CommitThenRaiseAssuranceLedger:
+            def __init__(self, ledger):
+                self.ledger = ledger
+
+            def append(self, fields):
+                self.ledger.append(fields)
+                raise RuntimeError("simulated post-commit durability error")
+
+        with tempfile.TemporaryDirectory() as directory:
+            from qyrenith_engine.qdas.ledger import QdasEventLedger
+            qdas = QdasEventLedger(Path(directory) / "qdas.jsonl")
+            assurance = AssuranceLedger(Path(directory) / "assurance.jsonl")
+
+            with self.assertRaises(MigrationEvidenceCommitError) as raised:
+                record_migration_step_with_qdas(
+                    bounded_report(),
+                    project=directory,
+                    qdas_ledger=qdas,
+                    assurance_ledger=CommitThenRaiseAssuranceLedger(assurance),
+                    project_id="proj-alpha",
+                    project_revision="rev-1",
+                    workspace_id="ws-ambiguous",
+                    event_kind="BUILD",
+                    tool_name="python",
+                    tool_version="3.11",
+                    argv=["python", "-m", "build"],
+                    environment={"PYTHONPATH": "src"},
+                    run_id="run-ambiguous",
+                    step_id="step-ambiguous",
+                    transition_id="transition-ambiguous",
+                    source_identity='{"product_version":"1.21"}',
+                    target_identity='{"product_version":"1.21.1"}',
+                    plan_digest="a" * 64,
+                    pre_state_digest="b" * 64,
+                    worker_id="worker-fixture",
+                    worker_version="1.0.0",
+                    worker_status="WORKED",
+                    changed_files=[],
+                    verdict="UNKNOWN",
+                    created_at="2026-11-04T12:00:00Z",
+                )
+
+            error = raised.exception
+            before = inspect_migration_evidence_link(error.event_digest, qdas, assurance)
+            self.assertEqual(before["status"], "LINKED")
+            after = reconcile_migration_evidence_commit(error, qdas, assurance)
+            self.assertEqual(after["status"], "LINKED")
+            self.assertEqual(len(assurance.read()), 1)
+
     def test_reconciliation_detects_dangling_and_duplicate_assurance_references(self):
         with tempfile.TemporaryDirectory() as directory:
             from qyrenith_engine.qdas.ledger import QdasEventLedger
