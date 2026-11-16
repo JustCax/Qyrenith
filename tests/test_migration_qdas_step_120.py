@@ -8,6 +8,7 @@ from pathlib import Path
 from qyrenith_engine.migration.qdas_step import (
     MigrationEvidenceCommitError,
     inspect_migration_evidence_link,
+    reconcile_migration_evidence_commit,
     record_migration_step_with_qdas,
 )
 from qyrenith_engine.migration.assurance import AssuranceLedger, verify_assurance_chain, AssuranceLedgerError
@@ -178,6 +179,20 @@ class TestQdasMigrationStep(unittest.TestCase):
                 link_status["qdas_record_digest"], error.qdas_record_digest
             )
             self.assertEqual(link_status["assurance_record_digests"], [])
+
+            real_assurance = AssuranceLedger(Path(directory) / "assurance.jsonl")
+            repaired = reconcile_migration_evidence_commit(
+                error, qdas, real_assurance
+            )
+            self.assertEqual(repaired["status"], "LINKED")
+            self.assertEqual(len(real_assurance.read()), 1)
+
+            # Re-running recovery after a successful commit is idempotent.
+            repeated = reconcile_migration_evidence_commit(
+                error, qdas, real_assurance
+            )
+            self.assertEqual(repeated["status"], "LINKED")
+            self.assertEqual(len(real_assurance.read()), 1)
 
     def test_reconciliation_detects_dangling_and_duplicate_assurance_references(self):
         with tempfile.TemporaryDirectory() as directory:
