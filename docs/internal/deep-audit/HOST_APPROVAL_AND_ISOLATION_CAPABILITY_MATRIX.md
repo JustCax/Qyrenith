@@ -28,7 +28,7 @@ These labels are not per-check outcomes and do not imply PASS.
 | Independent human identity authentication | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED |
 | Approval scope binding and one-time nonce | SOURCE_PRESENT | SOURCE_PRESENT | SOURCE_PRESENT | SOURCE_PRESENT |
 | Independent trust anchor for approval signing | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED |
-| Trust-store owner-only permissions | POSIX permission path present; NOT_TESTED | POSIX permission path present; NOT_TESTED | Windows ACL hardening NOT_IMPLEMENTED | POSIX permission path expected; NOT_TESTED |
+| Trust-store owner-only permissions | POSIX permission path present; NOT_TESTED | POSIX permission path present; NOT_TESTED | Windows protected owner/SYSTEM ACL enforcement SOURCE_PRESENT; NOT_TESTED | POSIX permission path expected; NOT_TESTED |
 | Snapshot descriptor-relative traversal | POSIX implementation present; NOT_TESTED | POSIX implementation present; NOT_TESTED | Handle-relative/reparse-point-safe path NOT_IMPLEMENTED | POSIX path expected; NOT_TESTED |
 | Race-safe workspace traversal | NOT_QUALIFIED | NOT_QUALIFIED | NOT_QUALIFIED | NOT_QUALIFIED |
 | Bounded subprocess execution | SOURCE_PRESENT; not a sandbox | SOURCE_PRESENT; not a sandbox | SOURCE_PRESENT; not a sandbox | SOURCE_PRESENT; not a sandbox |
