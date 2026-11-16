@@ -29,8 +29,8 @@ These labels are not per-check outcomes and do not imply PASS.
 | Approval scope binding and one-time nonce | SOURCE_PRESENT | SOURCE_PRESENT | SOURCE_PRESENT | SOURCE_PRESENT |
 | Independent trust anchor for approval signing | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED |
 | Trust-store owner-only permissions | POSIX permission path present; NOT_TESTED | POSIX permission path present; NOT_TESTED | Windows protected owner/SYSTEM ACL enforcement SOURCE_PRESENT; NOT_TESTED | POSIX permission path expected; NOT_TESTED |
-| Snapshot descriptor-relative traversal | POSIX implementation present; NOT_TESTED | POSIX implementation present; NOT_TESTED | Handle-relative/reparse-point-safe path NOT_IMPLEMENTED | POSIX path expected; NOT_TESTED |
-| Race-safe workspace traversal | NOT_QUALIFIED | NOT_QUALIFIED | NOT_QUALIFIED | NOT_QUALIFIED |
+| Snapshot descriptor-relative traversal | POSIX implementation present; NOT_TESTED | POSIX implementation present; NOT_TESTED | NOT_SUPPORTED — capture fails closed until native handle-relative/reparse-point-safe traversal exists | POSIX path expected; NOT_TESTED |
+| Race-safe workspace traversal | POSIX descriptor-relative source open present; NOT_TESTED | POSIX descriptor-relative source open present; NOT_TESTED | NOT_SUPPORTED — source open fails closed pending native handle-relative implementation | NOT_QUALIFIED |
 | Bounded subprocess execution | SOURCE_PRESENT; not a sandbox | SOURCE_PRESENT; not a sandbox | SOURCE_PRESENT; not a sandbox | SOURCE_PRESENT; not a sandbox |
 | Process-tree containment | POSIX process-group termination path present; NOT_TESTED | POSIX process-group termination path present; NOT_TESTED | Windows Job Object descendant containment and 64-process cap SOURCE_PRESENT; documented Toolhelp/OpenProcess/ResumeThread startup; NOT_TESTED | POSIX process-group path expected; NOT_TESTED |
 | Filesystem isolation | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED |
@@ -68,7 +68,7 @@ The current branch does not contain a controlled qualification runner that indep
 1. Add a platform-authentication provider interface with explicit authenticated, unavailable, expired, and rejected outcomes. Unsupported platforms must fail closed.
 2. Bind approvals to an authenticated principal and a host trust anchor; do not treat local username or caller strings as proof.
 3. Make approval mandatory at the central side-effect dispatcher, not only at helper APIs.
-4. Verify the source-implemented Windows owner/SYSTEM trust-store ACLs; implement handle/reparse-point-safe traversal.
+4. Verify the source-implemented Windows owner/SYSTEM trust-store ACLs; implement native handle/reparse-point-safe snapshot/workspace traversal before enabling those Windows operations.
 5. Verify the source-implemented Windows Job Object descendant containment and 64-process cap; define and verify equivalent process-tree behavior on POSIX platforms.
 6. Introduce a host-enforced RVL isolation provider contract for filesystem, network, environment, secrets, CPU, memory, process count, timeout, and output.
 7. Implement controlled worker conformance execution with independently collected, digest-bound raw evidence.
