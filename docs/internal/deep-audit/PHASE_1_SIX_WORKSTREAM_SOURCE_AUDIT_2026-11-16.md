@@ -36,7 +36,7 @@ The six-workstream source review is complete. It confirms useful integrity, fres
 
 ### Required closure evidence
 
-- Windows owner/SYSTEM-only ACL verification for the complete store/key/lock path, plus handle-relative/reparse-point-safe filesystem operations. The source helper currently covers the trust-store directory, data file and key file; lock-path coverage remains to be confirmed.
+- Windows owner/SYSTEM-only ACL verification now covers the trust-store directory, data file, key file and lock path. Handle-relative/reparse-point-safe filesystem operations remain open; the ACL helper's path-based application/readback is not a substitute for handle-relative identity binding.
 - Handle-based file identity checks and race-focused tests on each supported platform.
 - Cross-process contention, crash-during-replacement, tamper, revocation, expiry, and recovery tests on the same revision.
 - Explicitly retain the documented same-OS-user threat-model limitation unless a stronger protected service/key boundary is introduced.
@@ -165,7 +165,7 @@ The six-workstream source review is complete. It confirms useful integrity, fres
 
 | Workstream | Source-level foundation | Material blocker | Review disposition |
 |---|---|---|---|
-| 1. Trust Store | Exact-digest local trust, HMAC, append/locking/freshness checks; protected Windows owner/SYSTEM DACL source implementation | Windows handle/reparse-point safety, independent trust-anchor and same-user threat limitations; ACL test not run | **AUDITED — OPEN** |
+| 1. Trust Store | Exact-digest local trust, HMAC, append/locking/freshness checks; protected Windows owner/SYSTEM DACL source implementation for directory/data/key/lock paths | Windows handle/reparse-point safety, independent trust-anchor and same-user threat limitations; ACL test not run | **AUDITED — OPEN** |
 | 2. Host Approval | Interactive exact-scope approval and nonce lifecycle | No independent authenticated human identity | **AUDITED — OPEN** |
 | 3. Worker Qualification | Pinned declarations and qualification-record matching | No controlled runner or independently collected conformance evidence | **AUDITED — OPEN** |
 | 4. Process Execution | Bounded subprocess, POSIX process-group cleanup, Windows Job Object descendant containment and 64-process cap (source only) | No filesystem/network/environment/secret/resource sandbox; Windows test not run | **AUDITED — OPEN** |
