@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
+import copy
 import re
 from typing import Any, Mapping, Sequence
 
@@ -40,10 +41,15 @@ class MigrationEvidenceCommitError(RuntimeError):
     preserves the QDAS evidence needed for that reconciliation.
     """
 
-    def __init__(self, capture_result: QdasCaptureResult) -> None:
+    def __init__(
+        self,
+        capture_result: QdasCaptureResult,
+        assurance_fields: Mapping[str, Any],
+    ) -> None:
         self.capture_result = capture_result
         self.event_digest = capture_result.event.event_digest
         self.qdas_record_digest = capture_result.ledger_record["record_digest"]
+        self.assurance_fields = copy.deepcopy(dict(assurance_fields))
         super().__init__(
             "QDAS event %s was committed, but its migration assurance link failed"
             % self.event_digest
@@ -101,6 +107,62 @@ def inspect_migration_evidence_link(
             record["record_digest"] for record in assurance_matches
         ),
     }
+
+
+def reconcile_migration_evidence_commit(
+    error: MigrationEvidenceCommitError,
+    qdas_ledger: QdasEventLedger,
+    assurance_ledger: AssuranceLedger,
+) -> dict[str, Any]:
+    """Explicitly repair one known partial commit, or confirm it already linked.
+
+    The exact assurance payload is taken from the original exception, not
+    reconstructed from caller-supplied metadata. Only an ORPHANED_QDAS_EVENT
+    may be repaired. The operation is idempotent after a successful append and
+    always re-verifies both ledgers before reporting LINKED.
+    """
+    if not isinstance(error, MigrationEvidenceCommitError):
+        raise TypeError("error must be a MigrationEvidenceCommitError")
+    if not isinstance(qdas_ledger, QdasEventLedger):
+        raise TypeError("qdas_ledger must be a QdasEventLedger")
+    if not isinstance(assurance_ledger, AssuranceLedger):
+        raise TypeError("assurance_ledger must be an AssuranceLedger")
+
+    current = inspect_migration_evidence_link(
+        error.event_digest, qdas_ledger, assurance_ledger
+    )
+    if current["status"] == "LINKED":
+        return current
+    if current["status"] != "ORPHANED_QDAS_EVENT":
+        raise RuntimeError(
+            "refusing evidence repair from state %s" % current["status"]
+        )
+
+    fields = copy.deepcopy(error.assurance_fields)
+    evidence_ids = fields.get("evidence_ids")
+    if not isinstance(evidence_ids, (list, tuple)) or error.event_digest not in evidence_ids:
+        raise RuntimeError("recovery payload does not bind the original QDAS event")
+
+    try:
+        assurance_ledger.append(fields)
+    except Exception:
+        # An append can report an error after replacement/fsync. Re-inspect
+        # before deciding whether the operation actually committed.
+        after_error = inspect_migration_evidence_link(
+            error.event_digest, qdas_ledger, assurance_ledger
+        )
+        if after_error["status"] == "LINKED":
+            return after_error
+        raise
+
+    repaired = inspect_migration_evidence_link(
+        error.event_digest, qdas_ledger, assurance_ledger
+    )
+    if repaired["status"] != "LINKED":
+        raise RuntimeError(
+            "assurance append returned but evidence link is %s" % repaired["status"]
+        )
+    return repaired
 
 
 def record_migration_step_with_qdas(
@@ -173,35 +235,36 @@ def record_migration_step_with_qdas(
     event_digest = capture_result.event.event_digest
     evidence_ids = [event_digest]
 
+    assurance_fields = {
+        "run_id": run_id,
+        "step_id": step_id,
+        "transition_id": transition_id,
+        "source_identity": source_identity,
+        "target_identity": target_identity,
+        "plan_digest": plan_digest,
+        "pre_state_digest": pre_state_digest,
+        "worker_id": worker_id,
+        "worker_version": worker_version,
+        "worker_status": worker_status,
+        "changed_files": list(changed_files),
+        "evidence_ids": evidence_ids,
+        "verdict": verdict,
+        "created_at": created_at,
+        "worker_manifest_digest": worker_manifest_digest,
+        "worker_qualification_id": worker_qualification_id,
+        "worker_qualification_digest": worker_qualification_digest,
+        "diff_digest": diff_digest,
+        "post_state_digest": post_state_digest,
+        "artifact_digest": artifact_digest,
+        "commit_id": commit_id,
+        "recovery_reference": recovery_reference,
+    }
     try:
-        assurance_record = assurance_ledger.append(
-            {
-                "run_id": run_id,
-                "step_id": step_id,
-                "transition_id": transition_id,
-                "source_identity": source_identity,
-                "target_identity": target_identity,
-                "plan_digest": plan_digest,
-                "pre_state_digest": pre_state_digest,
-                "worker_id": worker_id,
-                "worker_version": worker_version,
-                "worker_status": worker_status,
-                "changed_files": list(changed_files),
-                "evidence_ids": evidence_ids,
-                "verdict": verdict,
-                "created_at": created_at,
-                "worker_manifest_digest": worker_manifest_digest,
-                "worker_qualification_id": worker_qualification_id,
-                "worker_qualification_digest": worker_qualification_digest,
-                "diff_digest": diff_digest,
-                "post_state_digest": post_state_digest,
-                "artifact_digest": artifact_digest,
-                "commit_id": commit_id,
-                "recovery_reference": recovery_reference,
-            }
-        )
+        assurance_record = assurance_ledger.append(assurance_fields)
     except Exception as exc:
-        raise MigrationEvidenceCommitError(capture_result) from exc
+        raise MigrationEvidenceCommitError(
+            capture_result, assurance_fields
+        ) from exc
 
     return capture_result, assurance_record
 
@@ -209,5 +272,6 @@ def record_migration_step_with_qdas(
 __all__ = [
     "MigrationEvidenceCommitError",
     "inspect_migration_evidence_link",
+    "reconcile_migration_evidence_commit",
     "record_migration_step_with_qdas",
 ]
