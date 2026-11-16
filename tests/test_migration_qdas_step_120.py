@@ -46,6 +46,19 @@ def assurance_fields(**overrides):
 
 
 class TestQdasMigrationStep(unittest.TestCase):
+    def test_reconciliation_api_is_exported_from_public_packages(self):
+        from qyrenith_engine import (
+            MigrationEvidenceCommitError as EngineCommitError,
+            inspect_migration_evidence_link as engine_inspector,
+        )
+        from qyrenith_engine.migration import (
+            MigrationEvidenceCommitError as MigrationCommitError,
+            inspect_migration_evidence_link as migration_inspector,
+        )
+
+        self.assertIs(EngineCommitError, MigrationCommitError)
+        self.assertIs(engine_inspector, migration_inspector)
+
     def test_records_qdas_event_and_assurance_record_with_digest_binding(self):
         with tempfile.TemporaryDirectory() as directory:
             qdas_path = Path(directory) / "qdas.jsonl"
