@@ -1,6 +1,6 @@
 # ADR-AA-002: Explicit, Exact-Scope Authorization for Side Effects
 
-**Status:** PROPOSED — reconciled with owner-approved AA-01 decision directions; ADR acceptance pending  
+**Status:** ACCEPTED — owner approval 2026-11-16; implementation and verification remain separate  
 **Original proposal date:** 2026-11-04  
 **Reconciliation date:** 2026-11-10  
 **Scope:** Discovery, planning, process execution, filesystem mutation, providers, network, migration, repair, and release
