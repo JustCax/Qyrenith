@@ -100,6 +100,14 @@ class TestQdasMigrationStep(unittest.TestCase):
             # Assurance ledger has one record
             assurance_records = verify_assurance_chain([assurance_record])
             self.assertEqual(len(assurance_records), 1)
+            link_status = inspect_migration_evidence_link(
+                capture_result.event.event_digest, qdas_ledger, assurance_ledger
+            )
+            self.assertEqual(link_status["status"], "LINKED")
+            self.assertEqual(
+                link_status["assurance_record_digests"],
+                [assurance_record["record_digest"]],
+            )
 
     def test_assurance_failure_exposes_committed_qdas_evidence_for_recovery(self):
         class FailingAssuranceLedger:
