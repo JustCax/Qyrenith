@@ -123,7 +123,9 @@ The six-workstream source review is complete. It confirms useful integrity, fres
 
 ### Findings and limits
 
-- The Windows/portable path-based fallback cannot provide the same parent-component no-follow guarantee as the POSIX descriptor-relative path. A last-moment directory check narrows but does not close replacement races.
+- Windows snapshot capture now fails closed before entering the path-based traversal fallback; it reports that native handle-relative, reparse-point-safe traversal is not yet implemented.
+- Workspace source opening now rejects platforms without the required descriptor-relative no-follow APIs instead of silently using a path-based fallback. On Windows this currently blocks snapshot-pinned workspace materialization rather than risking parent-component substitution.
+- These are deliberate safety restrictions, not completed Windows support. Windows handle-relative traversal/copy, native reparse-point validation, and race-focused platform tests remain mandatory before Windows migration preparation can be enabled.
 - The workspace parent is a trusted caller-supplied location; the API does not turn it into a protected security boundary.
 - A copied workspace is an independent filesystem tree, not a process/container/VM sandbox. It does not isolate network, credentials, host files, or OS privileges.
 - The current preparation API creates workspace copies and descriptors. It does not execute transformations, run target builds/tests, or provide a complete durable workspace lifecycle/recovery manager.
@@ -169,7 +171,7 @@ The six-workstream source review is complete. It confirms useful integrity, fres
 | 2. Host Approval | Interactive exact-scope approval and nonce lifecycle | No independent authenticated human identity | **AUDITED — OPEN** |
 | 3. Worker Qualification | Pinned declarations and qualification-record matching | No controlled runner or independently collected conformance evidence | **AUDITED — OPEN** |
 | 4. Process Execution | Bounded subprocess, POSIX process-group cleanup, Windows Job Object descendant containment and 64-process cap (source only) | No filesystem/network/environment/secret/resource sandbox; Windows test not run | **AUDITED — OPEN** |
-| 5. Workspace | Snapshot-pinned copies and partial rollback | Windows path race and no execution isolation/lifecycle guarantee | **AUDITED — OPEN** |
+| 5. Workspace | Snapshot-pinned copies and partial rollback | Windows snapshot/workspace preparation now fails closed pending native handle-relative traversal; no execution isolation/lifecycle guarantee | **AUDITED — OPEN** |
 | 6. Authorization | Plan/policy/worker/scope-bound grant validation | Caller attribution and declarative limits are not authenticated/enforced | **AUDITED — OPEN** |
 
 ### Phase 1 exit decision
