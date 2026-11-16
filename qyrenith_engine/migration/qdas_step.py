@@ -138,6 +138,16 @@ def reconcile_migration_evidence_commit(
     if not isinstance(evidence_ids, (list, tuple)) or error.event_digest not in evidence_ids:
         raise RuntimeError("recovery payload does not bind the original QDAS event")
 
+    initial = inspect_migration_evidence_link(
+        error.event_digest, qdas_ledger, assurance_ledger
+    )
+    if initial["status"] == "LINKED":
+        return initial
+    if initial["status"] != "ORPHANED_QDAS_EVENT":
+        raise RuntimeError(
+            "refusing evidence repair from state %s" % initial["status"]
+        )
+
     assurance_ledger.path.parent.mkdir(parents=True, exist_ok=True)
     lock_path = assurance_ledger.path.with_name(
         assurance_ledger.path.name + ".reconcile-" + error.event_digest + ".lock"
