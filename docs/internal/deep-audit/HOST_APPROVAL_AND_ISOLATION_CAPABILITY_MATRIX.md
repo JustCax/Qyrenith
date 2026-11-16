@@ -32,7 +32,7 @@ These labels are not per-check outcomes and do not imply PASS.
 | Snapshot descriptor-relative traversal | POSIX implementation present; NOT_TESTED | POSIX implementation present; NOT_TESTED | Handle-relative/reparse-point-safe path NOT_IMPLEMENTED | POSIX path expected; NOT_TESTED |
 | Race-safe workspace traversal | NOT_QUALIFIED | NOT_QUALIFIED | NOT_QUALIFIED | NOT_QUALIFIED |
 | Bounded subprocess execution | SOURCE_PRESENT; not a sandbox | SOURCE_PRESENT; not a sandbox | SOURCE_PRESENT; not a sandbox | SOURCE_PRESENT; not a sandbox |
-| Process-tree containment | POSIX process-group termination path present; NOT_TESTED | POSIX process-group termination path present; NOT_TESTED | Windows Job Object descendant containment and 64-process cap SOURCE_PRESENT; NOT_TESTED | POSIX process-group path expected; NOT_TESTED |
+| Process-tree containment | POSIX process-group termination path present; NOT_TESTED | POSIX process-group termination path present; NOT_TESTED | Windows Job Object descendant containment and 64-process cap SOURCE_PRESENT; documented Toolhelp/OpenProcess/ResumeThread startup; NOT_TESTED | POSIX process-group path expected; NOT_TESTED |
 | Filesystem isolation | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED |
 | Network isolation | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED | NOT_IMPLEMENTED |
 | Secret isolation | Reduced child environment is present; OS boundary NOT_IMPLEMENTED | Same | Same | Same |
