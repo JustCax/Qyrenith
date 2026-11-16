@@ -1,8 +1,10 @@
 """Tamper-evident, append-only migration step assurance ledger.
 
-The ledger records observations and Qyrenith verdicts. It does not execute workers,
-authorize project mutations, or provide cryptographic authenticity against an actor
-who can replace the entire local ledger and its trust anchor.
+The ledger records caller-supplied observations and Qyrenith verdict labels. It
+validates record structure and digest-chain consistency, not the existence,
+independent collection, or authenticity of referenced evidence. It does not execute
+workers, authorize project mutations, or provide cryptographic authenticity against
+an actor who can replace the entire local ledger and its trust anchor.
 """
 from datetime import datetime
 import hashlib
@@ -184,8 +186,9 @@ def _normalize_payload(fields, sequence, previous_digest):
         raise AssuranceLedgerError("commit_id must be a 40- or 64-character lowercase Git object identifier")
     _validate_timestamp(record["created_at"])
 
-    # PASS is a Qyrenith decision, never a worker self-report. It requires the
-    # independently collected transition, diff, post-state, evidence, and commit.
+    # PASS is a caller-supplied Qyrenith verdict label, not a worker self-report.
+    # This ledger checks required fields and shapes only; it does not resolve,
+    # independently collect, or authenticate the referenced evidence artifacts.
     if record["verdict"] == "PASS":
         required_for_pass = (
             record["changed_files"], record["diff_digest"], record["post_state_digest"],
