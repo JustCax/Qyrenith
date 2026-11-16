@@ -16,10 +16,24 @@ from qyrenith_engine.migration.snapshot import (
     deserialize_project_snapshot,
     serialize_project_snapshot,
     verify_project_snapshot,
+    _require_real_directory,
 )
 
 
 class TestProjectSnapshot(unittest.TestCase):
+    def test_portable_traversal_guard_rejects_a_symlink_directory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            outside = root / "outside"
+            outside.mkdir()
+            alias = root / "alias"
+            try:
+                alias.symlink_to(outside, target_is_directory=True)
+            except (OSError, NotImplementedError):
+                self.skipTest("symlink creation is unavailable on this platform")
+            with self.assertRaisesRegex(SnapshotError, "symlink before traversal"):
+                _require_real_directory(alias, "nested")
+
     def test_snapshot_digest_is_deterministic_and_excludes_capture_time(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
