@@ -217,8 +217,9 @@ class _WindowsJob:
 
 def _terminate_process_group(
     process: subprocess.Popen, windows_job: _WindowsJob | None = None
-) -> None:
-    """Stop the process tree using a Windows Job Object or POSIX process group."""
+) -> bool:
+    """Stop a process tree and report whether containment cleanup was reliable."""
+    cleanup_failed = False
     try:
         if os.name == "nt":
             if windows_job is not None:
@@ -227,7 +228,15 @@ def _terminate_process_group(
                 process.terminate()
         else:
             os.killpg(process.pid, signal.SIGTERM)
-    except (OSError, ProcessLookupError):
+    except ProcessLookupError:
+        if process.poll() is None:
+            cleanup_failed = True
+            try:
+                process.terminate()
+            except OSError:
+                pass
+    except OSError:
+        cleanup_failed = True
         try:
             process.terminate()
         except OSError:
@@ -242,13 +251,22 @@ def _terminate_process_group(
                 process.kill()
         else:
             os.killpg(process.pid, signal.SIGKILL)
-    except (OSError, ProcessLookupError):
+    except ProcessLookupError:
+        if process.poll() is None:
+            cleanup_failed = True
+            try:
+                process.kill()
+            except OSError:
+                pass
+    except OSError:
+        cleanup_failed = True
         if process.poll() is None:
             try:
                 process.kill()
             except OSError:
                 pass
     process.wait()
+    return not cleanup_failed
 
 
 def _environment(
@@ -388,6 +406,7 @@ def _run_process(
     input_error = threading.Event()
     termination_lock = threading.Lock()
     terminated = False
+    termination_error = threading.Event()
 
     def terminate_once() -> None:
         nonlocal terminated
@@ -395,7 +414,11 @@ def _run_process(
             if terminated:
                 return
             terminated = True
-        _terminate_process_group(process, windows_job)
+        try:
+            if not _terminate_process_group(process, windows_job):
+                termination_error.set()
+        except OSError:
+            termination_error.set()
 
     def drain(stream, name: str) -> None:
         nonlocal captured_bytes
@@ -479,6 +502,7 @@ def _run_process(
         try:
             windows_job.close()
         except OSError:
+            termination_error.set()
             terminate_once()
 
     if writer is not None:
@@ -500,7 +524,10 @@ def _run_process(
     stdout = _decode_output(buffers["stdout"])
     stderr = _decode_output(buffers["stderr"])
     exit_code = process.returncode
-    blocked = timed_out or output_limited or output_incomplete or input_incomplete
+    blocked = (
+        timed_out or output_limited or output_incomplete or input_incomplete
+        or termination_error.is_set()
+    )
     status = "BLOCKED" if blocked else ("PASS" if exit_code == 0 else "FAIL")
     return {
         "schema": 1,
@@ -514,6 +541,7 @@ def _run_process(
         "output_limited": output_limited,
         "output_incomplete": output_incomplete,
         "input_incomplete": input_incomplete,
+        "termination_failed": termination_error.is_set(),
         "timed_out": timed_out,
         "duration_seconds": round(time.monotonic() - started, 3),
         "shell": False,
