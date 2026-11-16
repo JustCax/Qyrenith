@@ -348,10 +348,11 @@ def run_bounded_worker(
     output_limit: int = _MAX_WORKER_INPUT_BYTES,
     env: Mapping[str, str] | None = None,
 ) -> Dict[str, Any]:
-    """Run a protocol worker with deadline-covered stdin, separate bounded streams.
+    """Run a protocol worker with deadline-covered stdin and bounded output.
 
     Input is written by a dedicated thread so a worker that never reads stdin
-    cannot block the controller before its timeout starts. Output overflow kills
+    cannot block the controller before its timeout starts. Stdout and stderr are
+    captured separately under one aggregate output budget. Output overflow kills
     the process group immediately and is always reported as BLOCKED.
     """
     if env is None:
