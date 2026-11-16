@@ -60,6 +60,30 @@ class TestQdasMigrationStep(unittest.TestCase):
                 self.assertEqual(info.st_uid, os.getuid())
                 self.assertEqual(info.st_nlink, 1)
 
+    @unittest.skipIf(os.name == "nt", "POSIX no-follow lock policy")
+    def test_reconciliation_lock_rejects_symlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "target"
+            target.write_text("not a lock", encoding="ascii")
+            lock = root / "reconcile.lock"
+            lock.symlink_to(target)
+            with self.assertRaises(OSError):
+                with _exclusive_reconciliation_lock(lock):
+                    self.fail("symlink lock must never be acquired")
+
+    @unittest.skipIf(os.name == "nt", "POSIX single-link lock policy")
+    def test_reconciliation_lock_rejects_hard_link(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            original = root / "original"
+            original.write_text("", encoding="ascii")
+            lock = root / "reconcile.lock"
+            os.link(original, lock)
+            with self.assertRaisesRegex(RuntimeError, "single-link"):
+                with _exclusive_reconciliation_lock(lock):
+                    self.fail("hard-linked lock must never be acquired")
+
     def test_reconciliation_api_is_exported_from_public_packages(self):
         from qyrenith_engine import (
             MigrationEvidenceCommitError as EngineCommitError,
