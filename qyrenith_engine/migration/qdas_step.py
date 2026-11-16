@@ -53,11 +53,16 @@ class MigrationEvidenceCommitError(RuntimeError):
         self.capture_result = capture_result
         self.event_digest = capture_result.event.event_digest
         self.qdas_record_digest = capture_result.ledger_record["record_digest"]
-        self.assurance_fields = copy.deepcopy(dict(assurance_fields))
+        self._assurance_fields = copy.deepcopy(dict(assurance_fields))
         super().__init__(
             "QDAS event %s was committed, but the assurance append did not return successfully"
             % self.event_digest
         )
+
+    @property
+    def assurance_fields(self) -> dict[str, Any]:
+        """Return a defensive copy of the exact original assurance payload."""
+        return copy.deepcopy(self._assurance_fields)
 
 
 def inspect_migration_evidence_link(
