@@ -1,7 +1,7 @@
 # Qyrenith 1.2.0 — Implementation Readiness Gate
 
 **Status:** OVERALL READINESS OPEN — Phase 0 specification baseline COMPLETE; Phase 1 remains a hard blocker  
-**Assessment date:** 2026-11-16  
+**Assessment date:** 2026-11-19  
 **Target branch:** `feature/1.2.0-universal-migration-core`  
 **Purpose:** One auditable checklist for deciding when 1.2.0 is sufficiently specified to begin or resume implementation. This is a planning gate, not implementation evidence.
 
@@ -137,16 +137,18 @@ The dedicated six-workstream review is recorded in [Phase 1 Safety Review — Si
 
 **Additional fail-closed hardening (2026-11-16):** Windows snapshot capture and workspace source opening no longer use the known-racy path-based fallback. They now reject the operation until native handle-relative, reparse-point-safe traversal is implemented. A POSIX reconciliation lock now requires no-follow opening, current-user ownership, a single link, and exact `0600` permissions; tests cover owner/mode/link count plus symlink and hard-link rejection. Process-tree cleanup failure is now surfaced as `BLOCKED` rather than allowing a false PASS. The new tests are source additions only and have not been executed. These changes reduce unsafe fallback behavior but do not close Phase 1.
 
-### Package-manifest and test/workflow consistency review (2026-11-16)
+### Package-manifest and test/workflow consistency review (updated 2026-11-19)
 
-A read-only release-surface review compared `PUBLIC_FILES.txt`, `MANIFEST.in`, the setuptools configuration, the release builder, and the current PR file set.
+A read-only release-surface review compared the current Git tree, `PUBLIC_FILES.txt`, `MANIFEST.in`, the setuptools configuration, the release builder, and the wheel-content regression test.
 
-- `PUBLIC_FILES.txt` contains 181 unique entries; `MANIFEST.in` contains the exact same 181 paths. No internal deep-audit documents or GitHub Actions workflow files are included in the public source archive allowlist.
-- The explicit source-archive allowlist currently omits the new QDAS integration modules `qyrenith_engine/analysis_qdas.py`, `qyrenith_engine/dynamic_audit_qdas.py`, and `qyrenith_engine/migration/qdas_step.py`. This is not silently treated as a packaging defect before release scope is approved; however, if these capabilities are part of the 1.2.0 public runtime, their inclusion, package tests, schemas, and documentation must be reconciled before Phase 7 acceptance.
-- The branch removes `.github/workflows/ci.yml`, `.github/workflows/qyrenith-verify.yml`, and `.github/workflows/release.yml`; GitHub Actions remain disabled by owner direction. The source-level workflow test contract has been corrected: `tests/test_version_consistency.py::test_present_github_actions_are_pinned_to_immutable_shas` now validates immutable SHA pins for any workflow files that are present, while allowing the workflow directory to remain absent under the owner's Actions-disabled policy. This is a source change only; the test has not been executed. No workflow was restored or triggered.
-- The public `SECURITY.md` has been corrected to describe the step-boundary HostApproval API accurately while retaining the non-claims: local terminal attribution is not independent identity authentication; the lower-level authorization constructor still accepts caller-supplied attribution; the step API is not a worker executor; a declared sandbox profile is not enforced OS isolation.
+- `PUBLIC_FILES.txt` contains 184 unique entries; `MANIFEST.in` contains the exact same 184 paths. No internal deep-audit documents or GitHub Actions workflow files are included in the public source archive allowlist.
+- The review found that the allowlist omitted three QDAS integration modules required by the 1.2.0 source runtime: `qyrenith_engine/analysis_qdas.py`, `qyrenith_engine/dynamic_audit_qdas.py`, and `qyrenith_engine/migration/qdas_step.py`. All three are now included in both manifests.
+- `tests/test_release_contents.py` now includes all three modules in its expected wheel inventory and adds an import smoke test for `qyrenith_engine`, the migration QDAS integration, static-analysis QDAS integration, and dynamic-audit QDAS integration. This specifically guards against a source archive/wheel that contains an initializer but omits a module imported by that initializer.
+- A source-level parity check against the current recursive Git tree confirms that every `qyrenith_engine/**/*.py` module is present in the public archive manifest, every engine module is represented in the wheel inventory assertion, and the 184 `PUBLIC_FILES.txt` entries exactly match the 184 `MANIFEST.in` include directives. This is a static source check, not a package build or test execution.
+- The branch has no `.github/workflows/` files. GitHub Actions remain disabled by owner direction; no workflow was restored and no CI run was triggered.
+- The earlier SECURITY.md correction and the 2026-11-19 Advanced Assurance documentation reconciliation remain in effect. The four AA ADRs, all 70 AA requirements, and all 27 diagnostic domains are recorded as owner-accepted scope; this does not advance implementation or verification states.
 
-These findings must remain visible in the Phase 0/1 and release traceability. No package build, release archive, wheel, test suite, or CI was executed during this source review.
+The packaging correction is **IMPLEMENTED — NOT TEST-VERIFIED**. No package build, release archive, wheel, local test suite, cross-platform test matrix, or CI was executed during this review. The independent local/external verification route remains mandatory before release.
 
 ### Gate G — Implementation slices and independent validation
 
