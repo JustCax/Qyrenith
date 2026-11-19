@@ -166,7 +166,7 @@ def compare_baselines(previous: Dict[str, Any], current: Dict[str, Any]) -> Dict
             pure_path = PurePosixPath(path_value)
             if (
                 not path_value
-                or "\\x00" in path_value
+                or "\x00" in path_value
                 or "\\" in path_value
                 or pure_path.is_absolute()
                 or pure_path.as_posix() != path_value
