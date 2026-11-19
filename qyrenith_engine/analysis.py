@@ -4,6 +4,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import os
+import re
 from pathlib import Path, PurePosixPath
 from typing import Any, Dict, List, Set, Union
 
@@ -150,16 +151,37 @@ def analyze_project(project: Union[str, Path], *, max_files: int = 10000,
 def compare_baselines(previous: Dict[str, Any], current: Dict[str, Any]) -> Dict[str, Any]:
     """Compare validated source-analysis snapshots without claiming behavioral equivalence."""
     for label, report in (("previous", previous), ("current", current)):
-        if not isinstance(report, dict) or report.get("schema") != 1 or not isinstance(report.get("files"), list):
+        if (
+            not isinstance(report, dict)
+            or report.get("schema") != 1
+            or report.get("status") not in {"PASS", "FAIL", "BLOCKED", "UNKNOWN"}
+            or not isinstance(report.get("files"), list)
+        ):
             return {"schema": 1, "status": "UNKNOWN", "reason": label + " baseline has an unsupported schema"}
         seen: Set[str] = set()
         for item in report["files"]:
             if not isinstance(item, dict) or not isinstance(item.get("path"), str):
                 return {"schema": 1, "status": "UNKNOWN", "reason": label + " baseline contains an invalid file record"}
-            if item["path"] in seen:
+            path_value = item["path"]
+            pure_path = PurePosixPath(path_value)
+            if (
+                not path_value
+                or "\\x00" in path_value
+                or "\\" in path_value
+                or pure_path.is_absolute()
+                or pure_path.as_posix() != path_value
+                or any(part in {".", ".."} for part in path_value.split("/"))
+                or re.match(r"^[A-Za-z]:", path_value)
+            ):
+                return {"schema": 1, "status": "UNKNOWN", "reason": label + " baseline contains an unsafe file path"}
+            if path_value in seen:
                 return {"schema": 1, "status": "UNKNOWN", "reason": label + " baseline contains duplicate paths"}
-            seen.add(item["path"])
-            if not isinstance(item.get("sha256"), str) or item.get("syntax") not in {"PASS", "FAIL", "UNKNOWN"}:
+            seen.add(path_value)
+            if (
+                not isinstance(item.get("sha256"), str)
+                or not re.fullmatch(r"[0-9a-f]{64}", item["sha256"])
+                or item.get("syntax") not in {"PASS", "FAIL", "UNKNOWN"}
+            ):
                 return {"schema": 1, "status": "UNKNOWN", "reason": label + " baseline contains incomplete evidence"}
     old = {item["path"]: item for item in previous["files"]}
     new = {item["path"]: item for item in current["files"]}
