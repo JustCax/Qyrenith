@@ -153,6 +153,7 @@ def compare_baselines(previous: Dict[str, Any], current: Dict[str, Any]) -> Dict
     for label, report in (("previous", previous), ("current", current)):
         if (
             not isinstance(report, dict)
+            or type(report.get("schema")) is not int
             or report.get("schema") != 1
             or not isinstance(report.get("status"), str)
             or report.get("status") not in {"PASS", "FAIL", "BLOCKED", "UNKNOWN"}
