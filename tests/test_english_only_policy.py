@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Character-set guard for the English-only policy; not a language detector."""
+
 import unicodedata
 import unittest
 from pathlib import Path
@@ -19,7 +21,7 @@ EXCLUDED_PARTS = {
 
 
 class EnglishOnlyRepositoryPolicyTests(unittest.TestCase):
-    def test_repository_text_contains_only_ascii_letters(self) -> None:
+    def test_repository_text_contains_no_non_ascii_letters(self) -> None:
         violations: list[str] = []
 
         for path in sorted(ROOT.rglob("*")):
@@ -45,7 +47,7 @@ class EnglishOnlyRepositoryPolicyTests(unittest.TestCase):
         self.assertEqual(
             violations,
             [],
-            "English only project.",
+            "Non-ASCII letters are forbidden; this character-set check does not prove semantic English.",
         )
 
 
