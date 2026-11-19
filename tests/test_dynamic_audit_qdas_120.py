@@ -37,7 +37,8 @@ def make_report():
 
 
 class TestQdasDynamicAuditCapture(unittest.TestCase):
-    def test_invalid_timeout_is_rejected_without_fallback(self):
+    @patch("qyrenith_engine.dynamic_audit_qdas.run_bounded_process", return_value=make_report())
+    def test_invalid_timeout_is_rejected_without_fallback(self, bounded_runner):
         for timeout in (0, 3601, 1.5, True, None):
             with self.subTest(timeout=timeout):
                 with tempfile.TemporaryDirectory() as directory:
@@ -56,7 +57,10 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
                             environment={"PYTHONPATH": "src"},
                         )
 
-    def test_unknown_oracle_is_rejected(self):
+        bounded_runner.assert_not_called()
+
+    @patch("qyrenith_engine.dynamic_audit_qdas.run_bounded_process", return_value=make_report())
+    def test_unknown_oracle_is_rejected(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
             scenario = make_scenario()
             scenario["oracle"] = "UNRECOGNIZED"
@@ -73,7 +77,10 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
                     environment={"PYTHONPATH": "src"},
                 )
 
-    def test_missing_oracle_is_rejected(self):
+        bounded_runner.assert_not_called()
+
+    @patch("qyrenith_engine.dynamic_audit_qdas.run_bounded_process", return_value=make_report())
+    def test_missing_oracle_is_rejected(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
             scenario = make_scenario()
             del scenario["oracle"]
@@ -90,7 +97,10 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
                     environment={"PYTHONPATH": "src"},
                 )
 
-    def test_missing_timeout_is_rejected(self):
+        bounded_runner.assert_not_called()
+
+    @patch("qyrenith_engine.dynamic_audit_qdas.run_bounded_process", return_value=make_report())
+    def test_missing_timeout_is_rejected(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
             scenario = make_scenario()
             del scenario["timeout_seconds"]
@@ -107,7 +117,10 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
                     environment={"PYTHONPATH": "src"},
                 )
 
-    def test_invalid_argv_is_rejected_before_report_ingestion(self):
+        bounded_runner.assert_not_called()
+
+    @patch("qyrenith_engine.dynamic_audit_qdas.run_bounded_process", return_value=make_report())
+    def test_invalid_argv_is_rejected_before_process_execution(self, bounded_runner):
         invalid_argv_values = (
             [],
             ["python", "\x00"],
@@ -131,6 +144,8 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
                             tool_version="3.11",
                             environment={"PYTHONPATH": "src"},
                         )
+
+        bounded_runner.assert_not_called()
 
     @patch("qyrenith_engine.dynamic_audit_qdas.run_bounded_process", return_value=make_report())
     def test_records_qdas_event_and_scenario_outcome(self, bounded_runner):
