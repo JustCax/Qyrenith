@@ -182,6 +182,7 @@ include tests/test_single_walk.py
 include tests/test_verification_invariants.py
 include tests/test_version_consistency.py
 include tests/test_analysis_qdas_120.py
+include tests/test_analysis.py
 include tests/test_dynamic_audit_qdas_120.py
 include tests/test_english_only_policy.py
 include tests/test_execution_bounds_120.py
