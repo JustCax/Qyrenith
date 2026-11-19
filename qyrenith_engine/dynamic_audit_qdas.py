@@ -158,7 +158,10 @@ def run_scenario_with_qdas(
 
     event = capture_result.event
     scenario_outcome = {
-        "status": event.execution_status,
+        "status": "NOT_RUN",
+        "execution_status": event.execution_status,
+        "behavior_status": "NOT_RUN",
+        "behavior_verified": False,
         "environment_fingerprint": event.environment_digest,
         "seed": seed,
         "stdout_digest": event.stdout_digest,
