@@ -45,6 +45,7 @@ No code work may bypass an unresolved safety gate merely because a document is c
 | Twenty-seven diagnostic domains | **OWNER-ACCEPTED 1.2.0 RELEASE SCOPE — 2026-11-16** | All 27 domains and DI-001..DI-081 are in scope; each needs implementation/support evidence and an explicit acceptance disposition | Yes for complete release delivery |
 | Release verification route | **ACTIONS DISABLED BY OWNER** | Approved independent local/external runner and retained revision-bound evidence must be defined; do not restore/trigger Actions without approval | Yes for release |
 | Documentation integrity | **IN PROGRESS** | Continue link, terminology, status, requirement-ID, cross-reference and package-content audits | Yes for final readiness |
+| English-only repository language | **CHARACTER-SET CHECK ONLY; SEMANTIC REVIEW OPEN** | `tests/test_english_only_policy.py` rejects non-ASCII letters, but it is not a language detector and cannot identify non-English ASCII text. The test name/message now state this limitation; a complete human review of source, docs, comments, diagnostics, logs, configuration and public artifacts remains required. The test has not been executed on the current revision. | **YES for final release** |
 | Final implementation baseline | **NOT APPROVED YET** | Requires closed P0 gates, reconciled traceability, implementation slice plan, and explicit owner sign-off | **YES** |
 
 ## 3. Mandatory pre-implementation exit gates
