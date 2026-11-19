@@ -153,7 +153,7 @@ The packaging correction is **IMPLEMENTED — NOT TEST-VERIFIED**. No package bu
 
 ### Dynamic QDAS input-boundary hardening (2026-11-19)
 
-The QDAS dynamic process-capture wrapper now rejects an invalid explicit timeout instead of silently replacing it with the 120-second default, rejects missing or unknown oracle values instead of silently downgrading them to HEURISTIC, and validates argv shape, count, length, and NUL content before launching a process or accepting a supplied report. Targeted negative regression tests were added for invalid timeout values, unknown/missing oracles, and empty argv.
+The QDAS dynamic process-capture wrapper now requires an explicit bounded timeout and rejects missing/invalid values instead of silently replacing them with the 120-second default; it rejects missing or unknown oracle values instead of silently downgrading them to HEURISTIC; and it validates argv shape, count, length, and NUL content before launching a process or accepting a supplied report. Targeted negative regression tests were added for missing/invalid timeout values, unknown/missing oracles, and empty, oversized, excessive-count, or NUL-containing argv.
 
 This is a narrow input-contract hardening change, not completion of DB-01..DB-12 or the dynamic/behavioral audit module. The current wrapper still captures a bounded process report; it does not implement the full scenario setup/actions/expected-observation/cleanup lifecycle, evaluate behavioral oracles, or provide RVL isolation. The new tests have **not been executed** and remain source-level test additions only.
 
