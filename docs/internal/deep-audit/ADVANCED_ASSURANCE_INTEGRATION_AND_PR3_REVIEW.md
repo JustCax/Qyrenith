@@ -1,6 +1,6 @@
 # Advanced Assurance Integration and PR #3 Review — Qyrenith 1.2.0
 
-**Status:** INTEGRATION BASELINE — AA-01 OWNER DECISIONS RESOLVED; REMAINING AA/PR3 ITEMS OPEN  
+**Status:** INTEGRATION BASELINE — AA-01 DECISIONS, ALL 70 AA REQUIREMENTS, AND FOUR RECONCILED ADRs ACCEPTED; PR #3 REMAINS SEPARATE  
 **Source PR:** [#3 — Advanced Assurance AA-01](https://github.com/JustCax/Qyrenith/pull/3)  
 **Source branch:** `feature/advanced-assurance-aa01-mainline`  
 **Reviewed source head after PR #3 audit corrections:** `0ee2edb9fe136bba729483e56d5c450421fa6e80`  
@@ -13,7 +13,7 @@ Advanced Assurance (AA) is relevant to Qyrenith 1.2.0 and should be retained. It
 
 The correct integration is to treat AA as a **cross-cutting assurance architecture contract** implemented through the existing five planes and fourteen post-QDAS capability modules. QDAS remains the development-assurance lifecycle and integration mechanism. The 27 diagnostic domains remain analyzer/knowledge/execution capabilities. AA defines how checks are discovered, planned, authorized, executed, validated, evaluated and reported.
 
-Do not merge PR #3 independently into `main`. Keep it draft as a separate source/review PR. The seven AA-01 decision directions are now owner-approved; the remaining requirement/ADR reconciliation and any selective 1.2.0-branch integration still require review. Do not merge PR #9 or PR #3 as part of this documentation pass.
+Do not merge PR #3 independently into `main`. Keep it draft as a separate source/review PR. The seven AA-01 decision directions, all 70 AA requirements, and all four reconciled AA ADRs were accepted by the owner on 2026-11-16. This does not accept PR #3 as a whole. Do not merge PR #9 or PR #3 as part of this documentation pass.
 
 ## 2. Repository and branch facts
 
@@ -45,7 +45,7 @@ The five planes in `DEEP_AUDIT_MASTER_ARCHITECTURE.md` remain canonical. AA's lo
 
 ## 4. Requirement-family integration
 
-PR #3 defines 70 stable AA requirement IDs across eleven groups, including the four `AA-REQ-REL` release requirements. They are represented in the 1.2.0 traceability matrix as `PROPOSED`, retaining their original statements and linking them to proposed owners, acceptance tests and evidence. The PR #3 acceptance matrix now maps all 70 IDs individually to an architecture owner, relevant threat references, and a reserved test ID; these are planned test identifiers, not existing test implementations or evidence.
+PR #3 defines 70 stable AA requirement IDs across eleven groups, including the four `AA-REQ-REL` release requirements. All 70 requirements are recorded as `ACCEPTED` in the 1.2.0 traceability matrix, retaining their original statements and linking them to implementation targets, acceptance tests and evidence. Acceptance does not imply implementation or verification. The PR #3 acceptance matrix now maps all 70 IDs individually to an architecture owner, relevant threat references, and a reserved test ID; these are planned test identifiers, not existing test implementations or evidence.
 
 | Requirement group | Count | Primary owner | Existing overlap / integration |
 |---|---:|---|---|
@@ -65,14 +65,14 @@ The AA requirements are platform-level contracts. They must not duplicate the do
 
 ## 5. Reconciliation of PR #3 proposed ADRs
 
-The four PR #3 ADRs were selectively recreated on the 1.2.0 branch in reconciled form. Their status remains **RECONCILED PROPOSAL — OWNER ACCEPTANCE REQUIRED**; none is marked ACCEPTED.
+The four PR #3 ADRs were selectively recreated on the 1.2.0 branch in reconciled form and explicitly accepted by the owner on 2026-11-16. This does not accept PR #3 as a whole.
 
 | Reconciled ADR | 1.2.0 branch document | Reconciliation result | Remaining owner gate |
 |---|---|---|---|
-| ADR-AA-001 — authority separation | `docs/internal/ARCHITECTURE_DECISION_RECORDS/ADR-AA-001-authority-separation.md` | Separates observation, evidence validation, policy evaluation, reporting, and independent verification; preserves authority within the existing planes. | Explicit owner acceptance of the reconciled authority contract. |
-| ADR-AA-002 — side-effect authorization | `docs/internal/ARCHITECTURE_DECISION_RECORDS/ADR-AA-002-explicit-side-effect-authorization.md` | Adds exact plan/snapshot/action scope, authenticated host approval, RVL enforcement, no silent downgrade, and network default-deny. | Explicit owner acceptance of the reconciled authorization contract. |
-| ADR-AA-003 — evidence lifecycle | `docs/internal/ARCHITECTURE_DECISION_RECORDS/ADR-AA-003-evidence-lifecycle.md` | Reuses the QDAS canonical journal, immutable artifacts, derived index, and separation of integrity/authenticity/truth. | Explicit owner acceptance; physical backend remains deferred. |
-| ADR-AA-004 — standard-library-first core | `docs/internal/ARCHITECTURE_DECISION_RECORDS/ADR-AA-004-standard-library-first-core.md` | Preserves a standard-library-first core with qualified, least-privilege optional providers and exact support scopes. | Explicit owner acceptance of the reconciled dependency/provider contract. |
+| ADR-AA-001 — authority separation | `docs/internal/ARCHITECTURE_DECISION_RECORDS/ADR-AA-001-authority-separation.md` | Separates observation, evidence validation, policy evaluation, reporting, and independent verification; preserves authority within the existing planes. | Accepted as reconciled on 2026-11-16. |
+| ADR-AA-002 — side-effect authorization | `docs/internal/ARCHITECTURE_DECISION_RECORDS/ADR-AA-002-explicit-side-effect-authorization.md` | Adds exact plan/snapshot/action scope, authenticated host approval, RVL enforcement, no silent downgrade, and network default-deny. | Accepted as reconciled on 2026-11-16. |
+| ADR-AA-003 — evidence lifecycle | `docs/internal/ARCHITECTURE_DECISION_RECORDS/ADR-AA-003-evidence-lifecycle.md` | Reuses the QDAS canonical journal, immutable artifacts, derived index, and separation of integrity/authenticity/truth. | Accepted as reconciled on 2026-11-16; physical backend remains deferred. |
+| ADR-AA-004 — standard-library-first core | `docs/internal/ARCHITECTURE_DECISION_RECORDS/ADR-AA-004-standard-library-first-core.md` | Preserves a standard-library-first core with qualified, least-privilege optional providers and exact support scopes. | Accepted as reconciled on 2026-11-16. |
 
 The complete crosswalk, invariants, remaining gates, and non-claims are in `AA_ADR_RECONCILIATION_REVIEW.md`. Selective document integration is not a merge of PR #3 and does not accept PR #3 as a whole. The 70 stable AA requirements were separately accepted by the owner on 2026-11-16.
 
@@ -90,7 +90,7 @@ The owner approved all seven decision directions on 2026-11-10. The binding desi
 
 The owner also approved extensibility and supportability as a first-class architectural requirement, specified in `EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md`.
 
-Decision approval does not mark the runtime implemented or verified. The owner subsequently accepted all 70 AA requirements and all four reconciled ADRs on 2026-11-16; PR #3 as a whole remains unaccepted. The physical evidence backend, final profile catalog, exhaustive legacy mapping table, ADR reconciliation, and implementation contracts remain explicit follow-up work.
+Decision approval does not mark the runtime implemented or verified. The owner accepted all 70 AA requirements and all four reconciled ADRs on 2026-11-16; PR #3 as a whole remains unaccepted. The physical evidence backend, final profile catalog, exhaustive legacy mapping table, and implementation contracts remain explicit follow-up work.
 
 ## 7. Reproducibility and optimization integration
 
@@ -98,7 +98,7 @@ The RCA-01..RCA-12 requirements define reproducibility across build, tests, diag
 
 The OI-01..OI-10 requirements define measured optimization and safe repair. They extend QDAS, root-cause analysis, dynamic audit, formal verification, reproducibility and meta-audit; they do not authorize automatic code mutation.
 
-RCA, OI and the 70 PR #3 AA requirement IDs remain `PROPOSED` in the traceability matrix unless separately accepted. The seven AA-01 decision directions are approved design constraints, not blanket acceptance of those requirement families. The four ADRs remain reconciled proposals pending explicit owner acceptance.
+RCA-01..RCA-12 and OI-01..OI-10 remain `PROPOSED` in the traceability matrix. All 70 AA requirements and all four reconciled ADRs are owner-accepted; this does not accept PR #3 as a whole or advance implementation/verification status.
 
 ## 8. PR #3 disposition and safe integration sequence
 
@@ -106,7 +106,7 @@ Recommended disposition:
 
 1. Keep PR #3 open and draft. It must not be merged into `main`; if its content is accepted, integrate it only into `feature/1.2.0-universal-migration-core`.
 2. Review the requirement and architecture crosswalk in this document.
-3. The seven AA-01 decision directions are resolved. The four ADRs are reconciled as proposals and selectively present on the 1.2.0 branch; obtain explicit owner acceptance before treating them as accepted architecture.
+3. The seven AA-01 decision directions, all 70 AA requirements, and all four reconciled ADRs are accepted. Preserve their accepted wording and do not infer acceptance of PR #3 as a whole.
 4. Complete the legacy outcome inventory/mapping, evidence-backend comparison, checker catalog/resource model, and extension contract boundary work.
 5. Update the 1.2.0 plan and traceability matrix alongside every accepted requirement or ADR change.
 6. Only then finalize implementation slices. AA-02 checker contract/runtime and AA-03 project model/planning must not bypass the Phase 1 migration safety gate or Phase 2 QDAS-first integration sequence.
@@ -115,7 +115,7 @@ PR #9 is the release PR for the 1.2.0 branch and remains open/draft against main
 
 ## 9. Verification and repository safety
 
-- The AA-01 decision and ADR reconciliation work is documentation-only. No Python source, schema, or test files were changed.
+- The original AA-01 decision and ADR reconciliation work was documentation-only; it did not implement runtime behavior. Runtime implementation, tests, qualification and verification remain separately tracked.
 - Two legacy workflow files were removed from the PR #3 branch as a separate repository-safety cleanup; the workflow directories on `main`, PR #3, and PR #9 are now empty.
 - The owner has disabled GitHub Actions for billing reasons. Do not restore workflows or initiate CI without explicit approval.
 - No new Actions run was observed after the November 10 branch commits. Historical Actions runs do not verify these revisions.
