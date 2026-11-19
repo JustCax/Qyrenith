@@ -78,26 +78,28 @@ class TestQdasStaticAnalysisCapture(unittest.TestCase):
 
     @patch("qyrenith_engine.analysis_qdas.analyze_project")
     def test_unrecognized_analysis_status_is_blocked_not_error(self, analyze):
-        analyze.return_value = {
-            "schema": 1,
-            "status": "UNRECOGNIZED",
-            "files": [],
-        }
-        with tempfile.TemporaryDirectory() as directory:
-            qdas_path = Path(directory) / "qdas.jsonl"
-            capture_result, analysis_report = record_analysis_with_qdas(
-                project=directory,
-                qdas_ledger=make_qdas_ledger(qdas_path),
-                project_id="proj-unknown",
-                project_revision="rev-unknown",
-                workspace_id="ws-unknown",
-                tool_name="python",
-                tool_version="3.11",
-                environment={},
-            )
-            self.assertEqual(analysis_report["status"], "UNRECOGNIZED")
-            self.assertEqual(capture_result.report["status"], "BLOCKED")
-            self.assertEqual(capture_result.event.execution_status, "BLOCKED")
+        for raw_status in ("UNRECOGNIZED", ["PASS"], None):
+            with self.subTest(raw_status=raw_status):
+                analyze.return_value = {
+                    "schema": 1,
+                    "status": raw_status,
+                    "files": [],
+                }
+                with tempfile.TemporaryDirectory() as directory:
+                    qdas_path = Path(directory) / "qdas.jsonl"
+                    capture_result, analysis_report = record_analysis_with_qdas(
+                        project=directory,
+                        qdas_ledger=make_qdas_ledger(qdas_path),
+                        project_id="proj-unknown",
+                        project_revision="rev-unknown",
+                        workspace_id="ws-unknown",
+                        tool_name="python",
+                        tool_version="3.11",
+                        environment={},
+                    )
+                    self.assertEqual(analysis_report["status"], raw_status)
+                    self.assertEqual(capture_result.report["status"], "BLOCKED")
+                    self.assertEqual(capture_result.event.execution_status, "BLOCKED")
 
     def test_tampering_breaks_qdas_ledger(self):
         with tempfile.TemporaryDirectory() as directory:
