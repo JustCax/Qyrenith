@@ -8,7 +8,7 @@ This directory contains eighteen normative engineering specifications for the 1.
 2. **Existing work completion:** audit and finish the migration-platform foundation and known 1.1.0/1.2.0 regression issues.
 3. **QDAS first:** implement and independently validate the Qyrenith Development Assurance System.
 4. **Fourteen remaining capability modules:** implement with QDAS-assisted capture, planning, testing, auditing, and evidence recording.
-5. **Integrated acceptance:** required platform verification through CI or an owner-approved independent local/external runner, package verification, independent review, and owner approval.
+5. **Integrated acceptance:** required platform verification through an owner-approved independent local/external runner; GitHub Actions remain disabled unless explicitly approved, package verification, independent review, and owner approval.
 
 ## Specification index
 
@@ -69,7 +69,7 @@ These proposals extend and map onto the existing five-plane architecture; they d
 | Document | Scope |
 |---|---|
 | [Universal software intelligence architecture](UNIVERSAL_SOFTWARE_INTELLIGENCE_ARCHITECTURE.md) | Six capability pillars mapped onto existing planes; Deep Audit, Targeted Analysis and Continuous Assurance |
-| [Diagnostic intelligence expansion](DIAGNOSTIC_INTELLIGENCE_EXPANSION_SPEC.md) | 27 diagnostic domains and 81 proposed requirements |
+| [Diagnostic intelligence expansion](DIAGNOSTIC_INTELLIGENCE_EXPANSION_SPEC.md) | 27 owner-accepted diagnostic domains and 81 in-scope requirements; implementation remains separately tracked |
 | [Diagnostic capability coverage matrix](DIAGNOSTIC_CAPABILITY_COVERAGE_MATRIX.md) | Initial inventory-level capability map and evidence gaps |
 | [Reproducibility and cross-environment assurance](REPRODUCIBILITY_AND_CROSS_ENVIRONMENT_ASSURANCE_SPEC.md) | Reproducibility classes, manifests, independent replay and environment matrices |
 | [Optimization and repair intelligence](OPTIMIZATION_AND_REPAIR_INTELLIGENCE_SPEC.md) | Controlled optimization experiments, multi-objective decisions and safe repair |
@@ -78,7 +78,7 @@ These proposals extend and map onto the existing five-plane architecture; they d
 | [AA-01 owner decision design](ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md) | Owner-approved decisions and their semantics, consequences, and acceptance conditions |
 | [AA-01 owner decision record](AA01_OWNER_DECISION_RECORD.md) | Explicit approval scope, accepted decisions, deferred details, and governance boundaries |
 | [AA requirement reconciliation](AA_REQUIREMENT_RECONCILIATION.md) | Reconciliation and owner acceptance of all 70 PR #3 AA requirements across eleven groups; implementation remains separately tracked |
-| [AA ADR reconciliation review](AA_ADR_RECONCILIATION_REVIEW.md) | Four reconciled ADR proposals, architecture invariants, and remaining owner acceptance gates |
+| [AA ADR reconciliation review](AA_ADR_RECONCILIATION_REVIEW.md) | Four reconciled ADRs accepted by the owner on 2026-11-16; architecture invariants and implementation gates |
 | [Legacy outcome and state inventory](LEGACY_OUTCOME_AND_STATE_INVENTORY.md) | Source-observed legacy status vocabularies and provisional, non-approved mapping rules |
 | [Evidence-store backend evaluation](EVIDENCE_STORE_BACKEND_EVALUATION_PLAN.md) | Common fault-injection and portability criteria; no physical backend selected |
 | [Checker catalog and resource model](CHECKER_CATALOG_AND_RESOURCE_MODEL.md) | Versioned checker contracts, exact support scopes, immutable profiles, and resource budgets |
@@ -86,7 +86,7 @@ These proposals extend and map onto the existing five-plane architecture; they d
 
 ## Advanced Assurance decision records
 
-The following ADR drafts are retained as selectively reconciled source material from PR #3. Their status remains **PROPOSED — ADR acceptance pending**; the owner's seven AA-01 decision directions constrain their content but do not automatically accept these four ADRs or PR #3 as a whole.
+The following four ADRs are retained as selectively reconciled source material from PR #3. The owner explicitly accepted all four reconciled ADRs on 2026-11-16. This acceptance does not accept PR #3 as a whole or certify implementation.
 
 | ADR | Scope |
 |---|---|
@@ -97,13 +97,13 @@ The following ADR drafts are retained as selectively reconciled source material 
 
 ## Additional requirement families
 
-- **DI-001..DI-081:** proposed diagnostic requirements, three per domain.
+- **DI-001..DI-081:** accepted 1.2.0 release-scope requirements across the 27 owner-accepted diagnostic domains; implementation and verification remain separate.
 - **RCA-01..RCA-12:** proposed reproducibility requirements.
 - **OI-01..OI-10:** proposed optimization requirements.
-- **AA-REQ-*** (70 IDs): proposed cross-cutting Advanced Assurance requirements from PR #3; the seven owner decision directions do not automatically accept this entire requirement family.
+- **AA-REQ-*** (70 IDs): owner-accepted cross-cutting Advanced Assurance requirements from PR #3, across eleven groups; implementation and verification remain separate.
 - **EX-001..EX-016:** accepted extensibility/supportability requirements; implementation remains NOT_STARTED until evidence is produced.
 
-RCA, OI and the 70 PR #3 AA requirement IDs remain `PROPOSED` unless separately accepted. The AA-01 decision directions and EX-001..EX-016 design requirements are owner-approved; documentation approval does not establish implementation or verification.
+RCA-01..RCA-12 and OI-01..OI-10 remain `PROPOSED`. All 70 AA requirement IDs, all four reconciled AA ADRs, all 27 diagnostic domains, and EX-001..EX-016 are owner-accepted scope/design decisions. Acceptance does not establish implementation, testing, qualification, or verification.
 
 ## CI-disabled verification constraint
 
