@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Character-set guard for the English-only policy; not a language detector."""
+
+from __future__ import annotations
 
 import unicodedata
 import unittest
