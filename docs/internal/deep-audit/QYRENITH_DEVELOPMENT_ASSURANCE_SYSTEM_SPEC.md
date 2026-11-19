@@ -8,7 +8,7 @@
 
 QDAS continuously verifies development work performed on Qyrenith itself and, when explicitly enabled, on managed projects. It converts build/test/analyzer failures into evidence-linked diagnoses and controlled repair cycles. It does not promise automatic repair, and it never treats an AI or worker claim as proof.
 
-QDAS is implemented and accepted before the other fourteen deep-audit capability modules. Those modules are then developed with QDAS assistance, while QDAS itself is checked by independent CI and reproducible external tests.
+QDAS is implemented and accepted before the other fourteen deep-audit capability modules. Those modules are then developed with QDAS assistance, while QDAS itself is checked by an independent execution boundary and reproducible external tests. The independent boundary may be a separately authorized CI service or an owner-approved local/external runner; GitHub Actions remain disabled unless the owner explicitly authorizes them.
 
 ## 2. Canonical lifecycle
 
@@ -111,7 +111,7 @@ QDAS consumes normalized events from the execution and verification layers and e
 
 ## 8. Acceptance gate
 
-All QDAS-01..22 requirements need implementation and positive/negative/adversarial tests. QDAS must demonstrate at least one deterministic failure-to-diagnosis-to-repair-to-reverification scenario in a disposable fixture, plus safe-stop scenarios. The independent CI run must pass. QDAS cannot be marked complete solely by its own report.
+All QDAS-01..22 requirements need implementation and positive/negative/adversarial tests. QDAS must demonstrate at least one deterministic failure-to-diagnosis-to-repair-to-reverification scenario in a disposable fixture, plus safe-stop scenarios. The independent verification run must pass on the exact candidate revision through an owner-approved local/external runner or separately authorized CI. Disabling GitHub Actions does not waive independent verification or reduce the quality bar. QDAS cannot be marked complete solely by its own report.
 
 ## 9. Explicit non-claims
 
