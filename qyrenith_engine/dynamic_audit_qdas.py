@@ -36,6 +36,8 @@ class OracleType(Enum):
 
 @dataclass(frozen=True)
 class ScenarioContract:
+    """Scenario metadata; setup/actions/observations are not yet evaluated here."""
+
     scenario_id: str
     name: str
     setup: Any
@@ -48,7 +50,6 @@ class ScenarioContract:
     oracle_details: dict[str, Any] = field(default_factory=dict)
 
 
-_EXECUTION_STATUSES = {"PASS", "FAIL", "BLOCKED", "ERROR"}
 _OUTPUT_LIMIT = 16000
 
 
@@ -102,9 +103,11 @@ def run_scenario_with_qdas(
     started_at: datetime | None = None,
     finished_at: datetime | None = None,
 ) -> tuple[QdasCaptureResult, dict[str, Any]]:
-    """Run one scenario under QDAS observation and record a DYNAMIC_AUDIT event.
+    """Capture one bounded process run as a DYNAMIC_AUDIT event.
 
-    Returns the QDAS capture result and a scenario outcome dict.
+    This adapter does not enforce RVL isolation or host approval and does not
+    evaluate behavioral oracles. Callers must not use it on an original,
+    untrusted project tree; the returned behavior status remains NOT_RUN.
     """
     if not isinstance(qdas_ledger, QdasEventLedger):
         raise TypeError("qdas_ledger must be a QdasEventLedger")
@@ -122,7 +125,9 @@ def run_scenario_with_qdas(
             or "\x00" in value
         ):
             raise ValueError(f"{field_name} must be non-empty bounded text")
-    if seed is not None and (not isinstance(seed, str) or len(seed) > 4096 or "\x00" in seed):
+    if seed is not None and (
+        not isinstance(seed, str) or len(seed) > 4096 or "\x00" in seed
+    ):
         raise ValueError("seed must be bounded text when supplied")
     environment_fingerprint(environment)
     if started_at is not None and (
@@ -172,7 +177,9 @@ def run_scenario_with_qdas(
             for argument in argv
         )
     ):
-        raise ValueError("scenario argv must contain 1 to 256 non-empty bounded strings")
+        raise ValueError(
+            "scenario argv must contain 1 to 256 non-empty bounded strings"
+        )
 
     report = run_bounded_process(
         argv,
