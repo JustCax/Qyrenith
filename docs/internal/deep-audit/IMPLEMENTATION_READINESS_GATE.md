@@ -150,6 +150,12 @@ A read-only release-surface review compared the current Git tree, `PUBLIC_FILES.
 
 The packaging correction is **IMPLEMENTED — NOT TEST-VERIFIED**. No package build, release archive, wheel, local test suite, cross-platform test matrix, or CI was executed during this review. The independent local/external verification route remains mandatory before release.
 
+### Dynamic QDAS input-boundary hardening (2026-11-19)
+
+The QDAS dynamic process-capture wrapper now rejects an invalid explicit timeout instead of silently replacing it with the 120-second default, rejects missing or unknown oracle values instead of silently downgrading them to HEURISTIC, and validates argv shape, count, length, and NUL content before launching a process or accepting a supplied report. Targeted negative regression tests were added for invalid timeout values, unknown/missing oracles, and empty argv.
+
+This is a narrow input-contract hardening change, not completion of DB-01..DB-12 or the dynamic/behavioral audit module. The current wrapper still captures a bounded process report; it does not implement the full scenario setup/actions/expected-observation/cleanup lifecycle, evaluate behavioral oracles, or provide RVL isolation. The new tests have **not been executed** and remain source-level test additions only.
+
 ### Gate G — Implementation slices and independent validation
 
 - [ ] Every P0 requirement maps to a concrete implementation slice and acceptance evidence.
