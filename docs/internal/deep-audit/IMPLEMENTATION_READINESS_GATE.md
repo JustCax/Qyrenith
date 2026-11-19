@@ -178,12 +178,13 @@ The static-analysis capture adapter now maps unrecognized or non-string analyzer
 
 The current `REQUIREMENT_TRACEABILITY_MATRIX.md` contains 412 tracked requirement/decision rows:
 
-- **175 PARTIAL** and **119 NOT_STARTED** implementation/verification rows.
+- **171 PARTIAL** and **123 NOT_STARTED** implementation/verification rows.
 - **70 ACCEPTED** Advanced Assurance requirements; acceptance records scope/design approval, not implementation.
 - **48 PROPOSED** rows remain separately governed proposals and are not silently promoted into accepted scope.
 - The 81 accepted diagnostic requirements are still **63 PARTIAL / 18 NOT_STARTED**.
 - QDAS-01..22 are **9 PARTIAL / 13 NOT_STARTED**.
 - The dynamic/behavioral audit requirements DB-01..12 are **12 NOT_STARTED**.
+- Static/semantic analysis SA-01..13 is **9 PARTIAL / 4 NOT_STARTED**; the existing Python AST inventory is only a foundation, not the full module.
 - None of the fourteen post-QDAS capability modules is complete; several are only partially implemented and several have no implementation.
 
 This snapshot confirms that 1.2.0 remains far from the complete acceptance gate. It is a dated count, not a substitute for the row-level matrix.
