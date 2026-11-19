@@ -47,7 +47,6 @@ class ScenarioContract:
 
 
 _EXECUTION_STATUSES = {"PASS", "FAIL", "BLOCKED", "ERROR"}
-_DEFAULT_TIMEOUT = 120
 _OUTPUT_LIMIT = 16000
 
 
@@ -112,7 +111,9 @@ def run_scenario_with_qdas(
     scenario_dict = _scenario_mapping(scenario)
     oracle = _coerce_oracle(scenario_dict.get("oracle"))
 
-    timeout = scenario_dict.get("timeout_seconds", _DEFAULT_TIMEOUT)
+    if "timeout_seconds" not in scenario_dict:
+        raise ValueError("scenario must declare timeout_seconds")
+    timeout = scenario_dict["timeout_seconds"]
     if type(timeout) is not int or not 1 <= timeout <= 3600:
         raise ValueError("timeout_seconds must be an integer between 1 and 3600")
 
