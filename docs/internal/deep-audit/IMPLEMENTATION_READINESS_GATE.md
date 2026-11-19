@@ -159,7 +159,7 @@ The returned scenario result now keeps `execution_status` separate and reports o
 
 ### Static-analysis QDAS status hardening (2026-11-19)
 
-The static-analysis capture adapter now maps unrecognized or non-string analyzer status values to BLOCKED rather than treating them as an analyzer/infrastructure ERROR. The original analyzer report is preserved unchanged in the captured output. A targeted regression test covers an unrecognized status. This is a narrow classification correction; it does not complete the static/semantic analysis capability module, and the new test has not been executed.
+The static-analysis capture adapter now maps unrecognized or non-string analyzer status values to BLOCKED while preserving an explicit analyzer ERROR as ERROR. The original analyzer report is preserved unchanged in the captured output. A targeted regression test covers an unrecognized status. This is a narrow classification correction; it does not complete the static/semantic analysis capability module, and the new test has not been executed.
 
 ### Gate G — Implementation slices and independent validation
 
