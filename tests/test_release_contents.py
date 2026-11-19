@@ -134,7 +134,9 @@ class TestReleaseContents(unittest.TestCase):
                 "qyrenith_engine/__init__.py",
                 "qyrenith_engine/approval.py",
                 "qyrenith_engine/analysis.py",
+                "qyrenith_engine/analysis_qdas.py",
                 "qyrenith_engine/boundary.py",
+                "qyrenith_engine/dynamic_audit_qdas.py",
                 "qyrenith_engine/execution.py",
                 "qyrenith_engine/trust_store.py",
                 "qyrenith_engine/trust_cli.py",
@@ -151,6 +153,7 @@ class TestReleaseContents(unittest.TestCase):
                 "qyrenith_engine/migration/snapshot.py",
                 "qyrenith_engine/migration/workspace.py",
                 "qyrenith_engine/migration/preparation.py",
+                "qyrenith_engine/migration/qdas_step.py",
                 "qyrenith_engine/migration/knowledge.py",
                 "qyrenith_engine/migration/model.py",
                 "qyrenith_engine/migration/planner.py",
@@ -159,6 +162,29 @@ class TestReleaseContents(unittest.TestCase):
             entry_points = next(name for name in names if name.endswith(".dist-info/entry_points.txt"))
             with zipfile.ZipFile(wheel_path) as archive:
                 self.assertIn("qyrenith = qyrenith:main", archive.read(entry_points).decode("utf-8"))
+            import_result = subprocess.run(
+                [
+                    sys.executable,
+                    "-c",
+                    (
+                        "import sys; "
+                        "sys.path.insert(0, sys.argv[1]); "
+                        "import qyrenith_engine; "
+                        "from qyrenith_engine.migration import record_migration_step_with_qdas; "
+                        "from qyrenith_engine.analysis_qdas import record_analysis_with_qdas; "
+                        "from qyrenith_engine.dynamic_audit_qdas import run_scenario_with_qdas"
+                    ),
+                    str(wheel_path),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(
+                import_result.returncode,
+                0,
+                import_result.stdout + "\\n" + import_result.stderr,
+            )
 
     @unittest.skipUnless(importlib.util.find_spec("setuptools"),
                          "setuptools is not installed; Python package build is not available")
