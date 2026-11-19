@@ -142,10 +142,10 @@ The dedicated six-workstream review is recorded in [Phase 1 Safety Review — Si
 
 A read-only release-surface review compared the current Git tree, `PUBLIC_FILES.txt`, `MANIFEST.in`, the setuptools configuration, the release builder, and the wheel-content regression test.
 
-- `PUBLIC_FILES.txt` contains 190 unique entries; `MANIFEST.in` contains the exact same 190 paths. No internal deep-audit documents or GitHub Actions workflow files are included in the public source archive allowlist.
+- `PUBLIC_FILES.txt` contains 191 unique entries; `MANIFEST.in` contains the exact same 191 paths. No internal deep-audit documents or GitHub Actions workflow files are included in the public source archive allowlist.
 - The review found that the allowlist omitted three QDAS integration modules required by the 1.2.0 source runtime: `qyrenith_engine/analysis_qdas.py`, `qyrenith_engine/dynamic_audit_qdas.py`, and `qyrenith_engine/migration/qdas_step.py`. All three are now included in both manifests.
 - `tests/test_release_contents.py` now includes all three modules in its expected wheel inventory and adds an import smoke test for `qyrenith_engine`, the migration QDAS integration, static-analysis QDAS integration, and dynamic-audit QDAS integration. This specifically guards against a source archive/wheel that contains an initializer but omits a module imported by that initializer.
-- A source-level parity check against the current recursive Git tree confirms that every `qyrenith_engine/**/*.py` module is present in the public archive manifest, every engine module is represented in the wheel inventory assertion, the six 1.2.0 runtime/policy regression suites are included in the public source archive, and the 190 `PUBLIC_FILES.txt` entries exactly match the 190 `MANIFEST.in` include directives. This is a static source check, not a package build or test execution.
+- A source-level parity check against the current recursive Git tree confirms that every `qyrenith_engine/**/*.py` module is present in the public archive manifest, every engine module is represented in the wheel inventory assertion, the six 1.2.0 runtime/policy regression suites are included in the public source archive, and the 191 `PUBLIC_FILES.txt` entries exactly match the 191 `MANIFEST.in` include directives. This is a static source check, not a package build or test execution.
 - The branch has no `.github/workflows/` files. GitHub Actions remain disabled by owner direction; no workflow was restored and no CI run was triggered.
 - The earlier SECURITY.md correction and the 2026-11-19 Advanced Assurance documentation reconciliation remain in effect. The four AA ADRs, all 70 AA requirements, and all 27 diagnostic domains are recorded as owner-accepted scope; this does not advance implementation or verification states.
 
@@ -163,7 +163,7 @@ The current static-analysis adapter invokes `analyze_project()` in-process but r
 
 ### Static-analysis QDAS status hardening (2026-11-19)
 
-The static-analysis capture adapter now maps unrecognized or non-string analyzer status values to BLOCKED while preserving an explicit analyzer ERROR as ERROR. The original analyzer report is preserved unchanged in the captured output. A targeted regression test covers an unrecognized status. This is a narrow classification correction; it does not complete the static/semantic analysis capability module, and the new test has not been executed.
+The static-analysis capture adapter now maps unrecognized or non-string analyzer status values to BLOCKED while preserving an explicit analyzer ERROR as ERROR. The original analyzer report is preserved unchanged in the captured output. A targeted QDAS regression test covers unrecognized/non-string statuses and explicit ERROR preservation. A new `tests/test_analysis.py` suite covers no-execution AST inspection, syntax/UTF-8 failures, file/entry limits, strict limit types, symlink skipping, baseline comparison, and transitive import impact. This is a narrow classification/limit hardening change; it does not complete the static/semantic analysis capability module, and the new tests have not been executed.
 
 ### Gate G — Implementation slices and independent validation
 
