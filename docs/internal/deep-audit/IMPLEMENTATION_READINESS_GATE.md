@@ -153,9 +153,9 @@ The packaging correction is **IMPLEMENTED — NOT TEST-VERIFIED**. No package bu
 
 ### Dynamic QDAS input-boundary hardening (2026-11-19)
 
-The QDAS dynamic process-capture wrapper now requires an explicit bounded timeout and rejects missing/invalid values instead of silently replacing them with the 120-second default; it rejects missing or unknown oracle values instead of silently downgrading them to HEURISTIC; and it validates argv shape, count, length, and NUL content before launching a process or accepting a supplied report. Targeted negative regression tests were added for missing/invalid timeout values, unknown/missing oracles, and empty, oversized, excessive-count, or NUL-containing argv.
+The QDAS dynamic process-capture wrapper now requires an explicit bounded timeout and rejects missing/invalid values instead of silently replacing them with the 120-second default; it rejects missing or unknown oracle values instead of silently downgrading them to HEURISTIC; validates argv shape, count, length, and NUL content before launching a process; and always obtains the report from the shared bounded process runner. Caller-supplied report mappings can no longer bypass process execution. Targeted negative regression tests were added for missing/invalid timeout values, unknown/missing oracles, empty/oversized/excessive-count/NUL-containing argv, and attempted caller-report injection.
 
-This is a narrow input-contract hardening change, not completion of DB-01..DB-12 or the dynamic/behavioral audit module. The current wrapper still captures a bounded process report; it does not implement the full scenario setup/actions/expected-observation/cleanup lifecycle, evaluate behavioral oracles, or provide RVL isolation. The new tests have **not been executed** and remain source-level test additions only.
+This is a narrow input-contract and evidence-provenance hardening change, not completion of DB-01..DB-12 or the dynamic/behavioral audit module. The current wrapper still captures a bounded process report; it does not implement the full scenario setup/actions/expected-observation/cleanup lifecycle, evaluate behavioral oracles, or provide RVL isolation. The new tests have **not been executed** and remain source-level test additions only.
 
 ### Gate G — Implementation slices and independent validation
 
