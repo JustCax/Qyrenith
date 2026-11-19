@@ -69,6 +69,7 @@ class TestReleaseContents(unittest.TestCase):
     def test_public_source_archive_includes_120_regression_suites(self):
         expected = {
             "tests/test_analysis_qdas_120.py",
+            "tests/test_analysis.py",
             "tests/test_dynamic_audit_qdas_120.py",
             "tests/test_english_only_policy.py",
             "tests/test_execution_bounds_120.py",
