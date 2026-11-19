@@ -157,6 +157,10 @@ The QDAS dynamic process-capture wrapper now requires an explicit bounded timeou
 
 The returned scenario result now keeps `execution_status` separate and reports overall/behavior status as `NOT_RUN` with `behavior_verified=false`; a process exit PASS cannot be mistaken for a passing behavioral oracle. This is a narrow input-contract and evidence-provenance hardening change, not completion of DB-01..DB-12 or the dynamic/behavioral audit module. The current wrapper still captures a bounded process report; it does not implement the full scenario setup/actions/expected-observation/cleanup lifecycle, evaluate behavioral oracles, or provide RVL isolation. The new tests have **not been executed** and remain source-level test additions only.
 
+### Static-analysis QDAS provenance gap (2026-11-19)
+
+The current static-analysis adapter invokes `analyze_project()` in-process but records `argv=["python", "-m", "qyrenith_analysis"]`, which is not an actually launched command in the current tree. This does not satisfy the QDAS-01 exact-argv provenance requirement. The adapter remains PARTIAL until it either launches a real bounded analyzer CLI and records its actual argv, or the event model explicitly represents an in-process operation without fabricating process arguments. Do not treat this adapter as QDAS-01 verified.
+
 ### Static-analysis QDAS status hardening (2026-11-19)
 
 The static-analysis capture adapter now maps unrecognized or non-string analyzer status values to BLOCKED while preserving an explicit analyzer ERROR as ERROR. The original analyzer report is preserved unchanged in the captured output. A targeted regression test covers an unrecognized status. This is a narrow classification correction; it does not complete the static/semantic analysis capability module, and the new test has not been executed.
