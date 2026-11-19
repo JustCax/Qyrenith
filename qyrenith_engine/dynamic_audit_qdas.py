@@ -7,10 +7,11 @@ plus a scenario outcome summary. QDAS remains strictly observational: it
 records events and classifies failure symptoms; it never executes repairs or
 applies patches.
 
-A scenario is accepted either as a ScenarioContract or as a dict (the form
-produced by Task 1's make_scenario()). When the dict carries a pre-built
-"report" (as the Task 1 test does), that report is recorded directly; otherwise
-the scenario's argv is executed through run_bounded_process.
+A scenario is accepted either as a ScenarioContract or as a dict. Every
+scenario is executed through run_bounded_process before its result is recorded.
+Caller-supplied pre-built reports are not accepted here; integrations that need
+to ingest an already captured report must use record_execution_report directly
+and preserve that report's separate provenance.
 """
 from __future__ import annotations
 
@@ -131,15 +132,13 @@ def run_scenario_with_qdas(
     ):
         raise ValueError("scenario argv must contain 1 to 256 non-empty bounded strings")
 
-    report = scenario_dict.get("report")
-    if not isinstance(report, Mapping):
-        report = run_bounded_process(
-            argv,
-            root,
-            timeout=timeout,
-            output_limit=_OUTPUT_LIMIT,
-            env_overrides=dict(environment) if environment is not None else None,
-        )
+    report = run_bounded_process(
+        argv,
+        root,
+        timeout=timeout,
+        output_limit=_OUTPUT_LIMIT,
+        env_overrides=dict(environment) if environment is not None else None,
+    )
 
     capture_result = record_execution_report(
         report,
