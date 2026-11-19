@@ -1,0 +1,327 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qyrenith.dev/schemas/qdas-execution-event.schema.json",
+  "title": "Qyrenith QDAS Execution Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "event_id",
+    "project_id",
+    "project_revision",
+    "workspace_id",
+    "event_kind",
+    "os_name",
+    "os_version",
+    "architecture",
+    "runtime_name",
+    "runtime_version",
+    "tool_name",
+    "tool_version",
+    "argv",
+    "working_directory",
+    "environment_digest",
+    "started_at",
+    "finished_at",
+    "duration_milliseconds",
+    "exit_code",
+    "execution_status",
+    "timed_out",
+    "output_limited",
+    "output_incomplete",
+    "input_incomplete",
+    "unsupported_state",
+    "stdout_bytes",
+    "stderr_bytes",
+    "stdout_digest",
+    "stderr_digest"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "project_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "project_revision": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "workspace_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "event_kind": {
+      "enum": [
+        "BUILD",
+        "TEST",
+        "STATIC_ANALYSIS",
+        "RUNTIME",
+        "VERIFICATION",
+        "OTHER"
+      ]
+    },
+    "os_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "os_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "architecture": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "runtime_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "runtime_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "tool_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "tool_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "argv": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 16384
+      }
+    },
+    "working_directory": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "environment_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "duration_milliseconds": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 3600000
+    },
+    "exit_code": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "execution_status": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "BLOCKED",
+        "ERROR"
+      ]
+    },
+    "timed_out": {
+      "type": "boolean"
+    },
+    "output_limited": {
+      "type": "boolean"
+    },
+    "output_incomplete": {
+      "type": "boolean"
+    },
+    "input_incomplete": {
+      "type": "boolean"
+    },
+    "unsupported_state": {
+      "type": "boolean"
+    },
+    "stdout_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 8388608
+    },
+    "stderr_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 8388608
+    },
+    "stdout_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "stderr_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "execution_status": {
+            "const": "PASS"
+          }
+        },
+        "required": [
+          "execution_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "exit_code": {
+            "const": 0
+          },
+          "timed_out": {
+            "const": false
+          },
+          "output_limited": {
+            "const": false
+          },
+          "output_incomplete": {
+            "const": false
+          },
+          "input_incomplete": {
+            "const": false
+          },
+          "unsupported_state": {
+            "const": false
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "execution_status": {
+            "const": "FAIL"
+          }
+        },
+        "required": [
+          "execution_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "exit_code": {
+            "type": "integer",
+            "not": {
+              "const": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "execution_status": {
+            "const": "ERROR"
+          }
+        },
+        "required": [
+          "execution_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "exit_code": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "anyOf": [
+          {
+            "properties": {
+              "timed_out": {
+                "const": true
+              }
+            },
+            "required": [
+              "timed_out"
+            ]
+          },
+          {
+            "properties": {
+              "output_limited": {
+                "const": true
+              }
+            },
+            "required": [
+              "output_limited"
+            ]
+          },
+          {
+            "properties": {
+              "output_incomplete": {
+                "const": true
+              }
+            },
+            "required": [
+              "output_incomplete"
+            ]
+          },
+          {
+            "properties": {
+              "input_incomplete": {
+                "const": true
+              }
+            },
+            "required": [
+              "input_incomplete"
+            ]
+          },
+          {
+            "properties": {
+              "unsupported_state": {
+                "const": true
+              }
+            },
+            "required": [
+              "unsupported_state"
+            ]
+          }
+        ]
+      },
+      "then": {
+        "properties": {
+          "execution_status": {
+            "const": "BLOCKED"
+          }
+        }
+      }
+    }
+  ]
+}

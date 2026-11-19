@@ -8,7 +8,7 @@ from pathlib import Path
 
 from qyrenith_engine import (
     analyze_project, build_change_impact, compare_baselines,
-    inspect_project_boundary, run_bounded_process,
+    inspect_project_boundary, run_bounded_process, run_bounded_worker,
 )
 
 
@@ -49,7 +49,7 @@ class TestStaticAnalysis(unittest.TestCase):
     def test_symlinked_source_directory_blocks_incomplete_inventory(self):
         with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as outside:
             root = Path(directory)
-            (Path(outside) / "hidden.py").write_text("pass\\n", encoding="utf-8")
+            (Path(outside) / "hidden.py").write_text("pass\n", encoding="utf-8")
             try:
                 (root / "external").symlink_to(Path(outside), target_is_directory=True)
             except OSError as exc:
@@ -93,7 +93,7 @@ class TestStaticAnalysis(unittest.TestCase):
     def test_empty_impact_input_is_unknown(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            (root / "module.py").write_text("pass\\n", encoding="utf-8")
+            (root / "module.py").write_text("pass\n", encoding="utf-8")
             self.assertEqual(build_change_impact(root, [])["status"], "UNKNOWN")
 
     def test_transitive_import_impact(self):
@@ -175,6 +175,57 @@ class TestBoundaryAndExecution(unittest.TestCase):
             self.assertEqual(report["status"], "BLOCKED")
             self.assertTrue(report["output_truncated"])
             self.assertLessEqual(len(report["output"].encode("utf-8")), 256)
+
+
+    def test_bounded_worker_times_out_when_child_does_not_read_stdin(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report = run_bounded_worker(
+                [sys.executable, "-c", "import time; time.sleep(10)"],
+                directory,
+                b"x" * (1024 * 1024),
+                timeout=1,
+            )
+            self.assertEqual(report["status"], "BLOCKED")
+            self.assertTrue(report["timed_out"])
+            self.assertTrue(report["input_incomplete"])
+            self.assertLess(report["duration_seconds"], 6)
+
+    def test_bounded_worker_kills_output_flood_before_timeout(self):
+        with tempfile.TemporaryDirectory() as directory:
+            script = "import sys\nwhile True:\n sys.stdout.write('x' * 65536)\n sys.stdout.flush()\n"
+            report = run_bounded_worker(
+                [sys.executable, "-c", script],
+                directory,
+                b"{}\n",
+                timeout=30,
+                output_limit=256,
+            )
+            self.assertEqual(report["status"], "BLOCKED")
+            self.assertTrue(report["output_limited"])
+            self.assertFalse(report["timed_out"])
+            self.assertLess(report["duration_seconds"], 10)
+
+    def test_bounded_worker_normalizes_crlf_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            script = "import sys; sys.stdin.buffer.read(); sys.stdout.buffer.write(b'protocol\\r\\n'); sys.stderr.buffer.write(b'diagnostic\\r\\n')"
+            report = run_bounded_worker(
+                [sys.executable, "-c", script], directory, b"request\n", timeout=5
+            )
+            self.assertEqual(report["status"], "PASS")
+            self.assertEqual(report["stdout"], "protocol\n")
+            self.assertEqual(report["stderr"], "diagnostic\n")
+
+    def test_bounded_worker_keeps_stdout_and_stderr_separate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            script = "import sys; sys.stdin.read(); print('protocol'); print('diagnostic', file=sys.stderr)"
+            report = run_bounded_worker(
+                [sys.executable, "-c", script], directory, b"request\n", timeout=5
+            )
+            self.assertEqual(report["status"], "PASS")
+            self.assertEqual(report["stdout"], "protocol\n")
+            self.assertEqual(report["stderr"], "diagnostic\n")
+            self.assertFalse(report["input_incomplete"])
+
 
 
 if __name__ == "__main__":

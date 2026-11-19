@@ -4,6 +4,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import os
+import re
 from pathlib import Path, PurePosixPath
 from typing import Any, Dict, List, Set, Union
 
@@ -27,8 +28,13 @@ def analyze_project(project: Union[str, Path], *, max_files: int = 10000,
                     max_file_bytes: int = 2_000_000,
                     max_entries: int = 50000) -> Dict[str, Any]:
     """Inventory Python files and extract syntax, imports, symbols, and review hints."""
-    if min(max_files, max_file_bytes, max_entries) < 1:
-        raise ValueError("analysis limits must be positive")
+    for limit_name, limit_value in (
+        ("max_files", max_files),
+        ("max_file_bytes", max_file_bytes),
+        ("max_entries", max_entries),
+    ):
+        if type(limit_value) is not int or limit_value < 1:
+            raise ValueError(f"{limit_name} must be a positive integer")
     root = Path(project).resolve(strict=True)
     if not root.is_dir():
         raise ValueError("project root must be a directory")
@@ -145,16 +151,40 @@ def analyze_project(project: Union[str, Path], *, max_files: int = 10000,
 def compare_baselines(previous: Dict[str, Any], current: Dict[str, Any]) -> Dict[str, Any]:
     """Compare validated source-analysis snapshots without claiming behavioral equivalence."""
     for label, report in (("previous", previous), ("current", current)):
-        if not isinstance(report, dict) or report.get("schema") != 1 or not isinstance(report.get("files"), list):
+        if (
+            not isinstance(report, dict)
+            or type(report.get("schema")) is not int
+            or report.get("schema") != 1
+            or not isinstance(report.get("status"), str)
+            or report.get("status") not in {"PASS", "FAIL", "BLOCKED", "UNKNOWN"}
+            or not isinstance(report.get("files"), list)
+        ):
             return {"schema": 1, "status": "UNKNOWN", "reason": label + " baseline has an unsupported schema"}
         seen: Set[str] = set()
         for item in report["files"]:
             if not isinstance(item, dict) or not isinstance(item.get("path"), str):
                 return {"schema": 1, "status": "UNKNOWN", "reason": label + " baseline contains an invalid file record"}
-            if item["path"] in seen:
+            path_value = item["path"]
+            pure_path = PurePosixPath(path_value)
+            if (
+                not path_value
+                or "\x00" in path_value
+                or "\\" in path_value
+                or pure_path.is_absolute()
+                or pure_path.as_posix() != path_value
+                or any(part in {".", ".."} for part in path_value.split("/"))
+                or re.match(r"^[A-Za-z]:", path_value)
+            ):
+                return {"schema": 1, "status": "UNKNOWN", "reason": label + " baseline contains an unsafe file path"}
+            if path_value in seen:
                 return {"schema": 1, "status": "UNKNOWN", "reason": label + " baseline contains duplicate paths"}
-            seen.add(item["path"])
-            if not isinstance(item.get("sha256"), str) or item.get("syntax") not in {"PASS", "FAIL", "UNKNOWN"}:
+            seen.add(path_value)
+            if (
+                not isinstance(item.get("sha256"), str)
+                or not re.fullmatch(r"[0-9a-f]{64}", item["sha256"])
+                or not isinstance(item.get("syntax"), str)
+                or item.get("syntax") not in {"PASS", "FAIL", "UNKNOWN"}
+            ):
                 return {"schema": 1, "status": "UNKNOWN", "reason": label + " baseline contains incomplete evidence"}
     old = {item["path"]: item for item in previous["files"]}
     new = {item["path"]: item for item in current["files"]}

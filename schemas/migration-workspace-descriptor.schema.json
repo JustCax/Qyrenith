@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://qyrenith.dev/schemas/migration-workspace-descriptor.schema.json",
+  "title": "Qyrenith Isolated Workspace Descriptor",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "workspace_id",
+    "workspace_path",
+    "project_path",
+    "target",
+    "source_snapshot_digest",
+    "file_count",
+    "total_bytes",
+    "created_at",
+    "descriptor_digest"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "workspace_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "workspace_path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "project_path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "target": {
+      "$ref": "#/$defs/identity"
+    },
+    "source_snapshot_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "file_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1000000
+    },
+    "total_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 17179869184
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "descriptor_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "$defs": {
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domain",
+        "product",
+        "product_version",
+        "platform",
+        "loader",
+        "loader_version",
+        "framework",
+        "framework_version",
+        "language",
+        "toolchain",
+        "dependency_fingerprint",
+        "profile"
+      ],
+      "properties": {
+        "domain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "product": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "product_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1024
+        },
+        "platform": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1024
+        },
+        "loader": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1024
+        },
+        "loader_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1024
+        },
+        "framework": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1024
+        },
+        "framework_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1024
+        },
+        "language": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1024
+        },
+        "toolchain": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1024
+        },
+        "dependency_fingerprint": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1024
+        },
+        "profile": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 1024
+        }
+      }
+    }
+  }
+}

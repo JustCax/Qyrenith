@@ -1,0 +1,209 @@
+# Qyrenith 1.2.0 Implementation and Acceptance Plan
+
+## 1. Release principle
+
+1.2.0 is complete only when all accepted requirements across the eighteen normative specifications are implemented, tested, integrated, documented, and supported by retained evidence. The deep-audit README is the navigation index. A specification, stub, placeholder, TODO, or passing narrow unit test does not constitute feature completion.
+
+## 2. Mandatory sequence
+
+### Phase 0 — Documentation baseline
+- Preserve the 2026-11-16 owner acceptance of all four reconciled AA ADRs and verify their final wording remains aligned with the seven AA-01 directions, five-plane architecture, QDAS/RVL authority, migration authorization, and extensibility contract.
+- Maintain requirement-to-ADR traceability and the conservative mapping policy for every observed tracked legacy state; collect real historical user-state fixtures and verify conversions during the Phase 1/2 test gates.
+- Record the current checker source-surface inventory and accepted resource/profile architecture; derive exact checker manifests, profile inventories, and budgets alongside the implementations and representative workload measurements in the relevant module phases.
+- Complete the host approval/isolation capability matrix as the specification baseline; implement and independently qualify the actual platform boundaries in Phase 1.
+- Fix the logical evidence model and complete the physical-backend comparison/fault-injection protocol in Phase 0; select the physical backend in Phase 1 after candidate measurements, before final evidence-store integration.
+- Define extension identity, qualification, trust, support, authorization, RVL execution, and QDAS evidence authority boundaries in Phase 0; deliver exact schemas and runtime APIs with the extension/module implementation slices.
+- Create and cross-link all eighteen normative specifications and the specification index.
+- Maintain `REQUIREMENT_TRACEABILITY_MATRIX.md` as the authoritative requirement-to-implementation/test/evidence/dependency/status map.
+- Resolve contradictions with existing public/internal docs.
+- Review all security, trust, permission, isolation, and non-claim language.
+- Keep internal specifications out of public package contents unless separately approved.
+- Maintain `HOST_APPROVAL_AND_ISOLATION_CAPABILITY_MATRIX.md` as the platform-specific source/enforcement/qualification crosswalk; it does not substitute for Phase 1 implementation or testing.
+
+### Phase 0 exit record — owner-accepted baseline (2026-11-16)
+
+**Phase 0 disposition: COMPLETE — specification and owner-decision baseline.** This does not mean the runtime is implemented or the overall implementation readiness gate has passed.
+
+Completed Phase 0 baseline items:
+
+- All four reconciled AA ADRs accepted by the owner.
+- All 70 AA requirements accepted across their existing eleven groups and recorded as ACCEPTED in the traceability matrix.
+- All 27 diagnostic domains and DI-001..DI-081 accepted as 1.2.0 release scope; current PARTIAL/NOT_STARTED states remain implementation inventory only.
+- The eighteen normative specifications and deep-audit navigation/index are present and cross-linked.
+- Host approval/isolation source capability matrix added, with enforcement gaps and untested platform cells explicit.
+- Current checker/verification source-surface inventory added without claiming qualification or final profile coverage.
+- Extension manifest, qualification, trust, support, authorization, execution, and evidence authority boundaries specified.
+- Legacy state vocabularies and conservative mapping rules documented; historical user-state fixtures remain a Phase 1/2 verification prerequisite.
+- Evidence-store logical architecture and common comparison/fault-injection protocol documented; physical backend selection is explicitly a Phase 1 pre-integration decision after candidate measurements.
+- Public/internal security, package allowlist, documentation links, and release non-claims reconciled at source level.
+
+Phase 0 completion is a documentation/specification baseline only. It does not certify any tests, platform support, checker, domain, extension, worker, isolation provider, or release artifact. Phase 1 remains a mandatory hard blocker.
+
+### Phase 1 — Finish existing migration-platform work
+- Audit migration identity, transition validation, knowledge catalog, planner, worker contracts, authorization, ledger, snapshots, and workspace copying.
+- Resolve known platform-test failures, including Windows newline-sensitive subprocess tests, through explicitly authorized local test runs; GitHub Actions remain disabled by owner direction.
+- Reconcile PR description with implemented workspace API and remaining limitations.
+- Resolve subprocess timeout/stdin/output-limit issues and command-path validation bypasses.
+- Review environment allowlisting, worker first-run approval, adapter trust, symlink/race behavior, concurrent access, and failure cleanup.
+- Do not use path-based Windows snapshot/workspace traversal as a security substitute: until native handle-relative, reparse-point-safe traversal and race tests exist, these operations must fail closed on Windows. Treat this as a temporary capability restriction, not Windows support.
+- Finish the trust and execution boundary before any migration worker can run: persist knowledge/worker allowlists in an owner-controlled trust store; revalidate catalog identity, trust decisions, claim scope, and expiry at approval and immediately before execution; implement a controlled conformance runner with independently collected results; add an authenticated host approval channel; and enforce filesystem/process/network limits through an OS sandbox or equivalent host boundary. Until every gate is enforceable, migration-platform and QDAS worker/repair execution remain propose-only. The legacy `worker-run` command is separate: its `--yes` flag is a caller assertion, not authenticated human approval, and it does not provide an OS sandbox.
+- Verify and pin the Gradle wrapper bootstrap JAR and distribution checksums; retain cross-platform subprocess newline and output-limit regression tests.
+- Enforce generated agent-instruction synchronization in tests and reject symlinked release output paths.
+- Integrate only where acceptance tests prove safety; retain explicit non-claims otherwise.
+- Re-run complete 1.1.0 regression suite and the full platform matrix.
+
+### Phase 1 exit gate — mandatory before QDAS implementation
+
+Do not begin Phase 2 until all of the following are true:
+
+- The complete 1.1.0 regression suite and required Windows/Linux/macOS matrix pass on the same commit.
+- Existing migration identity, knowledge, planner, worker registry, authorization, ledger, snapshot, and workspace contracts have no unresolved critical/high defect.
+- Owner-controlled trust-store loading, exact-digest trust/revocation, and approval-time/validation-time freshness checks are implemented and tested.
+- Worker qualification is backed by a controlled conformance runner or authenticated attestation with independently collected evidence.
+- Human approval is authenticated through a trusted host channel; caller-supplied strings and CLI flags do not count.
+- Filesystem, process, environment, secret, and network restrictions are enforced by an OS sandbox or equivalent host-controlled boundary.
+- The assurance ledger is integrated into the relevant lifecycle and cannot be treated as independent proof when its local store is replaceable.
+- Workspace and recovery behavior has adversarial tests; Windows snapshot/workspace preparation remains unavailable until handle-relative reparse-point-safe traversal is implemented and verified; any unsupported isolation guarantee remains explicitly unavailable.
+- The PR description, public docs, internal specs, traceability matrix, CLI behavior, and package contents agree.
+
+If any item is missing, keep the affected execution path disabled/propose-only, record the blocker, and do not declare Phase 1 complete.
+
+### Phase 2 — QDAS foundation
+- Implement event schema and ingestion.
+- Implement failure taxonomy and evidence lineage.
+- Implement root-cause hypothesis contracts and repair planning.
+- Integrate exact snapshot and reproducible lab identities.
+- Add approval-scoped repair execution only behind an OS-enforced sandbox or equivalent host-controlled least-privilege boundary; otherwise remain propose-only.
+- Add regression-preservation checks, anti-false-fix checks, bounded retries, and safe-stop states.
+- Demonstrate disposable fixture repair and independent external verification.
+
+### Phase 3 — Remaining fourteen capability modules
+Implement each module in small dependency-ordered slices. For every slice: QDAS capture → plan → approval → implementation → targeted tests → full regression → static/security audit → diff review → evidence record. QDAS assists but does not self-certify its own changes.
+
+## 3. Capability modules
+
+The fourteen capability modules after QDAS are:
+1. Static and semantic analysis.
+2. Dynamic and behavioral audit.
+3. Formal verification and bounded symbolic execution.
+4. Fuzzing and property testing.
+5. Security and supply-chain audit.
+6. Root-cause and cross-module analysis.
+7. Universal compatibility and failure knowledge.
+8. Reproducible verification lab.
+9. Meta-audit and benchmark.
+10. Evidence and confidence model.
+11. Language and domain adapters.
+12. Audit maturity and coverage.
+13. Migration platform integration.
+14. Integrated reporting, orchestration, and acceptance controls.
+
+The master architecture and this plan are governance documents. The migration integration and reporting specifications define the final two capability modules. The README is an index, not a runtime module.
+
+**Phase boundary:** Phase 1 completes and hardens the migration foundation that already exists in the branch (typed identities/transitions, knowledge, planning, worker records, authorization, ledger, snapshots, and workspace copying). Phase 3 module 13 then performs the QDAS/deep-audit integration across the completed migration platform; it must not duplicate or bypass the Phase 1 contracts.
+
+## 4. Requirement traceability
+
+Each requirement must have a stable ID and a traceability row containing:
+- specification and requirement ID;
+- implementation package/API/CLI;
+- positive test and negative/adversarial test;
+- evidence artifact type;
+- dependencies and blocking prerequisites;
+- status: NOT_STARTED, IN_PROGRESS, IMPLEMENTED, TESTED, VERIFIED, BLOCKED;
+- reviewer and verification timestamp.
+
+No requirement may be marked VERIFIED solely because its code exists or its unit tests pass.
+
+## 5. Definition of done
+
+A module is done only when:
+- all normative requirements have implementation or owner-approved scope removal;
+- supported inputs and unsupported cases are explicit;
+- positive, negative, boundary, regression, and adversarial tests pass;
+- resource limits and failure states are exercised;
+- evidence lineage is complete;
+- docs, schemas, CLI help, and package manifests agree;
+- no critical/high unresolved issue remains without explicit accepted risk;
+- independent validation is complete where the claim requires it.
+
+## 6. Release blockers
+
+Any failing required CI job, unresolved critical/high security defect, false PASS path, silent downgrade, missing evidence, unbounded execution path, package-content mismatch, broken compatibility contract, or undocumented public behavior blocks release.
+
+## 7. Governance
+
+- The only active development/integration branch for 1.2.0 is `feature/1.2.0-universal-migration-core`.
+- Do not commit, merge into, rebase, or otherwise modify `main` before the approved 1.2.0 release integration.
+- PR #9 is the release PR from the 1.2.0 branch to `main`; keep it open and draft during development. Do not merge it before release approval.
+- PR #3 and any other supporting PRs are review/source branches only. If accepted, their changes are integrated into the 1.2.0 branch only, after selective review; never merge them into `main`.
+- Do not merge every PR automatically. First determine whether its content is needed, non-duplicative, compatible, and accepted. Preserve useful PRs as draft review records when direct integration is unnecessary.
+- No tag, PyPI publication, or public release is authorized without explicit owner approval.
+- Changes to accepted architecture require a decision record and updated traceability.
+
+## 8. Expanded capability envelope — proposed extension
+
+The owner accepted all 27 diagnostic domains for the 1.2.0 release scope on 2026-11-16. The domains are grouped into shared engines and domain packs, not 27 isolated packages. Every domain must have a delivered implementation/support slice, domain-specific positive/negative/boundary/adversarial evidence, explicit limitations, and an acceptance disposition before release; current PARTIAL/NOT_STARTED labels are implementation status, not scope deferrals.
+
+The six product pillars map onto the existing five planes in `UNIVERSAL_SOFTWARE_INTELLIGENCE_ARCHITECTURE.md`. The current master remains canonical unless the owner approves a decision record changing it.
+
+### 8.1 Planning artifacts
+- `DIAGNOSTIC_CAPABILITY_COVERAGE_MATRIX.md`: initial inventory, not verification.
+- `REPRODUCIBILITY_AND_CROSS_ENVIRONMENT_ASSURANCE_SPEC.md`: extends the existing lab/evidence model.
+- `OPTIMIZATION_AND_REPAIR_INTELLIGENCE_SPEC.md`: controlled optimization and repair.
+- `ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md`: crosswalk for the separate AA-01 draft, reconciled ADRs, and PR #3 disposition.
+- `ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md`: owner-approved seven-decision AA-01 design baseline; backend/profile details remain deferred where explicitly stated.
+- `ARCHITECTURE_DECISION_RECORDS/ADR-AA-001..004`: selectively reconciled ADR drafts; all four are ACCEPTED by owner decision on 2026-11-16; implementation and verification remain separate.
+- `LEGACY_STATE_INVENTORY_AND_MAPPING.md`: source-based inventory and conservative mapping proposal; exhaustive historical fixture mapping remains a prerequisite.
+- `EVIDENCE_STORE_BACKEND_EVALUATION.md`: common backend comparison and fault-injection protocol; no physical backend is selected until evidence is reviewed.
+- `CHECKER_CATALOG_AND_PROFILE_DESIGN.md`: check identity, support resolution, immutable profile manifests, resource budgets, and aggregate assurance rules; final profile inventories remain deferred.
+- `AA_REQUIREMENT_RECONCILIATION.md`: review and owner acceptance of all 70 PR #3 AA requirements across eleven groups on 2026-11-16; implementation remains unverified.
+- `IMPLEMENTATION_READINESS_GATE.md`: consolidated pre-implementation readiness register and mandatory exit gates; it does not replace the phase sequence.
+- `AA_ADR_RECONCILIATION_REVIEW.md`: standalone reconciliation summary for the four AA ADR drafts; owner acceptance was recorded on 2026-11-16.
+- `EXTENSIBILITY_AND_SUPPORTABILITY_SPEC.md`: owner-approved first-class extension ecosystem, qualification, exact support scope, lifecycle, and compatibility contract.
+- `RESEARCH_AND_STANDARDS_ALIGNMENT.md`: source register and interoperability consequences.
+- DI-001..DI-081: accepted 1.2.0 domain requirements across all 27 accepted diagnostic domains; implementation status remains independently tracked.
+- RCA-01..RCA-12 and OI-01..OI-10: add to the authoritative matrix before implementation.
+
+### 8.2 Delivery interpretation
+The 27 domains are the full target envelope, not a promise that all are complete in 1.2.0. Identify shared foundations and end-to-end vertical slices with executable tests/evidence. Other domains remain explicitly PARTIAL, UNSUPPORTED, BLOCKED or deferred. No support claim may be inferred from a registry or document.
+
+The existing Phase 1 migration safety gate and Phase 2 QDAS-first order remain unchanged. Reuse the fourteen existing modules and contracts; do not create a parallel architecture.
+
+### 8.3 Advanced Assurance integration
+
+The separate AA-01 draft is a cross-cutting assurance contract, not a fifteenth capability module or a replacement for QDAS. Its project discovery/model, verification planner, authorization gate, checker registry/runtime, evidence validator/store, policy evaluator, reporting layer and provider boundary map onto the existing five planes and fourteen post-QDAS capability modules.
+
+The owner accepted all 70 stable AA requirement IDs across eleven groups on 2026-11-16. Their traceability rows are now marked ACCEPTED as requirements; mapped acceptance-test identifiers remain plans, not existing test code or verification evidence. This does not accept PR #3 as a whole. See `ADVANCED_ASSURANCE_INTEGRATION_AND_PR3_REVIEW.md` for the mapping, overlap rules, architecture ownership and safe PR disposition.
+
+Before implementation:
+- implement the approved AA-01 decision directions from ADVANCED_ASSURANCE_AA01_DECISION_DESIGN.md only after reconciling the required contracts;
+- verify the accepted ADR-AA-001..004 records and keep their implementation claims separate from architecture acceptance;
+- preserve the explicit acceptance of all 70 AA requirements across the eleven groups and ensure each implementation/test/evidence target remains traceable;
+- approve the exact requirement baseline and acceptance methods, including the distinction between SPECIFIED, IMPLEMENTED and VERIFIED;
+- complete the repository-wide and historical-fixture legacy state inventory; resolve the `INCONCLUSIVE` schema gap and the analyzer `UNKNOWN`/execution `ERROR` semantic mismatch before finalizing compatibility implementation;
+- complete the evidence backend comparison using the common atomicity, crash recovery, concurrency, portability, privacy, retention, export/restore, and fault-injection protocol; obtain owner approval for the selected backend;
+- complete the checker inventory and exact check contracts, then derive versioned profile inventories and resource budgets from measured capabilities; do not approve profile labels or mandatory coverage by name alone;
+- preserve Phase 1 migration hardening and Phase 2 QDAS-first order;
+- define implementation slices against the existing module contracts rather than creating a parallel runtime;
+- keep per-check outcomes, aggregate assurance decisions, reproducibility outcomes, and extension support classifications as separate vocabularies;
+- implement extensibility through versioned contracts, capability discovery, qualification, support manifests, and conformance—not an untrusted code-loading shortcut.
+
+## 9. Verification while GitHub Actions are disabled
+
+The owner disabled GitHub Actions to avoid usage/billing. Workflow definitions have been removed from the active branches and must not be restored or triggered without explicit approval.
+
+This changes the verification execution method, not the quality bar:
+- release verification remains mandatory;
+- use an owner-approved independent local or external runner;
+- record exact commit, command, OS/architecture, runtime/toolchain, dependencies, timestamp, exit result and artifact digests;
+- retain positive, negative, regression and adversarial evidence;
+- execute supported platform matrix cells explicitly; unexecuted cells remain NOT_RUN;
+- independently review security, packaging and release contents;
+- historical Actions runs are not evidence for a newer commit.
+
+If equivalent independent verification is unavailable, release readiness remains BLOCKED. Do not lower acceptance criteria because Actions are disabled.
+
+## 10. Proposal governance
+
+The six-pillar grouping, reproducibility extension and optimization specification remain proposals pending owner review. The 27 diagnostic domains and DI-001..DI-081 requirements are owner-accepted 1.2.0 release scope; their implementation and qualification remain open until individually evidenced. The extensibility and supportability architecture is an owner-approved requirement, but its implementation and each individual extension's qualification remain unverified. They do not automatically amend accepted architecture or remove requirements. Before implementation, review overlaps with existing modules, add RCA/OI IDs to the matrix, approve exact 1.2.0 vertical slices and record architecture decisions.

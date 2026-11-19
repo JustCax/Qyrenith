@@ -85,10 +85,26 @@ def collect_dirs(files):
 
 
 def resolve_output_dir(arg):
-    default = (ROOT / "dist").resolve()
-    target = default if arg is None else Path(arg).resolve()
-    if target != default and (target == ROOT or ROOT in target.parents):
-        fail("release output directory must be outside the project tree, or use the default dist/ directory")
+    default_path = ROOT / "dist"
+    if default_path.is_symlink():
+        fail("default release output directory must not be a symbolic link")
+    default = default_path.resolve()
+    if arg is None:
+        target = default
+    else:
+        requested = Path(arg).absolute()
+        if requested == default_path.absolute():
+            target = default
+        else:
+            try:
+                requested.relative_to(ROOT)
+            except ValueError:
+                pass
+            else:
+                fail("custom release output directory must be outside the project tree")
+            target = requested.resolve()
+            if target == ROOT or ROOT in target.parents:
+                fail("release output directory must be outside the project tree, or use the default dist/ directory")
     target.mkdir(parents=True, exist_ok=True)
     return target
 

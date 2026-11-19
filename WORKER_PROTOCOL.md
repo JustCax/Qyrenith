@@ -42,4 +42,4 @@ Adapter manifests may declare task capabilities such as `inspect`, `plan`, or `p
 
 ## Adapter manifest
 
-A non-protocol work operation requires a manifest with version, capabilities, supported loaders, supported Minecraft versions, task types, risk profile, evidence requirements, command/interface, and result schema. Qyrenith validates these declarations before execution.
+A non-protocol work operation requires a manifest with version, capabilities, supported loaders, supported Minecraft versions, task types, risk profile, evidence requirements, command/interface, and result schema. Qyrenith validates these declarations before execution. The first launch of each exact command requires explicit user approval with `worker-run --yes`. Approval is stored outside the project in the user's Qyrenith home directory and is bound to a SHA-256 fingerprint of the command, executable, file entrypoints, adapter version, and reduced environment. Any fingerprint change requires re-approval. This is an approval gate, not an operating-system sandbox.

@@ -6,9 +6,11 @@ Minecraft remains the first flagship domain; domain-specific knowledge lives in 
 and workers while the safety/verification core stays generic. Standard library only.
 """
 from __future__ import annotations
-import argparse, datetime as dt, hashlib, json, os, re, shutil, signal, stat, subprocess, sys, tempfile, threading, time, zipfile, shlex
+import argparse, datetime as dt, hashlib, json, os, re, shutil, sqlite3, stat, sys, tempfile, threading, time, zipfile, shlex
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+
+from qyrenith_engine.execution import run_bounded_process, run_bounded_worker
 
 # Keep diagnostics deterministic across Windows console code pages.
 for _stream in (sys.stdout, sys.stderr):
@@ -172,73 +174,77 @@ def require_qyrenith(root: Path) -> Path:
         if not p.resolve().is_relative_to(root.resolve()): die("PREFLIGHT_FAILURE",f"Qyrenith orchestrator escapes project root: {p}")
     except OSError as e: die("PREFLIGHT_FAILURE",f"Qyrenith orchestrator cannot be resolved: {e}")
     return p
-def _terminate_process(proc: subprocess.Popen) -> None:
-    try:
-        if os.name == "nt":
-            proc.terminate()
-        else:
-            os.killpg(proc.pid, signal.SIGTERM)
-    except (OSError, ProcessLookupError):
-        try: proc.terminate()
-        except OSError: pass
-    try:
-        proc.wait(timeout=2)
-    except subprocess.TimeoutExpired:
+def record_qdas_process_report(
+    report: Dict[str, Any],
+    cwd: Path,
+    cmd: Sequence[str],
+    event_kind: str,
+    started_at: dt.datetime,
+    project_revision: Optional[str] = None,
+):
+    """Persist an already executed bounded-process report without re-running it."""
+    from qyrenith_engine.qdas import QdasEventLedger, record_execution_report
+
+    ensure_state_dir(cwd)
+    root_identity = str(cwd.resolve())
+    project_id = hashlib.sha256(("qyrenith-project:" + root_identity).encode("utf-8")).hexdigest()
+    workspace_id = hashlib.sha256(("qyrenith-workspace:" + root_identity).encode("utf-8")).hexdigest()
+    executable = Path(cmd[0]).name if cmd else "unknown"
+    return record_execution_report(
+        report,
+        cwd,
+        QdasEventLedger(cwd / STATE_DIR / "qdas" / "events.jsonl"),
+        project_id=project_id,
+        project_revision=project_revision or source_fingerprint(cwd),
+        workspace_id=workspace_id,
+        event_kind=event_kind,
+        tool_name=executable[:128] or "unknown",
+        tool_version="not-reported",
+        argv=cmd,
+        environment=os.environ,
+        started_at=started_at,
+    )
+
+
+def cmdrun(
+    cmd: Sequence[str],
+    cwd: Path,
+    timeout: Optional[int] = None,
+    *,
+    qdas_event_kind: Optional[str] = None,
+) -> Tuple[int, str]:
+    """Run one bounded command and optionally ingest its existing report into QDAS."""
+    revision = None
+    if qdas_event_kind is not None:
+        _clear_sha256_cache()
+        revision = source_fingerprint(cwd)
+    started_at = dt.datetime.now(dt.timezone.utc)
+    report = run_bounded_process(
+        cmd,
+        cwd,
+        timeout=3600 if timeout is None else timeout,
+        output_limit=COMMAND_STREAM_LIMIT,
+        inherit_environment=True,
+    )
+    if qdas_event_kind is not None:
         try:
-            if os.name == "nt": proc.kill()
-            else: os.killpg(proc.pid, signal.SIGKILL)
-        except (OSError, ProcessLookupError):
-            try: proc.kill()
-            except OSError: pass
-def cmdrun(cmd: Sequence[str], cwd: Path, timeout: Optional[int] = None) -> Tuple[int, str]:
-    """Run a controller command with bounded captured output and hard timeout cleanup."""
-    kwargs: Dict[str, Any] = {"cwd": str(cwd), "stdin": subprocess.DEVNULL, "stdout": subprocess.PIPE, "stderr": subprocess.STDOUT, "text": False, "shell": False}
-    if os.name == "nt":
-        kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-    else:
-        kwargs["start_new_session"] = True
-    try:
-        proc = subprocess.Popen(list(cmd), **kwargs)
-    except OSError as e:
-        die("PREFLIGHT_FAILURE", f"Cannot execute {' '.join(cmd)}: {e}")
-    out: List[bytes] = []
-    state = {"overflow": False, "total": 0}
-    def reader() -> None:
-        try:
-            if proc.stdout is None: return
-            while True:
-                chunk = proc.stdout.read(65536)
-                if not chunk: break
-                state["total"] += len(chunk)
-                if state["total"] <= COMMAND_STREAM_LIMIT:
-                    out.append(chunk)
-                else:
-                    state["overflow"] = True
-                    _terminate_process(proc)
-                    break
-        except (OSError, ValueError):
-            pass
-    t = threading.Thread(target=reader, daemon=True); t.start()
-    timed_out = False
-    try:
-        try:
-            proc.wait(timeout=timeout)
-        except subprocess.TimeoutExpired:
-            timed_out = True
-            _terminate_process(proc)
-    finally:
-        t.join(timeout=2)
-        try:
-            if proc.stdout is not None: proc.stdout.close()
-        except OSError: pass
-    text = redact_text(b"".join(out).decode("utf-8", errors="replace"))
-    if timed_out:
-        text += "\nTIMEOUT"
-        return 124, text
-    if state["overflow"]:
-        text += "\nOUTPUT_LIMIT_EXCEEDED"
-        return 124, text
-    return proc.returncode if proc.returncode is not None else 124, text
+            record_qdas_process_report(report, cwd, cmd, qdas_event_kind, started_at, revision)
+        except Exception as exc:
+            die(
+                "PREFLIGHT_FAILURE",
+                "QDAS could not durably record the completed command; its result is not accepted: "
+                + type(exc).__name__,
+            )
+    output = redact_text(report.get("output", ""))
+    if report.get("status") == "ERROR":
+        die("PREFLIGHT_FAILURE", f"Cannot execute {' '.join(cmd)}: {report.get('error', 'unknown error')}")
+    if report.get("timed_out"):
+        return 124, output + "\nTIMEOUT"
+    if report.get("output_truncated"):
+        return 124, output + "\nOUTPUT_LIMIT_EXCEEDED"
+    if report.get("output_incomplete"):
+        return 124, output + "\nOUTPUT_INCOMPLETE"
+    return report.get("exit_code") if report.get("exit_code") is not None else 124, output
 def git(root: Path, *args: str): return cmdrun(["git", *args], root)
 def git_repo(root: Path) -> bool: return (root / ".git").exists()
 
@@ -648,75 +654,6 @@ def build_version_graph(root: Path, s: Dict[str,Any]) -> Dict[str,Any]:
 # ---------------------------------------------------------------------------
 # Workers
 # ---------------------------------------------------------------------------
-def _terminate_worker(proc: subprocess.Popen) -> None:
-    """Terminate the worker and its process group where the platform supports it."""
-    try:
-        if os.name == "nt":
-            proc.terminate()
-        else:
-            os.killpg(proc.pid, signal.SIGTERM)
-    except (OSError, ProcessLookupError):
-        try: proc.terminate()
-        except OSError: pass
-    try:
-        proc.wait(timeout=2)
-    except subprocess.TimeoutExpired:
-        try:
-            if os.name == "nt": proc.kill()
-            else: os.killpg(proc.pid, signal.SIGKILL)
-        except (OSError, ProcessLookupError):
-            try: proc.kill()
-            except OSError: pass
-def _bounded_worker_process(command: Sequence[str], cwd: Path, wire: str, timeout: int, env: Dict[str, str]) -> Tuple[str, str, int, bool, bool, float]:
-    """Run a worker with bounded stdout/stderr, timeout and process-group cleanup."""
-    kwargs: Dict[str, Any] = {"cwd": str(cwd), "stdin": subprocess.PIPE, "stdout": subprocess.PIPE, "stderr": subprocess.PIPE, "text": False, "shell": False}
-    if os.name == "nt":
-        kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
-    else:
-        kwargs["start_new_session"] = True
-    proc = subprocess.Popen(list(command), env=env, **kwargs)
-    started = time.monotonic()
-    out: List[bytes] = []; err: List[bytes] = []
-    overflow = {"stdout": False, "stderr": False}
-    def reader(stream, bucket, key):
-        total = 0
-        try:
-            while True:
-                chunk = stream.read(65536)
-                if not chunk: break
-                total += len(chunk)
-                if total <= WORKER_STREAM_LIMIT:
-                    bucket.append(chunk)
-                else:
-                    overflow[key] = True
-                    break
-        except (OSError, ValueError):
-            pass
-    threads=[threading.Thread(target=reader,args=(proc.stdout,out,"stdout"),daemon=True), threading.Thread(target=reader,args=(proc.stderr,err,"stderr"),daemon=True)]
-    for t in threads: t.start()
-    try:
-        if proc.stdin is not None:
-            proc.stdin.write(wire.encode("utf-8")); proc.stdin.close()
-        proc.wait(timeout=timeout)
-    except BrokenPipeError:
-        try: proc.wait(timeout=2)
-        except subprocess.TimeoutExpired: _terminate_worker(proc)
-    except subprocess.TimeoutExpired:
-        _terminate_worker(proc)
-        for t in threads: t.join(timeout=1)
-        for stream in (proc.stdout, proc.stderr):
-            try:
-                if stream is not None: stream.close()
-            except OSError: pass
-        return b"".join(out).decode("utf-8",errors="replace"), b"".join(err).decode("utf-8",errors="replace"), proc.returncode or 124, True, False, round(time.monotonic()-started,3)
-    if overflow["stdout"] or overflow["stderr"]:
-        _terminate_worker(proc)
-    for t in threads: t.join(timeout=1)
-    for stream in (proc.stdout, proc.stderr):
-        try:
-            if stream is not None: stream.close()
-        except OSError: pass
-    return b"".join(out).decode("utf-8",errors="replace"), b"".join(err).decode("utf-8",errors="replace"), proc.returncode or 0, False, overflow["stdout"] or overflow["stderr"], round(time.monotonic()-started,3)
 def validate_adapter_manifest(entry: Dict[str,Any], request: Dict[str,Any]) -> None:
     operation=request.get("operation") if isinstance(request,dict) else None
     if operation in {"discover","inspect","plan","result"}: return
@@ -761,29 +698,167 @@ def validate_adapter_manifest(entry: Dict[str,Any], request: Dict[str,Any]) -> N
     loader=request.get("loader")
     if loader and loader not in entry["supported_loaders"]: die("STOPPED",f"Adapter does not support loader: {loader}")
 def validate_worker_command_paths(root: Path, command: Sequence[str]) -> None:
-    """Reject worker command path arguments that escape the project root."""
-    root_resolved=root.resolve()
-    for index,arg in enumerate(command):
-        value=str(arg)
-        if not value or "\x00" in value: die("USAGE", "Worker command contains an invalid argument")
-        candidate=Path(value)
-        path_like=candidate.is_absolute() or "/" in value or "\\" in value or value.startswith(".")
+    """Best-effort lint of path arguments; this is not a command sandbox or trust boundary."""
+    root_resolved = root.resolve()
+    for index, argument in enumerate(command):
+        if not isinstance(argument, str) or not argument or "\x00" in argument:
+            die("USAGE", "Worker command contains an invalid argument")
+        candidate = Path(argument)
+        local_candidate = candidate if candidate.is_absolute() else root / candidate
+        path_like = (
+            candidate.is_absolute() or "/" in argument or "\\" in argument
+            or argument.startswith(".") or (index > 0 and local_candidate.exists())
+        )
         if not path_like:
             continue
-        if candidate.is_absolute():
-            resolved=candidate.resolve()
-        else:
-            resolved=(root/candidate).resolve()
-        if index == 0 and candidate.is_absolute():
-            if not resolved.is_file() or not os.access(resolved,os.X_OK):
-                die("STOPPED", f"Worker executable is invalid or not executable: {value}")
+        if index > 0 and local_candidate.is_symlink():
+            die("STOPPED", f"Worker command path must not be a symbolic link: {argument}")
+        try:
+            resolved = local_candidate.resolve(strict=False)
+        except (OSError, ValueError) as exc:
+            die("STOPPED", f"Worker command path cannot be resolved: {argument}: {exc}")
+        if index == 0:
+            if candidate.is_absolute():
+                if not resolved.is_file() or not os.access(resolved, os.X_OK):
+                    die("STOPPED", f"Worker executable is invalid or not executable: {argument}")
+            elif not resolved.is_relative_to(root_resolved):
+                die("STOPPED", f"Worker executable escapes the project root: {argument}")
+            elif not resolved.is_file() or not os.access(resolved, os.X_OK):
+                die("STOPPED", f"Worker executable is invalid or not executable: {argument}")
             continue
         if not resolved.is_relative_to(root_resolved):
-            die("STOPPED", f"Worker command argument escapes project root: {value}")
-        if index > 0 and candidate.exists() and not resolved.is_file() and not resolved.is_dir():
-            die("STOPPED", f"Worker command argument is not a valid project-local path: {value}")
-def run_external_worker(root: Path, adapter_name: str, request: Dict[str, Any], timeout: int = 120) -> Dict[str, Any]:
-    """Run one explicitly declared worker without shell execution. Worker output never authorizes SUCCESS."""
+            die("STOPPED", f"Worker command argument escapes project root: {argument}")
+        if local_candidate.exists() and not resolved.is_file() and not resolved.is_dir():
+            die("STOPPED", f"Worker command argument is not a valid project-local path: {argument}")
+
+def worker_command_digest(root: Path, command: Sequence[str], entry: Dict[str, Any], env: Dict[str, str]) -> str:
+    """Fingerprint the exact argv, executable, file entrypoints, and effective worker environment."""
+    file_records = []
+    candidates = []
+    for index, argument in enumerate(command):
+        candidate = None
+        if index == 0:
+            resolved_executable = shutil.which(argument)
+            if resolved_executable:
+                candidate = Path(resolved_executable)
+            elif Path(argument).is_absolute():
+                candidate = Path(argument)
+        else:
+            path_value = Path(argument)
+            local_candidate = path_value if path_value.is_absolute() else root / path_value
+            if (
+                path_value.is_absolute() or "/" in argument or "\\" in argument
+                or argument.startswith(".")
+                or (local_candidate.is_file() and local_candidate.suffix.lower() in {
+                    ".py", ".pyw", ".jar", ".class", ".js", ".mjs", ".cjs",
+                    ".sh", ".bash", ".bat", ".cmd", ".exe", ".dll", ".so",
+                    ".dylib", ".wasm",
+                })
+            ):
+                candidate = local_candidate
+        if candidate is not None:
+            candidates.append((index, candidate))
+    entrypoint = entry.get("entrypoint")
+    entrypoints = [entrypoint] if isinstance(entrypoint, str) else entrypoint
+    if isinstance(entrypoints, list):
+        for index, value in enumerate(entrypoints):
+            if isinstance(value, str) and value:
+                path = Path(value)
+                candidates.append((len(command) + index, path if path.is_absolute() else root / path))
+    for index, candidate in candidates:
+        try:
+            resolved = candidate.resolve(strict=True)
+            if not resolved.is_file():
+                file_records.append({"argument_index": index, "path": str(candidate.absolute()), "status": "UNREADABLE"})
+                continue
+            file_records.append({
+                "argument_index": index,
+                "path": str(candidate.absolute()),
+                "resolved_path": str(resolved),
+                "sha256": sha256_full(resolved),
+            })
+        except OSError:
+            file_records.append({"argument_index": index, "path": str(candidate.absolute()), "status": "UNREADABLE"})
+    payload = {
+        "schema": 1,
+        "adapter_version": entry.get("version"),
+        "argv": list(command),
+        "entrypoint": entrypoint,
+        "files": file_records,
+        "environment": dict(sorted(env.items())),
+    }
+    encoded = json.dumps(payload, ensure_ascii=True, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _worker_command_is_approved(
+    root: Path,
+    adapter_name: str,
+    command_digest: str,
+    *,
+    approve: bool,
+    approval_store: Optional[Path] = None,
+) -> bool:
+    """Read or record an explicit user approval in a user-level SQLite store."""
+    path = Path(approval_store) if approval_store is not None else Path.home() / ".qyrenith" / "worker-approvals.sqlite3"
+    path = path.expanduser().absolute()
+    parent = path.parent
+    try:
+        if not parent.exists():
+            if not approve:
+                return False
+            parent.mkdir(parents=True, exist_ok=True)
+        if parent.is_symlink() or not parent.is_dir():
+            raise OSError("approval store directory is not a real directory")
+        if path.is_symlink():
+            raise OSError("approval store must not be a symbolic link")
+        if path.exists() and not path.is_file():
+            raise OSError("approval store is not a regular file")
+        if not path.exists() and not approve:
+            return False
+        if approve and approval_store is None:
+            try:
+                os.chmod(parent, 0o700)
+            except OSError:
+                pass
+        connection = sqlite3.connect(str(path), timeout=5)
+        try:
+            connection.execute("PRAGMA busy_timeout = 5000")
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS worker_command_approvals ("
+                "project_root TEXT NOT NULL, adapter_name TEXT NOT NULL, "
+                "command_sha256 TEXT NOT NULL, approved_at TEXT NOT NULL, "
+                "PRIMARY KEY (project_root, adapter_name, command_sha256))"
+            )
+            if approve:
+                connection.execute(
+                    "INSERT OR IGNORE INTO worker_command_approvals "
+                    "(project_root, adapter_name, command_sha256, approved_at) VALUES (?, ?, ?, ?)",
+                    (str(root.resolve()), adapter_name, command_digest, now()),
+                )
+                connection.commit()
+            row = connection.execute(
+                "SELECT 1 FROM worker_command_approvals "
+                "WHERE project_root = ? AND adapter_name = ? AND command_sha256 = ?",
+                (str(root.resolve()), adapter_name, command_digest),
+            ).fetchone()
+            return row is not None
+        finally:
+            connection.close()
+    except (OSError, sqlite3.Error) as exc:
+        die("STOPPED", f"Worker approval store could not be validated: {type(exc).__name__}: {exc}")
+    finally:
+        if approve and path.exists() and not path.is_symlink():
+            try:
+                os.chmod(path, 0o600)
+            except OSError:
+                pass
+
+
+def run_external_worker(root: Path, adapter_name: str, request: Dict[str, Any], timeout: int = 120, *, approve_command: bool = False, approval_store: Optional[Path] = None) -> Dict[str, Any]:
+    """Run one user-approved worker command without shell execution or SUCCESS authority."""
+    if type(approve_command) is not bool:
+        die("USAGE", "approve_command must be a boolean")
     if timeout < 1 or timeout > 600:
         die("USAGE", "Worker timeout must be between 1 and 600 seconds")
     cfg=load_json(root/STATE_DIR/"adapters.json", {})
@@ -811,8 +886,8 @@ def run_external_worker(root: Path, adapter_name: str, request: Dict[str, Any], 
     if required_capability is not None and required_capability not in capabilities:
         die("STOPPED", f"Adapter {adapter_name} does not declare capability: {required_capability}")
     # A declared trust claim is not merely informational: if its executable
-    # provenance has drifted, refuse to execute the adapter. UNKNOWN remains
-    # runnable only because the caller explicitly named the adapter.
+    # provenance has drifted, refuse to execute the adapter. Every command,
+    # including UNKNOWN adapters, also requires a user-level hash approval.
     trust=adapter_trust_record(root,entry)
     if trust.get("declared") in {"VERIFIED","COMMUNITY"} and trust.get("effective") != trust.get("declared"):
         die("STOPPED", f"Adapter trust failed for {adapter_name}: {trust.get('reason')}")
@@ -825,16 +900,61 @@ def run_external_worker(root: Path, adapter_name: str, request: Dict[str, Any], 
     safe_env={"PATH":os.environ.get("PATH","")}
     for key in ("SystemRoot","WINDIR","HOME","TMPDIR","TEMP","TMP","LANG","LC_ALL"):
         if key in os.environ: safe_env[key]=os.environ[key]
-    try:
-        stdout, stderr, returncode, timed_out, output_limited, duration = _bounded_worker_process(command, root, wire, timeout, safe_env)
-    except OSError as e:
-        die("STOPPED", f"Worker could not start: {e}")
+    command_digest = worker_command_digest(root, command, entry, safe_env)
+    if not _worker_command_is_approved(
+        root, adapter_name, command_digest,
+        approve=approve_command, approval_store=approval_store,
+    ):
+        result={
+            "schema":1,
+            "worker":adapter_name,
+            "status":"APPROVAL_REQUIRED",
+            "verified_by_doctor":False,
+            "command_sha256":command_digest,
+            "summary":"This exact worker command has not been approved by the user.",
+            "unresolved":["Review the command and rerun worker-run with --yes to approve this exact command fingerprint."],
+        }
+        save_json(root/STATE_DIR/WORKER_RESULT,result)
+        return result
+    if worker_command_digest(root, command, entry, safe_env) != command_digest:
+        result={
+            "schema":1,
+            "worker":adapter_name,
+            "status":"COMMAND_CHANGED",
+            "verified_by_doctor":False,
+            "command_sha256":command_digest,
+            "unresolved":["The worker command or one of its file inputs changed after approval; review and approve the new fingerprint."],
+        }
+        save_json(root/STATE_DIR/WORKER_RESULT,result)
+        return result
+    execution = run_bounded_worker(
+        command,
+        root,
+        wire.encode("utf-8"),
+        timeout=timeout,
+        output_limit=WORKER_STREAM_LIMIT,
+        env=safe_env,
+    )
+    if execution.get("status") == "ERROR":
+        die("STOPPED", f"Worker could not start: {execution.get('error', 'unknown error')}")
+    timed_out = execution["timed_out"]
+    output_limited = execution["output_limited"]
     if timed_out:
-        result={"schema":1,"worker":adapter_name,"status":"TIMEOUT","verified_by_doctor":False,"unresolved":[f"Worker exceeded {timeout}s timeout"]}
+        result={"schema":1,"worker":adapter_name,"status":"TIMEOUT","verified_by_doctor":False,"command_sha256":command_digest,"unresolved":[f"Worker exceeded {timeout}s timeout"]}
         save_json(root/STATE_DIR/WORKER_RESULT,result); return result
     if output_limited:
-        result={"schema":1,"worker":adapter_name,"status":"OUTPUT_LIMIT","verified_by_doctor":False,"unresolved":[f"Worker stdout/stderr exceeded {WORKER_STREAM_LIMIT} bytes"]}
+        result={"schema":1,"worker":adapter_name,"status":"OUTPUT_LIMIT","verified_by_doctor":False,"command_sha256":command_digest,"unresolved":[f"Worker stdout/stderr exceeded {WORKER_STREAM_LIMIT} bytes"]}
         save_json(root/STATE_DIR/WORKER_RESULT,result); return result
+    if execution["input_incomplete"]:
+        result={"schema":1,"worker":adapter_name,"status":"INPUT_INCOMPLETE","verified_by_doctor":False,"command_sha256":command_digest,"unresolved":["Worker did not receive the complete request"]}
+        save_json(root/STATE_DIR/WORKER_RESULT,result); return result
+    if execution["output_incomplete"]:
+        result={"schema":1,"worker":adapter_name,"status":"OUTPUT_INCOMPLETE","verified_by_doctor":False,"command_sha256":command_digest,"unresolved":["Worker output could not be collected completely"]}
+        save_json(root/STATE_DIR/WORKER_RESULT,result); return result
+    stdout = execution["stdout"]
+    stderr = execution["stderr"]
+    returncode = execution["exit_code"]
+    duration = execution["duration_seconds"]
     try:
         result=json.loads(stdout.strip() or "{}")
     except json.JSONDecodeError:
@@ -843,14 +963,14 @@ def run_external_worker(root: Path, adapter_name: str, request: Dict[str, Any], 
         result={"schema":1,"worker":adapter_name,"status":"INVALID_RESULT","verified_by_doctor":False,"unresolved":["Worker result must be a JSON object"]}
     result=redact_sensitive(result)
     result.setdefault("schema",1); result.setdefault("worker",adapter_name); result.setdefault("dependency_changes",[]); result["verified_by_doctor"]=False
-    result["doctor_exit_code"]=returncode; result["duration_seconds"]=duration
+    result["doctor_exit_code"]=returncode; result["duration_seconds"]=duration; result["command_sha256"]=command_digest
     if returncode != 0:
-        result={"schema":1,"worker":adapter_name,"status":"FAILED","verified_by_doctor":False,"summary":"Worker exited non-zero; its claimed result is not trusted.","files_changed":result.get("files_changed",[]),"commands_run":result.get("commands_run",[]),"unresolved":result.get("unresolved",[])+[f"worker exit code {returncode}"],"evidence":result.get("evidence",[]),"dependency_changes":result.get("dependency_changes",[]),"doctor_exit_code":returncode,"duration_seconds":duration}
+        result={"schema":1,"worker":adapter_name,"status":"FAILED","verified_by_doctor":False,"summary":"Worker exited non-zero; its claimed result is not trusted.","files_changed":result.get("files_changed",[]),"commands_run":result.get("commands_run",[]),"unresolved":result.get("unresolved",[])+[f"worker exit code {returncode}"],"evidence":result.get("evidence",[]),"dependency_changes":result.get("dependency_changes",[]),"doctor_exit_code":returncode,"duration_seconds":duration,"command_sha256":command_digest}
     elif result.get("status") in {"WORKED","NO_CHANGE","BLOCKED","FAILED"}:
         required={"summary","files_changed","commands_run","unresolved","evidence","dependency_changes"}
         missing=sorted(required-set(result))
         if missing:
-            result={"schema":1,"worker":adapter_name,"status":"INVALID_RESULT","verified_by_doctor":False,"summary":"Worker result schema is incomplete.","files_changed":result.get("files_changed",[]),"commands_run":result.get("commands_run",[]),"unresolved":[f"missing result fields: {missing}"],"evidence":result.get("evidence",[]),"dependency_changes":result.get("dependency_changes",[]),"doctor_exit_code":returncode,"duration_seconds":duration}
+            result={"schema":1,"worker":adapter_name,"status":"INVALID_RESULT","verified_by_doctor":False,"summary":"Worker result schema is incomplete.","files_changed":result.get("files_changed",[]),"commands_run":result.get("commands_run",[]),"unresolved":[f"missing result fields: {missing}"],"evidence":result.get("evidence",[]),"dependency_changes":result.get("dependency_changes",[]),"doctor_exit_code":returncode,"duration_seconds":duration,"command_sha256":command_digest}
     if stderr:
         result["stderr_tail"]=redact_text(stderr[-4000:])
     save_json(root/STATE_DIR/WORKER_RESULT,result)
@@ -1105,7 +1225,7 @@ def benchmark_projects(root: Path) -> List[Dict[str,Any]]:
                     ensure_state_dir(work)
                     local_worker=work/".qyrenith/benchmark-worker.py"; local_worker.write_text(worker.read_text(encoding="utf-8"),encoding="utf-8")
                     save_json(work/STATE_DIR/"adapters.json", {"adapters":[{"name":worker_name,"version":"1.0.0","command":[sys.executable,".qyrenith/benchmark-worker.py"],"capabilities":["port"],"supported_loaders":["neoforge"],"supported_minecraft_versions":["1.21","1.21.1"],"task_types":["port"],"risk_profile":"bounded-golden-fixture","evidence_requirements":["verified-mapping"]}]})
-                    result_obj=run_external_worker(work,worker_name,{"operation":"port","task":manifest["task"]},120)
+                    result_obj=run_external_worker(work,worker_name,{"operation":"port","task":manifest["task"]},120,approve_command=True,approval_store=Path(td)/"worker-approvals.sqlite3")
                     changed=result_obj.get("files_changed",[]) if isinstance(result_obj,dict) else []
                     expected_changed=manifest.get("expected_changed_files",[])
                     unchanged_ok=True
@@ -1814,7 +1934,7 @@ def build(root: Path,s: Dict[str,Any]):
         die("BUILD_FAILURE","No canonical build script is available. Build execution is delegated to the project's own toolchain; use `python qyrenith.py verify --project . --execute` for project-neutral verification.")
     _clear_sha256_cache()
     before=project_fingerprint(root); started=time.time(); prev=next((x for x in reversed(s.get("build_history",[])) if x.get("status")=="SUCCESS"),None)
-    code,out=cmdrun(build_command(script,root),root)
+    code,out=cmdrun(build_command(script,root),root,qdas_event_kind="BUILD")
     out=redact_text(out)
     after=project_fingerprint(root); _clear_sha256_cache(); atomic_write(root/STATE_DIR/LAST_BUILD,out)
     jar=jar_info(newest_jar(root),root,started); status,notes=evaluate_build(code,before,after,jar,prev,out)
@@ -2548,7 +2668,8 @@ def generic_verify(root: Path, execute: bool=False, allow_missing_adapters: bool
             result["status"]="AVAILABLE" if not execute else "PENDING"
         if execute and adapter["available"]:
             started=time.monotonic()
-            code,out=cmdrun(adapter["command"],root,timeout=300)
+            event_kind = {"test": "TEST", "build": "BUILD", "build-check": "BUILD", "static": "STATIC_ANALYSIS", "static-analysis": "STATIC_ANALYSIS"}.get(adapter["kind"], "VERIFICATION")
+            code,out=cmdrun(adapter["command"],root,timeout=300,qdas_event_kind=event_kind)
             result["exit_code"]=code
             result["duration_seconds"]=round(time.monotonic()-started,3)
             result["output"]=redact_text(out[-12000:])
@@ -2770,7 +2891,7 @@ def run_full_tests(root: Path) -> int:
     if not test_file.is_file():
         print("No tests/test_qyrenith.py found; nothing to run.")
         return 0
-    code,out=cmdrun([sys.executable,"-m","unittest","discover","-s",str(root/"tests"),"-p","test_*.py","-v"],root)
+    code,out=cmdrun([sys.executable,"-m","unittest","discover","-s",str(root/"tests"),"-p","test_*.py","-v"],root,qdas_event_kind="TEST")
     print(out,end="")
     return code
 def cmd_benchmark(args):
@@ -2820,7 +2941,7 @@ def cmd_worker_run(args):
         security=security_scan(root)
         if security.get("status") != "PASS": die("PREFLIGHT_FAILURE",f"Security review required before external worker execution: {security.get('findings',[])}")
         request={"operation":args.operation,"task":args.task or "external worker task"}
-        result=run_external_worker(root,args.worker,request,args.timeout)
+        result=run_external_worker(root,args.worker,request,args.timeout,approve_command=args.yes)
         print(json.dumps(result,indent=2,ensure_ascii=False))
         return 0 if result.get("status") in {"WORKED","OBSERVED","PLANNED","AVAILABLE"} else 1
     finally: release_lock(root,s.get("run_id"))
@@ -2850,6 +2971,8 @@ def self_test() -> int:
         if code!=0: return code
     print("Benchmark suite")
     if cmd_benchmark(argparse.Namespace(project=str(root)))!=0: return 1
+    print("QDAS ledger integrity")
+    if cmd_qdas(argparse.Namespace(project=str(root), extra=["verify"], limit=12)) != 0: return 1
     report=public_audit(root)
     print("Public audit:", report["status"])
     return 0 if report["status"]=="PASS" else 1
@@ -3130,39 +3253,50 @@ def _declared_commands(root: Path, names: Sequence[str]) -> Dict[str, Any]:
     commands = cfg.get("commands", {}) if isinstance(cfg, dict) else {}
     return {name: commands.get(name) for name in names if commands.get(name)}
 def _run_isolated_command(root: Path, command: Sequence[str], timeout: int = 120, env: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+    """Run one declared runtime check through the shared bounded process engine."""
     if not command or not all(isinstance(x, str) and x for x in command):
         return {"status": "BLOCKED", "reason": "empty-or-invalid-command"}
     if any("|" in x or ";" in x or "&&" in x or "||" in x or "$(" in x or "`" in x for x in command):
         return {"status": "BLOCKED", "reason": "shell-metacharacters-not-allowed"}
+    if not isinstance(timeout, int) or not 1 <= timeout <= 900:
+        return {"status": "BLOCKED", "reason": "invalid-timeout"}
+    overrides = {"PYTHONUNBUFFERED": "1"}
+    if env is not None:
+        if not isinstance(env, dict) or any(not isinstance(k, str) or not isinstance(v, str) for k, v in env.items()):
+            return {"status": "BLOCKED", "reason": "invalid-environment"}
+        overrides.update(env)
     started = time.monotonic()
-    safe_env = {"PATH": os.environ.get("PATH", ""), "HOME": os.environ.get("HOME", ""), "PYTHONUNBUFFERED": "1"}
-    if env:
-        for k, v in env.items():
-            if re.fullmatch(r"[A-Z_][A-Z0-9_]*", k): safe_env[k] = str(v)
-    kwargs={"cwd":str(root),"env":safe_env,"stdin":subprocess.DEVNULL,"stdout":subprocess.PIPE,"stderr":subprocess.STDOUT,"text":True,"shell":False}
-    if os.name == "nt":
-        kwargs["creationflags"]=getattr(subprocess,"CREATE_NEW_PROCESS_GROUP",0)
-    else:
-        kwargs["start_new_session"]=True
-    proc=None
     try:
-        proc=subprocess.Popen(list(command),**kwargs)
-        try:
-            output=proc.communicate(timeout=max(1,min(timeout,900)))[0] or ""
-        except subprocess.TimeoutExpired as e:
-            output=(e.stdout or "") if isinstance(e.stdout,str) else ""
-            _terminate_process(proc)
-            output=output[-20000:]
-            return {"status":"BLOCKED","reason":"timeout","duration_seconds":round(time.monotonic()-started,6),
-                    "output":output,"output_sha256":hashlib.sha256(output.encode()).hexdigest()}
-        output=output[-20000:]
-        return {"status":"PASS" if proc.returncode==0 else "FAIL","exit_code":proc.returncode,
-                "duration_seconds":round(time.monotonic()-started,6),"output":output,
-                "output_sha256":hashlib.sha256(output.encode()).hexdigest()}
-    except (OSError,ValueError) as e:
-        if proc is not None:
-            _terminate_process(proc)
-        return {"status":"BLOCKED","reason":type(e).__name__,"message":str(e)}
+        report = run_bounded_process(
+            command,
+            root,
+            timeout=timeout,
+            output_limit=1024 * 1024,
+            env_overrides=overrides,
+        )
+    except (OSError, ValueError) as exc:
+        return {"status": "BLOCKED", "reason": type(exc).__name__, "message": str(exc)}
+    output = redact_text(report.get("output", ""))[-20000:]
+    if report.get("status") == "ERROR":
+        return {"status": "BLOCKED", "reason": report.get("error", "execution-error"),
+                "duration_seconds": round(time.monotonic() - started, 6),
+                "output": output, "output_sha256": hashlib.sha256(output.encode()).hexdigest()}
+    if report.get("timed_out"):
+        reason = "timeout"
+    elif report.get("output_truncated"):
+        reason = "output-limit"
+    elif report.get("output_incomplete"):
+        reason = "output-incomplete"
+    else:
+        reason = None
+    if reason:
+        return {"status": "BLOCKED", "reason": reason,
+                "duration_seconds": round(time.monotonic() - started, 6),
+                "output": output, "output_sha256": hashlib.sha256(output.encode()).hexdigest()}
+    return {"status": report["status"], "exit_code": report["exit_code"],
+            "duration_seconds": round(time.monotonic() - started, 6), "output": output,
+            "output_sha256": hashlib.sha256(output.encode()).hexdigest()}
+
 def execute_runtime_lab(root: Path, timeout: int = 120) -> Dict[str, Any]:
     commands = _declared_commands(root, ["runtime", "server", "client", "multiplayer"])
     if not commands:
@@ -3608,6 +3742,116 @@ def cmd_boundary_check(args):
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result["status"] == "PASS" else 2
 
+def cmd_qdas(args):
+    """Inspect the local QDAS ledger without exposing raw command output or user paths."""
+    root = root_path(args.project)
+    action = args.extra[0] if args.extra else "summary"
+    if len(args.extra) > 1 or action not in {"summary", "verify"}:
+        die("PREFLIGHT_FAILURE", "qdas accepts one optional action: summary or verify")
+    limit = args.limit
+    if type(limit) is not int or not 1 <= limit <= 1000:
+        die("PREFLIGHT_FAILURE", "qdas event display limit must be between 1 and 1000")
+
+    def reject_reparse_path(path: Path, label: str) -> None:
+        try:
+            info = path.lstat()
+        except FileNotFoundError:
+            return
+        except OSError:
+            die("PREFLIGHT_FAILURE", f"cannot inspect {label} path")
+        attributes = getattr(info, "st_file_attributes", 0)
+        if stat.S_ISLNK(info.st_mode) or attributes & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400):
+            die("PREFLIGHT_FAILURE", f"{label} path must not be a symbolic link or reparse point")
+
+    state_dir = root / STATE_DIR
+    reject_reparse_path(state_dir, "QDAS state")
+    if state_dir.exists() and not state_dir.is_dir():
+        die("PREFLIGHT_FAILURE", "QDAS state path is not a directory")
+    qdas_dir = state_dir / "qdas"
+    ledger_path = qdas_dir / "events.jsonl"
+    lineage_path = qdas_dir / "lineage.jsonl"
+    reject_reparse_path(qdas_dir, "QDAS directory")
+    reject_reparse_path(ledger_path, "QDAS ledger")
+    reject_reparse_path(lineage_path, "QDAS lineage ledger")
+    if not qdas_dir.is_dir() or not ledger_path.exists():
+        if lineage_path.exists():
+            die("PREFLIGHT_FAILURE", "QDAS evidence lineage exists without its primary execution ledger")
+        result = {
+            "schema": 1,
+            "status": "NOT_INITIALIZED" if action == "summary" else "BLOCKED",
+            "record_count": 0,
+            "hypothesis_count": 0,
+            "integrity_scope": "No QDAS execution ledger is present; no execution history is inferred.",
+        }
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0 if action == "summary" else 2
+
+    try:
+        from qyrenith_engine.qdas import QdasEventLedger, QdasEvidenceLineage
+        event_ledger = QdasEventLedger(ledger_path)
+        records = event_ledger.verify()
+        lineage = QdasEvidenceLineage(lineage_path, event_ledger)
+        lineage_records = lineage.verify() if lineage_path.exists() else ()
+    except Exception as exc:
+        die("PREFLIGHT_FAILURE", "QDAS event or evidence lineage verification failed: " + type(exc).__name__)
+
+    lineage_kind_counts = {}
+    for item in lineage_records:
+        lineage_kind_counts[item["kind"]] = lineage_kind_counts.get(item["kind"], 0) + 1
+
+    status_counts = {}
+    kind_counts = {}
+    failure_counts = {}
+    hypothesis_count = 0
+    for record in records:
+        event = record["event"]
+        status_counts[event["execution_status"]] = status_counts.get(event["execution_status"], 0) + 1
+        kind_counts[event["event_kind"]] = kind_counts.get(event["event_kind"], 0) + 1
+        classification = record["classification"]
+        if classification is not None:
+            category = classification["category"]
+            failure_counts[category] = failure_counts.get(category, 0) + 1
+        hypothesis_count += len(record.get("hypotheses", []))
+
+    recent_events = []
+    for record in records[-limit:]:
+        event = record["event"]
+        classification = record["classification"]
+        recent_events.append({
+            "event_id": event["event_id"],
+            "event_kind": event["event_kind"],
+            "execution_status": event["execution_status"],
+            "failure_category": classification["category"] if classification else None,
+            "hypothesis_count": len(record.get("hypotheses", [])),
+            "started_at": event["started_at"],
+        })
+
+    result = {
+        "schema": 1,
+        "status": "CHAIN_VERIFIED" if records else "EMPTY",
+        "record_count": len(records),
+        "status_counts": dict(sorted(status_counts.items())),
+        "event_kind_counts": dict(sorted(kind_counts.items())),
+        "failure_category_counts": dict(sorted(failure_counts.items())),
+        "hypothesis_count": hypothesis_count,
+        "unconfirmed_hypothesis_count": hypothesis_count,
+        "latest_record_digest": records[-1]["record_digest"] if records else None,
+        "lineage_status": "CHAIN_VERIFIED" if lineage_records else ("EMPTY" if lineage_path.exists() else "NOT_INITIALIZED"),
+        "lineage_record_count": len(lineage_records),
+        "lineage_kind_counts": dict(sorted(lineage_kind_counts.items())),
+        "latest_lineage_record_digest": lineage_records[-1]["record_digest"] if lineage_records else None,
+        "integrity_scope": (
+            "Internal hash-chain, event, classification, persisted-hypothesis, and repair-lineage consistency only. "
+            "This does not prove ledger completeness or provide an independent trust anchor; human review records are unauthenticated assertions."
+        ),
+        "recent_events": recent_events,
+    }
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    if action == "verify" and not records:
+        return 2
+    return 0
+
+
 def cmd_bounded_check(args):
     from qyrenith_engine import run_bounded_process
     if not args.check_command_one:
@@ -3618,25 +3862,101 @@ def cmd_bounded_check(args):
         die("PREFLIGHT_FAILURE", f"Invalid command quoting: {exc}")
     if os.name == "nt":
         argv = [token[1:-1] if len(token) >= 2 and token[0] == token[-1] and token[0] in "\\\"'" else token for token in argv]
+    root = root_path(args.project)
+    _clear_sha256_cache()
+    revision = source_fingerprint(root)
+    started_at = dt.datetime.now(dt.timezone.utc)
     try:
-        result = run_bounded_process(argv, root_path(args.project), timeout=args.timeout, output_limit=args.output_limit)
+        result = run_bounded_process(argv, root, timeout=args.timeout, output_limit=args.output_limit)
     except (OSError, ValueError) as exc:
         die("PREFLIGHT_FAILURE", f"bounded execution could not start: {exc}")
+    try:
+        record_qdas_process_report(result, root, argv, "VERIFICATION", started_at, revision)
+    except Exception as exc:
+        die(
+            "PREFLIGHT_FAILURE",
+            "QDAS could not durably record the completed command; its result is not accepted: "
+            + type(exc).__name__,
+        )
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0 if result["status"] == "PASS" else (2 if result["status"] == "BLOCKED" else 1)
+
+def cmd_snapshot(args):
+    """Capture or verify a read-only, deterministic project snapshot."""
+    from qyrenith_engine import (
+        SnapshotLimits,
+        capture_project_snapshot,
+        deserialize_project_snapshot,
+        verify_project_snapshot,
+    )
+
+    if len(args.extra) != 1 or args.extra[0] not in {"capture", "verify"}:
+        die("PREFLIGHT_FAILURE", "snapshot requires exactly one operation: capture or verify.")
+    operation = args.extra[0]
+    root = Path(args.project).expanduser().absolute()
+    if operation == "capture":
+        if args.snapshot_file:
+            die("PREFLIGHT_FAILURE", "--snapshot-file is only valid for snapshot verify.")
+        try:
+            limits = SnapshotLimits(
+                max_entries=args.snapshot_max_entries,
+                max_file_bytes=args.snapshot_max_file_bytes,
+                max_total_bytes=args.snapshot_max_total_bytes,
+                max_depth=args.snapshot_max_depth,
+            )
+            snapshot = capture_project_snapshot(
+                root,
+                excluded_paths=(".git", ".qyrenith", ".backups", "__pycache__", *tuple(args.snapshot_exclude)),
+                limits=limits,
+            )
+            encoded = snapshot.to_json_bytes()
+            sys.stdout.buffer.write(encoded)
+        except (OSError, TypeError, ValueError) as exc:
+            die("PREFLIGHT_FAILURE", f"snapshot capture could not complete: {exc}")
+        return 0
+
+    if not args.snapshot_file:
+        die("PREFLIGHT_FAILURE", "snapshot verify requires --snapshot-file.")
+    try:
+        snapshot_path = Path(args.snapshot_file).expanduser()
+        with snapshot_path.open("rb") as stream:
+            data = stream.read(64 * 1024 * 1024 + 1)
+        if len(data) > 64 * 1024 * 1024:
+            raise ValueError("snapshot file exceeds the 64 MiB import limit")
+        expected = deserialize_project_snapshot(data)
+        result = verify_project_snapshot(root, expected)
+    except (OSError, TypeError, ValueError) as exc:
+        die("PREFLIGHT_FAILURE", f"snapshot verification could not complete: {exc}")
+    report = {
+        "schema": 1,
+        "status": result.status,
+        "matches": result.matches,
+        "expected_digest": result.expected_digest,
+        "actual_digest": result.actual_digest,
+        "changed_paths": list(result.changed_paths),
+        "checked_at": result.checked_at,
+        "project": str(root),
+    }
+    print(json.dumps(report, indent=2, ensure_ascii=False))
+    return 0 if result.matches else 1
+
 
 # ---------------------------------------------------------------------------
 # Parser / main
 # ---------------------------------------------------------------------------
 def parser():
-    p=argparse.ArgumentParser(description=f"Qyrenith {VERSION} Project Verification & Control Plane"); p.add_argument("command",choices=["audit","plan","port","continue","build","verify","policy","skills","reality","inspect","explain","dry-run","rollback","doctor","status","report","self-test","benchmark","failure-quality","security-test","security-review","recovery-test","graph","compatibility","replay","adapters","worker-run","artifact-inspect","evidence","git-test","fuzz-test","public-audit","domains","intelligence","external-check","external-verify","source-analysis","impact","boundary-check","bounded-check"]); p.add_argument("-p","--project",default="."); p.add_argument("--check-command",action="append",default=[],help="Explicit command for external-verify; repeat for multiple checks"); p.add_argument("--target-mc",default=""); p.add_argument("--target-loader",default=""); p.add_argument("--target-loader-version",default=""); p.add_argument("--resume",action="store_true"); p.add_argument("--yes",action="store_true"); p.add_argument("--noninteractive",action="store_true"); p.add_argument("--managed",action="store_true"); p.add_argument("--allow-unknown-dependencies",action="store_true"); p.add_argument("--allow-missing-adapters",action="store_true",help="For verify --ci: downgrade detected-but-unavailable adapters to informational instead of blocking; never turns zero available adapters into PASS."); p.add_argument("--task",default=""); p.add_argument("--execute",action="store_true"); p.add_argument("--ci",action="store_true"); p.add_argument("--limit",type=int,default=12); p.add_argument("--worker",default=""); p.add_argument("--operation",default="result",choices=["discover","inspect","plan","execute","result","port"]); p.add_argument("--timeout",type=int,default=120); p.add_argument("--baseline",default="",help="Baseline external-check JSON for diffing (external-check only)"); p.add_argument("--run-runtime",action="store_true"); p.add_argument("--run-failure-lab",action="store_true"); p.add_argument("--run-mutations",action="store_true"); p.add_argument("--run-counterfactual",action="store_true"); p.add_argument("--verdict",action="store_true"); p.add_argument("--finding-id",default=""); p.add_argument("--reason",default=""); p.add_argument("--max-files",type=int,default=10000); p.add_argument("--max-entries",type=int,default=50000); p.add_argument("--check-command-one",default=""); p.add_argument("--output-limit",type=int,default=16000,help="Maximum captured subprocess output bytes (256–1000000)"); p.add_argument("extra",nargs="*"); return p
+    p=argparse.ArgumentParser(description=f"Qyrenith {VERSION} Project Verification & Control Plane"); p.add_argument("command",choices=["audit","plan","port","continue","build","verify","policy","skills","reality","inspect","explain","dry-run","rollback","doctor","status","report","self-test","benchmark","failure-quality","security-test","security-review","recovery-test","graph","compatibility","replay","adapters","worker-run","artifact-inspect","evidence","git-test","fuzz-test","public-audit","domains","intelligence","external-check","external-verify","source-analysis","impact","boundary-check","bounded-check","snapshot","trust-store","qdas"]); p.add_argument("-p","--project",default="."); p.add_argument("--check-command",action="append",default=[],help="Explicit command for external-verify; repeat for multiple checks"); p.add_argument("--target-mc",default=""); p.add_argument("--target-loader",default=""); p.add_argument("--target-loader-version",default=""); p.add_argument("--resume",action="store_true"); p.add_argument("--yes",action="store_true",help="Explicitly approve a new external worker command when used with worker-run"); p.add_argument("--noninteractive",action="store_true"); p.add_argument("--managed",action="store_true"); p.add_argument("--allow-unknown-dependencies",action="store_true"); p.add_argument("--allow-missing-adapters",action="store_true",help="For verify --ci: downgrade detected-but-unavailable adapters to informational instead of blocking; never turns zero available adapters into PASS."); p.add_argument("--task",default=""); p.add_argument("--execute",action="store_true"); p.add_argument("--ci",action="store_true"); p.add_argument("--limit",type=int,default=12); p.add_argument("--worker",default=""); p.add_argument("--operation",default="result",choices=["discover","inspect","plan","execute","result","port"]); p.add_argument("--timeout",type=int,default=120); p.add_argument("--baseline",default="",help="Baseline external-check JSON for diffing (external-check only)"); p.add_argument("--run-runtime",action="store_true"); p.add_argument("--run-failure-lab",action="store_true"); p.add_argument("--run-mutations",action="store_true"); p.add_argument("--run-counterfactual",action="store_true"); p.add_argument("--verdict",action="store_true"); p.add_argument("--finding-id",default=""); p.add_argument("--reason",default=""); p.add_argument("--max-files",type=int,default=10000); p.add_argument("--max-entries",type=int,default=50000); p.add_argument("--check-command-one",default=""); p.add_argument("--output-limit",type=int,default=16000,help="Maximum captured subprocess output bytes (256–1000000)"); p.add_argument("--snapshot-file",default="",help="Existing canonical snapshot JSON file for snapshot verify"); p.add_argument("--snapshot-exclude",action="append",default=[],help="Additional project-relative path exclusion for snapshot capture"); p.add_argument("--snapshot-max-entries",type=int,default=200000); p.add_argument("--snapshot-max-file-bytes",type=int,default=256*1024*1024); p.add_argument("--snapshot-max-total-bytes",type=int,default=2*1024*1024*1024); p.add_argument("--snapshot-max-depth",type=int,default=64); p.add_argument("--trust-action",choices=["init","list","trust","revoke"]); p.add_argument("--trust-kind",choices=["KNOWLEDGE_CATALOG","WORKER_MANIFEST","WORKER_QUALIFICATION","EXECUTION_POLICY"]); p.add_argument("--digest",default=""); p.add_argument("--expires-at",default=None); p.add_argument("extra",nargs="*"); return p
 def main():
     args=parser().parse_intermixed_args()
     try:
+        if args.command=="trust-store":
+            from qyrenith_engine.trust_cli import run_trust_store_cli
+            return run_trust_store_cli(args)
         # This mode deliberately bypasses require_qyrenith(root): the target is an
         # unrelated external project and is inspected without writing Qyrenith state.
         if args.command=="external-check": return cmd_external_check(args)
         if args.command=="external-verify": return cmd_external_verify(args)
+        if args.command=="qdas": return cmd_qdas(args)
         if args.command=="self-test": return self_test()
         if args.command=="intelligence":
             root=root_path(args.project); require_qyrenith(root); intelligence_suite(root)
@@ -3649,7 +3969,7 @@ def main():
             if args.verdict:
                 return 0 if result.get("verdict")=="PASS" else (2 if result.get("verdict")=="BLOCKED" else 1)
             return 0
-        return {"audit":cmd_audit,"plan":cmd_plan,"port":cmd_port,"continue":cmd_continue,"build":cmd_build,"verify":cmd_verify,"policy":cmd_policy,"skills":cmd_skills,"reality":cmd_reality,"inspect":cmd_inspect,"explain":cmd_explain,"dry-run":cmd_dry_run,"rollback":cmd_rollback,"doctor":cmd_doctor,"status":cmd_status,"report":cmd_report,"benchmark":cmd_benchmark,"failure-quality":cmd_failure_quality,"security-test":cmd_security_test,"security-review":cmd_security_review,"recovery-test":cmd_recovery_test,"graph":cmd_graph,"compatibility":cmd_compatibility,"replay":cmd_replay,"adapters":cmd_adapters,"worker-run":cmd_worker_run,"artifact-inspect":cmd_artifact_inspect,"evidence":cmd_evidence,"git-test":cmd_git_test,"fuzz-test":cmd_fuzz_test,"public-audit":cmd_public_audit,"domains":cmd_domains,"source-analysis":cmd_source_analysis,"impact":cmd_change_impact,"boundary-check":cmd_boundary_check,"bounded-check":cmd_bounded_check}[args.command](args)
+        return {"audit":cmd_audit,"plan":cmd_plan,"port":cmd_port,"continue":cmd_continue,"build":cmd_build,"verify":cmd_verify,"policy":cmd_policy,"skills":cmd_skills,"reality":cmd_reality,"inspect":cmd_inspect,"explain":cmd_explain,"dry-run":cmd_dry_run,"rollback":cmd_rollback,"doctor":cmd_doctor,"status":cmd_status,"report":cmd_report,"benchmark":cmd_benchmark,"failure-quality":cmd_failure_quality,"security-test":cmd_security_test,"security-review":cmd_security_review,"recovery-test":cmd_recovery_test,"graph":cmd_graph,"compatibility":cmd_compatibility,"replay":cmd_replay,"adapters":cmd_adapters,"worker-run":cmd_worker_run,"artifact-inspect":cmd_artifact_inspect,"evidence":cmd_evidence,"git-test":cmd_git_test,"fuzz-test":cmd_fuzz_test,"public-audit":cmd_public_audit,"domains":cmd_domains,"source-analysis":cmd_source_analysis,"impact":cmd_change_impact,"boundary-check":cmd_boundary_check,"bounded-check":cmd_bounded_check,"snapshot":cmd_snapshot}[args.command](args)
     except QyrenithError as e: print(f"{e.code}: {e.message}",file=sys.stderr); return EXIT.get(e.code,EXIT["INTERNAL_ERROR"])
     except KeyboardInterrupt: print("STOPPED: interrupted by user",file=sys.stderr); return EXIT["STOPPED"]
     except Exception as e: print(f"INTERNAL_ERROR: {type(e).__name__}: {e}",file=sys.stderr); return EXIT["INTERNAL_ERROR"]
