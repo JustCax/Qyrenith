@@ -77,9 +77,13 @@ def _coerce_oracle(value: Any) -> OracleType:
     if isinstance(value, str):
         try:
             return OracleType(value)
-        except ValueError:
-            pass
-    return OracleType.HEURISTIC
+        except ValueError as exc:
+            raise ValueError(
+                "oracle must be EXACT, PROPERTY, DIFFERENTIAL, or HEURISTIC"
+            ) from exc
+    raise ValueError(
+        "oracle must be EXACT, PROPERTY, DIFFERENTIAL, or HEURISTIC"
+    )
 
 
 def run_scenario_with_qdas(
@@ -110,9 +114,21 @@ def run_scenario_with_qdas(
 
     timeout = scenario_dict.get("timeout_seconds", _DEFAULT_TIMEOUT)
     if type(timeout) is not int or not 1 <= timeout <= 3600:
-        timeout = _DEFAULT_TIMEOUT
+        raise ValueError("timeout_seconds must be an integer between 1 and 3600")
 
-    argv = scenario_dict.get("argv") or [tool_name]
+    argv = scenario_dict["argv"] if "argv" in scenario_dict else [tool_name]
+    if (
+        not isinstance(argv, (list, tuple))
+        or not 1 <= len(argv) <= 256
+        or any(
+            not isinstance(argument, str)
+            or not argument
+            or len(argument) > 16_384
+            or "\\x00" in argument
+            for argument in argv
+        )
+    ):
+        raise ValueError("scenario argv must contain 1 to 256 non-empty bounded strings")
 
     report = scenario_dict.get("report")
     if not isinstance(report, Mapping):
