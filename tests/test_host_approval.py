@@ -63,6 +63,7 @@ class HostApprovalTests(unittest.TestCase):
         )
         approval, output = self.approve(request, now=now)
         self.assertIn("QYRENITH HOST ACTION APPROVAL", output)
+        self.assertIn("does not independently authenticate identity", output)
         restored = type(approval).from_json_bytes(approval.to_json_bytes())
         self.assertEqual(restored, approval)
         self.assertIsNone(validate_host_approval(
