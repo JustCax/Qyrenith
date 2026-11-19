@@ -19,6 +19,8 @@ def make_scenario():
     return {
         "scenario_id": "scenario-1",
         "scenario_kind": "BOUNDED_PROCESS",
+        "timeout_seconds": 120,
+        "oracle": "HEURISTIC",
         "report": {
             "status": "PASS",
             "stdout": "scenario executed",
@@ -30,6 +32,76 @@ def make_scenario():
 
 
 class TestQdasDynamicAuditCapture(unittest.TestCase):
+    def test_invalid_timeout_is_rejected_without_fallback(self):
+        for timeout in (0, 3601, 1.5, True, None):
+            with self.subTest(timeout=timeout):
+                with tempfile.TemporaryDirectory() as directory:
+                    scenario = make_scenario()
+                    scenario["timeout_seconds"] = timeout
+                    with self.assertRaises(ValueError):
+                        run_scenario_with_qdas(
+                            scenario,
+                            project=directory,
+                            qdas_ledger=make_qdas_ledger(Path(directory) / "qdas.jsonl"),
+                            project_id="proj-alpha",
+                            project_revision="rev-1",
+                            workspace_id="ws-1",
+                            tool_name="python",
+                            tool_version="3.11",
+                            environment={"PYTHONPATH": "src"},
+                        )
+
+    def test_unknown_oracle_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            scenario = make_scenario()
+            scenario["oracle"] = "UNRECOGNIZED"
+            with self.assertRaises(ValueError):
+                run_scenario_with_qdas(
+                    scenario,
+                    project=directory,
+                    qdas_ledger=make_qdas_ledger(Path(directory) / "qdas.jsonl"),
+                    project_id="proj-alpha",
+                    project_revision="rev-1",
+                    workspace_id="ws-1",
+                    tool_name="python",
+                    tool_version="3.11",
+                    environment={"PYTHONPATH": "src"},
+                )
+
+    def test_missing_oracle_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            scenario = make_scenario()
+            del scenario["oracle"]
+            with self.assertRaises(ValueError):
+                run_scenario_with_qdas(
+                    scenario,
+                    project=directory,
+                    qdas_ledger=make_qdas_ledger(Path(directory) / "qdas.jsonl"),
+                    project_id="proj-alpha",
+                    project_revision="rev-1",
+                    workspace_id="ws-1",
+                    tool_name="python",
+                    tool_version="3.11",
+                    environment={"PYTHONPATH": "src"},
+                )
+
+    def test_empty_argv_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            scenario = make_scenario()
+            scenario["argv"] = []
+            with self.assertRaises(ValueError):
+                run_scenario_with_qdas(
+                    scenario,
+                    project=directory,
+                    qdas_ledger=make_qdas_ledger(Path(directory) / "qdas.jsonl"),
+                    project_id="proj-alpha",
+                    project_revision="rev-1",
+                    workspace_id="ws-1",
+                    tool_name="python",
+                    tool_version="3.11",
+                    environment={"PYTHONPATH": "src"},
+                )
+
     def test_records_qdas_event_and_scenario_outcome(self):
         with tempfile.TemporaryDirectory() as directory:
             qdas_path = Path(directory) / "qdas.jsonl"
