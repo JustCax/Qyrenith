@@ -124,6 +124,16 @@ class StaticAnalysisTests(unittest.TestCase):
         self.assertEqual(report["status"], "UNKNOWN")
         self.assertIn("duplicate paths", report["reason"])
 
+    def test_compare_baselines_rejects_boolean_schema_version(self):
+        baseline = {
+            "schema": True,
+            "status": "PASS",
+            "files": [{"path": "a.py", "sha256": "a" * 64, "syntax": "PASS"}],
+        }
+        report = compare_baselines(baseline, baseline)
+        self.assertEqual(report["status"], "UNKNOWN")
+        self.assertIn("unsupported schema", report["reason"])
+
     def test_compare_baselines_rejects_invalid_sha256(self):
         baseline = {
             "schema": 1,
