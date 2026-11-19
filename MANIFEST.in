@@ -92,8 +92,10 @@ include pyproject.toml
 include qyrenith.py
 include qyrenith_engine/__init__.py
 include qyrenith_engine/analysis.py
+include qyrenith_engine/analysis_qdas.py
 include qyrenith_engine/approval.py
 include qyrenith_engine/boundary.py
+include qyrenith_engine/dynamic_audit_qdas.py
 include qyrenith_engine/execution.py
 include qyrenith_engine/trust_store.py
 include qyrenith_engine/trust_cli.py
@@ -111,6 +113,7 @@ include qyrenith_engine/migration/knowledge.py
 include qyrenith_engine/migration/model.py
 include qyrenith_engine/migration/planner.py
 include qyrenith_engine/migration/preparation.py
+include qyrenith_engine/migration/qdas_step.py
 include qyrenith_engine/migration/snapshot.py
 include qyrenith_engine/migration/workspace.py
 include qyrenith_engine/migration/worker.py
