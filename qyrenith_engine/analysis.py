@@ -154,6 +154,7 @@ def compare_baselines(previous: Dict[str, Any], current: Dict[str, Any]) -> Dict
         if (
             not isinstance(report, dict)
             or report.get("schema") != 1
+            or not isinstance(report.get("status"), str)
             or report.get("status") not in {"PASS", "FAIL", "BLOCKED", "UNKNOWN"}
             or not isinstance(report.get("files"), list)
         ):
@@ -180,6 +181,7 @@ def compare_baselines(previous: Dict[str, Any], current: Dict[str, Any]) -> Dict
             if (
                 not isinstance(item.get("sha256"), str)
                 or not re.fullmatch(r"[0-9a-f]{64}", item["sha256"])
+                or not isinstance(item.get("syntax"), str)
                 or item.get("syntax") not in {"PASS", "FAIL", "UNKNOWN"}
             ):
                 return {"schema": 1, "status": "UNKNOWN", "reason": label + " baseline contains incomplete evidence"}
