@@ -27,8 +27,13 @@ def analyze_project(project: Union[str, Path], *, max_files: int = 10000,
                     max_file_bytes: int = 2_000_000,
                     max_entries: int = 50000) -> Dict[str, Any]:
     """Inventory Python files and extract syntax, imports, symbols, and review hints."""
-    if min(max_files, max_file_bytes, max_entries) < 1:
-        raise ValueError("analysis limits must be positive")
+    for limit_name, limit_value in (
+        ("max_files", max_files),
+        ("max_file_bytes", max_file_bytes),
+        ("max_entries", max_entries),
+    ):
+        if type(limit_value) is not int or limit_value < 1:
+            raise ValueError(f"{limit_name} must be a positive integer")
     root = Path(project).resolve(strict=True)
     if not root.is_dir():
         raise ValueError("project root must be a directory")
