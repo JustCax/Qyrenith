@@ -53,7 +53,7 @@ def record_analysis_with_qdas(
         "UNKNOWN": "BLOCKED",
     }
     raw_status = analysis_report.get("status", "UNKNOWN")
-    status = _STATUS_MAP.get(raw_status, "ERROR")
+    status = _STATUS_MAP.get(raw_status, "BLOCKED") if isinstance(raw_status, str) else "BLOCKED"
     if status == "PASS":
         exit_code = 0
     elif status == "ERROR":
