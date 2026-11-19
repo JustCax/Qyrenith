@@ -23,6 +23,7 @@ from typing import Any, Mapping
 
 from .execution import run_bounded_process
 from .qdas.collector import QdasCaptureResult, record_execution_report
+from .qdas.events import environment_fingerprint
 from .qdas.ledger import QdasEventLedger
 
 
@@ -100,16 +101,57 @@ def run_scenario_with_qdas(
     seed: str | None = None,
     started_at: datetime | None = None,
     finished_at: datetime | None = None,
-    **analysis_kwargs: Any,
 ) -> tuple[QdasCaptureResult, dict[str, Any]]:
     """Run one scenario under QDAS observation and record a DYNAMIC_AUDIT event.
 
     Returns the QDAS capture result and a scenario outcome dict.
     """
+    if not isinstance(qdas_ledger, QdasEventLedger):
+        raise TypeError("qdas_ledger must be a QdasEventLedger")
+    for field_name, value in (
+        ("project_id", project_id),
+        ("project_revision", project_revision),
+        ("workspace_id", workspace_id),
+        ("tool_name", tool_name),
+        ("tool_version", tool_version),
+    ):
+        if (
+            not isinstance(value, str)
+            or not value
+            or len(value) > 4096
+            or "\x00" in value
+        ):
+            raise ValueError(f"{field_name} must be non-empty bounded text")
+    if seed is not None and (not isinstance(seed, str) or len(seed) > 4096 or "\x00" in seed):
+        raise ValueError("seed must be bounded text when supplied")
+    environment_fingerprint(environment)
+    if started_at is not None and (
+        not isinstance(started_at, datetime)
+        or started_at.tzinfo is None
+        or started_at.utcoffset() is None
+    ):
+        raise ValueError("started_at must be a timezone-aware datetime")
+    if finished_at is not None and (
+        not isinstance(finished_at, datetime)
+        or finished_at.tzinfo is None
+        or finished_at.utcoffset() is None
+    ):
+        raise ValueError("finished_at must be a timezone-aware datetime")
+
     root = Path(project).expanduser().resolve(strict=True)
     started = datetime.now(timezone.utc) if started_at is None else started_at
+    if finished_at is not None and finished_at < started:
+        raise ValueError("finished_at must not predate started_at")
 
     scenario_dict = _scenario_mapping(scenario)
+    scenario_id = scenario_dict.get("scenario_id")
+    if (
+        not isinstance(scenario_id, str)
+        or not scenario_id
+        or len(scenario_id) > 256
+        or "\x00" in scenario_id
+    ):
+        raise ValueError("scenario_id must be non-empty bounded text")
     oracle = _coerce_oracle(scenario_dict.get("oracle"))
 
     if "timeout_seconds" not in scenario_dict:
@@ -168,6 +210,7 @@ def run_scenario_with_qdas(
         "stderr_digest": event.stderr_digest,
         "duration_seconds": event.duration_milliseconds / 1000.0,
         "oracle_type": oracle.value,
+        "scenario_id": scenario_id,
     }
     return capture_result, scenario_outcome
 
