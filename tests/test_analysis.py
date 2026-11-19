@@ -145,14 +145,26 @@ class StaticAnalysisTests(unittest.TestCase):
         self.assertIn("unsafe file path", report["reason"])
 
     def test_compare_baselines_rejects_unknown_report_status(self):
+        for raw_status in ("MYSTERY", ["PASS"], None):
+            with self.subTest(raw_status=raw_status):
+                baseline = {
+                    "schema": 1,
+                    "status": raw_status,
+                    "files": [{"path": "a.py", "sha256": "a" * 64, "syntax": "PASS"}],
+                }
+                report = compare_baselines(baseline, baseline)
+                self.assertEqual(report["status"], "UNKNOWN")
+                self.assertIn("unsupported schema", report["reason"])
+
+    def test_compare_baselines_rejects_non_string_syntax_status(self):
         baseline = {
             "schema": 1,
-            "status": "MYSTERY",
-            "files": [{"path": "a.py", "sha256": "a" * 64, "syntax": "PASS"}],
+            "status": "PASS",
+            "files": [{"path": "a.py", "sha256": "a" * 64, "syntax": ["PASS"]}],
         }
         report = compare_baselines(baseline, baseline)
         self.assertEqual(report["status"], "UNKNOWN")
-        self.assertIn("unsupported schema", report["reason"])
+        self.assertIn("incomplete evidence", report["reason"])
 
     def test_change_impact_returns_transitive_importers(self):
         with tempfile.TemporaryDirectory() as directory:
