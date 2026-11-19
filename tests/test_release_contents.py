@@ -66,6 +66,17 @@ class TestReleaseContents(unittest.TestCase):
         }
         self.assertEqual(directives, expected)
 
+    def test_public_source_archive_includes_120_regression_suites(self):
+        expected = {
+            "tests/test_analysis_qdas_120.py",
+            "tests/test_dynamic_audit_qdas_120.py",
+            "tests/test_english_only_policy.py",
+            "tests/test_execution_bounds_120.py",
+            "tests/test_migration_qdas_step_120.py",
+            "tests/test_qdas_cli_integration.py",
+        }
+        self.assertTrue(expected.issubset(manifest_files()))
+
     def test_release_archives_contain_exactly_the_manifest(self):
         expected = manifest_files()
         version = (ROOT / "VERSION.txt").read_text(encoding="utf-8").strip()
