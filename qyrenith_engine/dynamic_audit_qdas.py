@@ -124,7 +124,7 @@ def run_scenario_with_qdas(
             not isinstance(argument, str)
             or not argument
             or len(argument) > 16_384
-            or "\\x00" in argument
+            or "\x00" in argument
             for argument in argv
         )
     ):
