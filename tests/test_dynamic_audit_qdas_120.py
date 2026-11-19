@@ -169,7 +169,6 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
             )
 
     @patch("qyrenith_engine.dynamic_audit_qdas.run_bounded_process", return_value=make_report())
-    @patch("qyrenith_engine.dynamic_audit_qdas.run_bounded_process", return_value=make_report())
     def test_caller_supplied_report_cannot_bypass_bounded_runner(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
             scenario = make_scenario()
@@ -197,6 +196,7 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
                 hashlib.sha256(b"scenario executed").hexdigest(),
             )
 
+    @patch("qyrenith_engine.dynamic_audit_qdas.run_bounded_process", return_value=make_report())
     def test_tampering_breaks_qdas_ledger(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
             qdas_path = Path(directory) / "qdas.jsonl"
