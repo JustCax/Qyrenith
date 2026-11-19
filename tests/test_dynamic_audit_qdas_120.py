@@ -26,7 +26,7 @@ def make_scenario():
     }
 
 
-def make_report():
+def make_report(*_args, **_kwargs):
     return {
         "status": "PASS",
         "stdout": "scenario executed",
