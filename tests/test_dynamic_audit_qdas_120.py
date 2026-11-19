@@ -85,10 +85,10 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
                     environment={"PYTHONPATH": "src"},
                 )
 
-    def test_empty_argv_is_rejected(self):
+    def test_missing_timeout_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             scenario = make_scenario()
-            scenario["argv"] = []
+            del scenario["timeout_seconds"]
             with self.assertRaises(ValueError):
                 run_scenario_with_qdas(
                     scenario,
@@ -101,6 +101,31 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
                     tool_version="3.11",
                     environment={"PYTHONPATH": "src"},
                 )
+
+    def test_invalid_argv_is_rejected_before_report_ingestion(self):
+        invalid_argv_values = (
+            [],
+            ["python", "\x00"],
+            ["x" * 16_385],
+            ["python"] * 257,
+        )
+        for argv in invalid_argv_values:
+            with self.subTest(argument_count=len(argv)):
+                with tempfile.TemporaryDirectory() as directory:
+                    scenario = make_scenario()
+                    scenario["argv"] = argv
+                    with self.assertRaises(ValueError):
+                        run_scenario_with_qdas(
+                            scenario,
+                            project=directory,
+                            qdas_ledger=make_qdas_ledger(Path(directory) / "qdas.jsonl"),
+                            project_id="proj-alpha",
+                            project_revision="rev-1",
+                            workspace_id="ws-1",
+                            tool_name="python",
+                            tool_version="3.11",
+                            environment={"PYTHONPATH": "src"},
+                        )
 
     def test_records_qdas_event_and_scenario_outcome(self):
         with tempfile.TemporaryDirectory() as directory:
