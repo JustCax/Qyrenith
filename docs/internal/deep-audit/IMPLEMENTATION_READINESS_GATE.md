@@ -157,6 +157,10 @@ The QDAS dynamic process-capture wrapper now requires an explicit bounded timeou
 
 The returned scenario result now keeps `execution_status` separate and reports overall/behavior status as `NOT_RUN` with `behavior_verified=false`; a process exit PASS cannot be mistaken for a passing behavioral oracle. This is a narrow input-contract and evidence-provenance hardening change, not completion of DB-01..DB-12 or the dynamic/behavioral audit module. The current wrapper still captures a bounded process report; it does not implement the full scenario setup/actions/expected-observation/cleanup lifecycle, evaluate behavioral oracles, or provide RVL isolation. The new tests have **not been executed** and remain source-level test additions only.
 
+### Static-analysis QDAS status hardening (2026-11-19)
+
+The static-analysis capture adapter now maps unrecognized or non-string analyzer status values to BLOCKED rather than treating them as an analyzer/infrastructure ERROR. The original analyzer report is preserved unchanged in the captured output. A targeted regression test covers an unrecognized status. This is a narrow classification correction; it does not complete the static/semantic analysis capability module, and the new test has not been executed.
+
 ### Gate G — Implementation slices and independent validation
 
 - [ ] Every P0 requirement maps to a concrete implementation slice and acceptance evidence.
