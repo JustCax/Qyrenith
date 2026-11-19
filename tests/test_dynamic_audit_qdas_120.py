@@ -39,7 +39,7 @@ def make_report():
 class TestQdasDynamicAuditCapture(unittest.TestCase):
     @patch(
         "qyrenith_engine.dynamic_audit_qdas.run_bounded_process",
-        return_value=make_report(),
+        side_effect=make_report,
     )
     def test_invalid_event_metadata_is_rejected_before_process_execution(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
@@ -59,7 +59,7 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
 
     @patch(
         "qyrenith_engine.dynamic_audit_qdas.run_bounded_process",
-        return_value=make_report(),
+        side_effect=make_report,
     )
     def test_invalid_environment_is_rejected_before_process_execution(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
@@ -79,7 +79,7 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
 
     @patch(
         "qyrenith_engine.dynamic_audit_qdas.run_bounded_process",
-        return_value=make_report(),
+        side_effect=make_report,
     )
     def test_missing_scenario_id_is_rejected_before_process_execution(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
@@ -101,7 +101,7 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
 
     @patch(
         "qyrenith_engine.dynamic_audit_qdas.run_bounded_process",
-        return_value=make_report(),
+        side_effect=make_report,
     )
     def test_invalid_timeout_is_rejected_without_fallback(self, bounded_runner):
         for timeout in (0, 3601, 1.5, True, None):
@@ -126,7 +126,7 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
 
     @patch(
         "qyrenith_engine.dynamic_audit_qdas.run_bounded_process",
-        return_value=make_report(),
+        side_effect=make_report,
     )
     def test_unknown_oracle_is_rejected(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
@@ -149,7 +149,7 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
 
     @patch(
         "qyrenith_engine.dynamic_audit_qdas.run_bounded_process",
-        return_value=make_report(),
+        side_effect=make_report,
     )
     def test_missing_oracle_is_rejected(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
@@ -172,7 +172,7 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
 
     @patch(
         "qyrenith_engine.dynamic_audit_qdas.run_bounded_process",
-        return_value=make_report(),
+        side_effect=make_report,
     )
     def test_missing_timeout_is_rejected(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
@@ -195,7 +195,7 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
 
     @patch(
         "qyrenith_engine.dynamic_audit_qdas.run_bounded_process",
-        return_value=make_report(),
+        side_effect=make_report,
     )
     def test_invalid_argv_is_rejected_before_process_execution(self, bounded_runner):
         invalid_argv_values = (
@@ -226,7 +226,7 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
 
     @patch(
         "qyrenith_engine.dynamic_audit_qdas.run_bounded_process",
-        return_value=make_report(),
+        side_effect=make_report,
     )
     def test_records_qdas_event_and_scenario_outcome(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
@@ -269,7 +269,7 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
 
     @patch(
         "qyrenith_engine.dynamic_audit_qdas.run_bounded_process",
-        return_value=make_report(),
+        side_effect=make_report,
     )
     def test_caller_supplied_report_cannot_bypass_bounded_runner(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
@@ -300,7 +300,7 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
 
     @patch(
         "qyrenith_engine.dynamic_audit_qdas.run_bounded_process",
-        return_value=make_report(),
+        side_effect=make_report,
     )
     def test_tampering_breaks_qdas_ledger(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
@@ -333,7 +333,7 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
 
     @patch(
         "qyrenith_engine.dynamic_audit_qdas.run_bounded_process",
-        return_value=make_report(),
+        side_effect=make_report,
     )
     def test_environment_fingerprint_binding(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
