@@ -159,7 +159,7 @@ The returned scenario result now keeps `execution_status` separate and reports o
 
 ### Static-analysis QDAS provenance gap (2026-11-19)
 
-The current static-analysis adapter invokes `analyze_project()` in-process but records `argv=["python", "-m", "qyrenith_analysis"]`, which is not an actually launched command in the current tree. This does not satisfy the QDAS-01 exact-argv provenance requirement. The adapter remains PARTIAL until it either launches a real bounded analyzer CLI and records its actual argv, or the event model explicitly represents an in-process operation without fabricating process arguments. Do not treat this adapter as QDAS-01 verified.
+The current static-analysis adapter invokes `analyze_project()` in-process but records `argv=["python", "-m", "qyrenith_analysis"]`, which is not an actually launched command in the current tree. It also maps analyzer report status into the event's `execution_status` and `exit_code`, conflating analysis findings with process execution. These do not satisfy QDAS-01 provenance/semantics. The adapter remains PARTIAL until it either launches a real bounded analyzer CLI and records its actual argv/exit status, or the event model explicitly represents an in-process operation and separates analyzer verdict from execution status. Do not treat this adapter as QDAS-01 verified.
 
 ### Static-analysis QDAS status hardening (2026-11-19)
 
