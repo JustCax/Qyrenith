@@ -181,6 +181,12 @@ tests/test_rust_domain.py
 tests/test_single_walk.py
 tests/test_verification_invariants.py
 tests/test_version_consistency.py
+tests/test_analysis_qdas_120.py
+tests/test_dynamic_audit_qdas_120.py
+tests/test_english_only_policy.py
+tests/test_execution_bounds_120.py
+tests/test_migration_qdas_step_120.py
+tests/test_qdas_cli_integration.py
 workers/README.md
 workers/example-worker.py
 workers/neoforge-porter.py
