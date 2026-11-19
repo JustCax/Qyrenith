@@ -343,6 +343,7 @@ def approve_host_request(
     print("Exact action scope:", file=output)
     print(json.dumps(request.scope, indent=2, sort_keys=True, ensure_ascii=True), file=output)
     print("Approval grants only this exact scope. It does not bypass OS sandbox policy.", file=output)
+    print("The local account label is attribution only; this prompt does not independently authenticate identity.", file=output)
     challenge = f"APPROVE {request.action_type} {request.request_id} {request.nonce}"
     print(f"To approve, type exactly: {challenge}", file=output)
     output.flush()
