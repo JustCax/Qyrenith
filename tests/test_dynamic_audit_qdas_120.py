@@ -187,6 +187,10 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
             # Returns both results
             self.assertIsInstance(capture_result, QdasCaptureResult)
             self.assertIsInstance(scenario_outcome, dict)
+            self.assertEqual(scenario_outcome["status"], "NOT_RUN")
+            self.assertEqual(scenario_outcome["execution_status"], "PASS")
+            self.assertEqual(scenario_outcome["behavior_status"], "NOT_RUN")
+            self.assertFalse(scenario_outcome["behavior_verified"])
             bounded_runner.assert_called_once()
             self.assertEqual(bounded_runner.call_args.args[0], ["python"])
             self.assertEqual(bounded_runner.call_args.kwargs["timeout"], 120)
