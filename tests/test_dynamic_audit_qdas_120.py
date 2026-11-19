@@ -1,8 +1,10 @@
 """Tests for QDAS dynamic audit capture of scenario execution (1.2.0)."""
+import hashlib
 import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from qyrenith_engine.dynamic_audit_qdas import run_scenario_with_qdas
 from qyrenith_engine.qdas.collector import QdasCaptureResult
@@ -21,13 +23,16 @@ def make_scenario():
         "scenario_kind": "BOUNDED_PROCESS",
         "timeout_seconds": 120,
         "oracle": "HEURISTIC",
-        "report": {
-            "status": "PASS",
-            "stdout": "scenario executed",
-            "stderr": "",
-            "exit_code": 0,
-            "duration_seconds": 1.0,
-        },
+    }
+
+
+def make_report():
+    return {
+        "status": "PASS",
+        "stdout": "scenario executed",
+        "stderr": "",
+        "exit_code": 0,
+        "duration_seconds": 1.0,
     }
 
 
@@ -127,7 +132,8 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
                             environment={"PYTHONPATH": "src"},
                         )
 
-    def test_records_qdas_event_and_scenario_outcome(self):
+    @patch("qyrenith_engine.dynamic_audit_qdas.run_bounded_process", return_value=make_report())
+    def test_records_qdas_event_and_scenario_outcome(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
             qdas_path = Path(directory) / "qdas.jsonl"
             qdas_ledger = make_qdas_ledger(qdas_path)
@@ -148,6 +154,9 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
             # Returns both results
             self.assertIsInstance(capture_result, QdasCaptureResult)
             self.assertIsInstance(scenario_outcome, dict)
+            bounded_runner.assert_called_once()
+            self.assertEqual(bounded_runner.call_args.args[0], ["python"])
+            self.assertEqual(bounded_runner.call_args.kwargs["timeout"], 120)
 
             # QDAS ledger has one record
             qdas_records = verify_qdas_ledger(qdas_path)
@@ -159,7 +168,36 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
                 capture_result.event.event_id,
             )
 
-    def test_tampering_breaks_qdas_ledger(self):
+    @patch("qyrenith_engine.dynamic_audit_qdas.run_bounded_process", return_value=make_report())
+    @patch("qyrenith_engine.dynamic_audit_qdas.run_bounded_process", return_value=make_report())
+    def test_caller_supplied_report_cannot_bypass_bounded_runner(self, bounded_runner):
+        with tempfile.TemporaryDirectory() as directory:
+            scenario = make_scenario()
+            scenario["report"] = {
+                "status": "PASS",
+                "stdout": "forged caller-supplied report",
+                "stderr": "",
+                "exit_code": 0,
+                "duration_seconds": 0.0,
+            }
+            capture_result, _ = run_scenario_with_qdas(
+                scenario,
+                project=directory,
+                qdas_ledger=make_qdas_ledger(Path(directory) / "qdas.jsonl"),
+                project_id="proj-alpha",
+                project_revision="rev-1",
+                workspace_id="ws-1",
+                tool_name="python",
+                tool_version="3.11",
+                environment={"PYTHONPATH": "src"},
+            )
+            bounded_runner.assert_called_once()
+            self.assertEqual(
+                capture_result.event.stdout_digest,
+                hashlib.sha256(b"scenario executed").hexdigest(),
+            )
+
+    def test_tampering_breaks_qdas_ledger(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
             qdas_path = Path(directory) / "qdas.jsonl"
             qdas_ledger = make_qdas_ledger(qdas_path)
@@ -188,7 +226,8 @@ class TestQdasDynamicAuditCapture(unittest.TestCase):
             with self.assertRaises(QdasLedgerError):
                 verify_qdas_ledger(qdas_path)
 
-    def test_environment_fingerprint_binding(self):
+    @patch("qyrenith_engine.dynamic_audit_qdas.run_bounded_process", return_value=make_report())
+    def test_environment_fingerprint_binding(self, bounded_runner):
         with tempfile.TemporaryDirectory() as directory:
             qdas_path = Path(directory) / "qdas.jsonl"
             qdas_ledger = make_qdas_ledger(qdas_path)
